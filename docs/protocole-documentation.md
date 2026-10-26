@@ -110,7 +110,9 @@ page l'indique en tête ; une modification faite à la main dans le wiki est éc
 passage suivant. Les archives restent dans le dépôt.
 
 Le wiki se régénère **après chaque poussée de `main` qui touche `docs/`**, pour qu'il ne
-décrive jamais un état que le dépôt public n'a pas encore :
+décrive jamais un état que le dépôt public n'a pas encore. Le workflow
+[`wiki.yml`](../.github/workflows/wiki.yml) le fait de lui-même (et à la demande, depuis
+l'onglet Actions) ; à la main, en secours :
 
 ```bash
 git clone git@github.com:chrraj7/S-Aloha.wiki.git /tmp/s-aloha-wiki   # une fois
