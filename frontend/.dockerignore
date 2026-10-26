@@ -1,0 +1,11 @@
+# Contexte de construction de l'image : seulement les sources. L'image installe ses propres
+# dépendances (npm install) et construit son dist/ : ceux du poste ralentiraient l'envoi au
+# démon et pourraient masquer une dépendance absente de package.json.
+node_modules/
+dist/
+coverage/
+*.log
+.vscode/
+.idea/
+Dockerfile
+.dockerignore

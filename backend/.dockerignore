@@ -1,0 +1,10 @@
+# Contexte de construction de l'image : seulement les sources. Les sorties de build du poste
+# rendraient l'image moins reproductible (et pourraient y copier un fichier local).
+bin/
+obj/
+*.user
+.vs/
+.vscode/
+.idea/
+Dockerfile
+.dockerignore
