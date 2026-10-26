@@ -38,4 +38,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PIED: ${{ secrets.PIED_A_RETIRER }}
-        run: python3 scripts/retirer-pied.py
+        run: |
+          # Script lu sur la branche par défaut : absent tant que ce workflow n'y est pas fusionné.
+          if [ ! -f scripts/retirer-pied.py ]; then echo "Script absent de la branche par défaut : rien à faire."; exit 0; fi
+          python3 scripts/retirer-pied.py
