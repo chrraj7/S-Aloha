@@ -192,7 +192,7 @@ les entités EF sont renvoyées avec leurs navigations (`Analysis → Problem �
 | GET `/api/attachments?type=&id=`, POST `/api/attachments` (multipart : `type`, `id`, `file`), GET `/api/attachments/{id}/content`, DELETE `/api/attachments/{id}` | User | Pièces jointes dans le stockage compatible S3 ([SOC-25](regles-metier.md#8-notifications), ADR-0020) ; retrait : auteur, gestionnaire du périmètre ou Admin | Core/Attachments |
 | GET `/api/comments?type=&id=`, POST `/api/comments`, DELETE `/api/comments/{id}` | User | Commentaires publics et notes de travail ([SOC-24](regles-metier.md#9-traçabilité-commentaires-administration)) ; retrait : auteur ou Admin | Core/Comments |
 | GET `/api/links?type=&id=`, POST `/api/links`, DELETE `/api/links/{id}` | User | Liens inter-processus, lus dans les deux sens | Core/Links |
-| GET `/api/audit?type=&id=` | User | Historique d'un enregistrement (journal d'audit, SOC-20) | Core/Audit |
+| GET `/api/audit?type=&id=` | User | Historique d'un enregistrement (journal d'audit, SOC-20) ; visibilité de la fiche (PER-05), 404 hors périmètre ; périmètres et paramètres : Admin | Core/Audit |
 | PUT `…/{id}?force=true&reason=` | Admin | Transition forcée hors graphe, motif obligatoire et tracé (SOC-05) | Core/Audit, socle des pratiques et module Problèmes |
 | GET `/api/directory/search?q=` | User | Recherche utilisateurs/groupes AD (sélecteur RACI) | Core/Directory |
 | GET `/api/reports/dashboard/{overview,incidents,requests,problems,changes-projects,compliance,configuration}?from=&to=&service=` | User | Tableau de bord par onglet ([reporting](reporting.md), REP-01 à REP-63) | Core/Pilotage |
