@@ -15,7 +15,7 @@ services:
       retries: 10
 
   api:
-    # Image publiée à chaque version ; « up --build » construit depuis les sources.
+    # Image `edge` (état de `main`) par défaut ; S_ALOHA_VERSION fige une version ; « up --build » construit depuis les sources.
     image: ghcr.io/chrraj7/s-aloha-api:${S_ALOHA_VERSION:-edge}
     build: ./backend
     depends_on:
