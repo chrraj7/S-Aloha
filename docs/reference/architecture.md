@@ -274,5 +274,10 @@ sur un push sur `main` seulement, une fois les quatre premiers et la Recette ver
 par SHA, jeton en lecture seule (écriture des paquets pour le seul job Images edge). CodeQL (C#, JavaScript) et Dependabot
 ([`.github/dependabot.yml`](../../.github/dependabot.yml)) complètent ; les mises à jour
 Dependabot mineures ou correctives se fusionnent d'elles-mêmes une fois la CI au vert
-([`.github/workflows/dependabot.yml`](../../.github/workflows/dependabot.yml)). Voir
+([`.github/workflows/dependabot.yml`](../../.github/workflows/dependabot.yml)). Deux workflows
+d'entretien : [`wiki.yml`](../../.github/workflows/wiki.yml) publie le wiki à chaque poussée
+de `main` qui touche `docs/` ; [`commentaires.yml`](../../.github/workflows/commentaires.yml)
+retire des textes du compte du mainteneur (commentaires, descriptions et revues de PR) un
+pied de page ajouté automatiquement par un outil, dont le motif est lu dans le secret
+`PIED_A_RETIRER`. Voir
 [sécurité § Contrôles du dépôt](securite.md#contrôles-du-dépôt).

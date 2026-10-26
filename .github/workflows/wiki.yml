@@ -1,0 +1,41 @@
+# Publication du wiki, miroir généré de docs/ (protocole documentaire § 6) : à chaque
+# poussée de main qui touche docs/ ou le générateur, et à la demande. Le jeton du
+# workflow écrit dans le dépôt du wiki ; aucune autre écriture.
+name: Wiki
+
+on:
+  push:
+    branches: [main]
+    paths: ["docs/**", "scripts/sync-wiki.py"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wiki
+  cancel-in-progress: false
+
+jobs:
+  wiki:
+    name: Publication du wiki
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Régénération et publication
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git clone -q "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.wiki.git" ../wiki
+          python3 scripts/sync-wiki.py ../wiki
+          cd ../wiki
+          git add -A
+          if git diff --cached --quiet; then echo "Wiki déjà à jour."; exit 0; fi
+          git diff --cached --stat
+          git -c user.name=Leipa -c user.email=64126541+chrraj7@users.noreply.github.com \
+            commit -q -s -m "Wiki régénéré depuis docs/ (${GITHUB_SHA::7})"
+          git push -q
