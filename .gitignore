@@ -3,3 +3,7 @@ dist/
 bin/
 obj/
 *.user
+
+# Caches Python (scripts/)
+__pycache__/
+*.pyc
