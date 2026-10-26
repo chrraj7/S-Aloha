@@ -246,8 +246,9 @@ cd frontend && npm test                                                # interfa
 S-Aloha est un projet ouvert : code, documentation, retours d'usage, tout compte.
 
 - 📐 **Une spécification prête à coder.** Chaque pratique a son document : rôles, données,
-  cycle de vie, règles numérotées, scénarios d'acceptation. Une soixantaine de règles 🔜
-  attendent leur implémentation ; chacune est une pull request bien délimitée, citée par son
+  cycle de vie, règles numérotées, scénarios d'acceptation. Les règles 🔜 restantes (le
+  [tableau de synthèse](docs/reference/processus/readme.md#les-pratiques) les compte) attendent leur
+  implémentation ; chacune est une pull request bien délimitée, citée par son
   identifiant (`INC-15`, `REQ-24`…). Commencer par le
   [mode d'emploi](docs/reference/processus/readme.md#mode-demploi-pour-implémenter-une-règle).
 - 🧩 **Première contribution ?** Les issues
