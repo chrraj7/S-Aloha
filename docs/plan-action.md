@@ -28,7 +28,7 @@ tous les indicateurs des pratiques sont au tableau de bord. Le lot 3 des pratiqu
 **Versions** : préversions 0.1.0 et 0.2.0 retirées le 2026-10-23 (releases et tags) ; la
 première version publiée sera **stable**, à la fin de ce plan d'action.
 
-**Reste du plan** : les chantiers à arbitrer ci-dessous, la recette sur l'AMD, les points avant
+**Reste du plan** : les chantiers à arbitrer ci-dessous, les points avant
 mise en production (section 5 : S1, S2 ; S3 et O1 suivis par les issues de la communauté) et
 les tâches de communauté (section 8).
 
@@ -43,10 +43,10 @@ les tâches de communauté (section 8).
 
 **Actions en attente (hors dépôt)** :
 
-- **Recette AMD** : déployée le 2026-10-23 avec main (jusqu'à #172) et le langage visuel v2 ;
-  treize migrations appliquées, après `pg_dump`. Stockage S3 (Garage) et SMTP de recette
-  réglés dans la console le 2026-10-24 (essais de dépôt et d'envoi réussis) ; reste à
-  dérouler la recette.
+- **Recette** : automatisée depuis le 2026-10-26 par le job **Recette** de la CI, sur une pile
+  neuve à chaque PR ([architecture § Intégration continue](reference/architecture.md#intégration-continue)).
+  L'AMD reste un laboratoire d'essais à la demande (déployé le 2026-10-23 avec main jusqu'à
+  #172 ; S3 et SMTP essayés le 2026-10-24), hors du chemin de fusion.
 - **WinRM** ([CFG-57](reference/processus/gestion-de-la-configuration.md)) à valider sur un
   Windows réel (aucun au laboratoire).
 - **Avant la production** : S1, S2 (section 5) ; issues de la communauté #120 à #126 ouvertes.

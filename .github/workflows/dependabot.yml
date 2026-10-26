@@ -1,0 +1,41 @@
+# Fusion automatique des mises à jour Dependabot de version mineure ou corrective :
+# la fusion (squash) est programmée dès l'ouverture et n'a lieu qu'une fois les
+# contrôles exigés sur main au vert. Une version majeure (ADR-0004) ou une PR
+# modifiée par quelqu'un d'autre reste à la main. Pas d'action tierce : les
+# versions se lisent dans la description de la PR (« from X to Y »).
+name: Dependabot
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  fusion:
+    name: Fusion automatique
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Versions mineures ou correctives seulement
+        env:
+          BODY: ${{ github.event.pull_request.body }}
+        run: |
+          python3 - <<'PY'
+          import os, re, sys
+          paires = re.findall(r"from `?v?(\d+)[^\s`]*`? to `?v?(\d+)[^\s`]*`?", os.environ["BODY"])
+          if not paires:
+              sys.exit("Aucune version lue dans la description : fusion à la main.")
+          majeures = [p for p in paires if p[0] != p[1]]
+          if majeures:
+              sys.exit(f"Version majeure ({majeures[0][0]} → {majeures[0][1]}) : fusion à la main.")
+          print(f"{len(paires)} mise(s) à jour mineure(s) ou corrective(s).")
+          PY
+      - name: Programmer la fusion
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge --auto --squash "$PR"
