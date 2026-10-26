@@ -253,7 +253,7 @@ Détails (registre des modules, thème, design) : [frontend.md](frontend.md).
 ### Intégration continue
 
 [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) rejoue ces contrôles à chaque
-push sur `main` et sur chaque pull request, en sept jobs : **API** (tests ci-dessus et
+push sur `main` et sur chaque pull request, en huit jobs : **API** (tests ci-dessus et
 `dotnet list package --vulnerable`), **Interface** (`npm ci`, tests, build,
 `npm audit --audit-level=high`), **Documentation** (`scripts/check-docs.py`) et
 **Images Docker** (build des deux images, sans publication), **DCO** (chaque commit porte le
@@ -263,7 +263,12 @@ arrivés par la fusion, pour repérer un squash dont le message a perdu la signa
 une pull request seulement, **Hygiène**
 (`scripts/check-hygiene.py` : trailers autres que `Signed-off-by` et termes réservés, lus dans
 le secret `HYGIENE_TERMES` ; avertissements seulement pour l'instant, non exigé pour
-fusionner) ; sur un push sur `main` seulement, une fois les quatre premiers verts,
+fusionner) ; **Recette** : la pile de démonstration construite depuis les sources sur une base
+vierge (annuaire Samba AD, API, interface, sans le service d'embeddings), les données
+d'exemple chargées par l'API (`demo/donnees/charger.py`), puis
+[`scripts/recette.py`](../../scripts/recette.py) par l'interface : connexion des trois rôles,
+jeu de données complet, santé de la base et de l'annuaire ; c'est la recette avant fusion ;
+sur un push sur `main` seulement, une fois les quatre premiers et la Recette verts,
 **Images edge** publie l'état de `main` sur ghcr.io sous le tag `edge`
 ([exploitation § Versions et images](exploitation.md#versions-et-images)). Actions épinglées
 par SHA, jeton en lecture seule (écriture des paquets pour le seul job Images edge). CodeQL (C#, JavaScript) et Dependabot

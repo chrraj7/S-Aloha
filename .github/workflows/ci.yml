@@ -1,7 +1,7 @@
 # Contrôles de chaque push sur main et de chaque pull request : tests de l'API
 # (PostgreSQL réel via Testcontainers), tests et build de l'interface, santé
 # de la documentation, build des deux images, signature DCO de chaque commit
-# (ADR-0010). Sur main, une fois tout vert, images de
+# (ADR-0010), recette de la pile de démonstration sur une base vierge. Sur main, une fois tout vert, images de
 # développement « edge » publiées sur ghcr.io (aucun tag git, aucune release).
 # Actions épinglées par SHA (tenues à jour par Dependabot) ; jeton en lecture seule.
 name: CI
@@ -79,12 +79,39 @@ jobs:
       - run: docker build -t s-aloha-api backend
       - run: docker build -t s-aloha-web frontend
 
+  recette:
+    # Recette sur une pile neuve, à chaque PR et sur main : pile de démonstration construite
+    # depuis les sources (base vierge, annuaire Samba AD, API, interface ; sans le service
+    # d'embeddings), données d'exemple chargées par l'API, puis scripts/recette.py par
+    # l'interface. Remplace la recette manuelle avant fusion.
+    name: Recette
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      COMPOSE: docker compose -p s-aloha-recette -f docker-compose.yml -f docker-compose.demo.yml
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Pile de démonstration
+        run: $COMPOSE up -d --build --quiet-pull db annuaire api web
+      - name: Données d'exemple
+        run: python3 demo/donnees/charger.py http://localhost:8080
+      - name: Contrôles
+        run: python3 scripts/recette.py http://localhost
+      - name: Journaux de la pile
+        if: failure()
+        run: $COMPOSE logs --no-color --tail 200
+      - name: Arrêt
+        if: always()
+        run: $COMPOSE down -v
+
   edge:
     # Images de développement : l'état de main, à chaque fusion. « latest » et les
     # versions restent l'affaire de publication.yml (tag vX.Y.Z).
     name: Images edge (ghcr.io)
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [api, web, docs, images]
+    needs: [api, web, docs, images, recette]
     runs-on: ubuntu-latest
     permissions:
       contents: read
