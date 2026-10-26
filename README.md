@@ -184,8 +184,8 @@ git clone https://github.com/chrraj7/S-Aloha.git && cd S-Aloha
 docker compose -f docker-compose.yml -f docker-compose.demo.yml up -d
 ```
 
-Les images publiées de la dernière version sont téléchargées ; ajoutez `--build` pour
-construire depuis les sources.
+Les images de développement (`edge`, l'état de `main`) sont téléchargées ; ajoutez
+`--build` pour construire depuis les sources ([images publiées](docs/reference/exploitation.md)).
 
 Ouvrez **http://localhost** et connectez-vous avec l'un des comptes de démonstration :
 
@@ -210,13 +210,13 @@ appartenir à l'un des groupes `GRP-SALOHA-ADMINS`, `GRP-SALOHA-MANAGERS` ou
 La plupart des évolutions sont déjà **spécifiées règle par règle**, avec leurs scénarios
 d'acceptation ([pratiques ITIL](docs/reference/processus/readme.md)). Les prochains chantiers :
 
-- 📎 **Pièces jointes** sur chaque fiche, et **notifications par courriel** (immédiates ou
-  en résumé quotidien).
 - 📋 **Référentiels de conformité importés** par l'organisation (ISO 27002, CR-CMM…), à côté
   de NIS 2.
-- 🗃️ **Import en masse** de la CMDB, attributs par type de CI, service signalé « dégradé ».
-- 🙋 **Tâches d'exécution** des demandes, contestation, **enquête de satisfaction**.
-- 🔎 **Suggestions à la saisie** : les cas similaires dès le titre d'un incident.
+- 🛰️ **Agent de découverte léger** pour les postes nomades, et **preuves NIS 2** nourries par
+  la découverte.
+- 🔎 **Recherche dans les pièces jointes** : le texte des documents déposés, indexé.
+- 🔐 **Durcissement avant la production** : secrets hors du dépôt, LDAPS et HTTPS, CORS
+  restreint.
 
 Le détail et l'ordre : [plan d'action](docs/plan-action.md#7-feuille-de-route-fonctionnelle).
 Une organisation peut **sponsoriser** un chantier pour l'accélérer : le résultat est publié
@@ -246,8 +246,9 @@ cd frontend && npm test                                                # interfa
 S-Aloha est un projet ouvert : code, documentation, retours d'usage, tout compte.
 
 - 📐 **Une spécification prête à coder.** Chaque pratique a son document : rôles, données,
-  cycle de vie, règles numérotées, scénarios d'acceptation. Une soixantaine de règles 🔜
-  attendent leur implémentation ; chacune est une pull request bien délimitée, citée par son
+  cycle de vie, règles numérotées, scénarios d'acceptation. Les règles 🔜 restantes (le
+  [tableau de synthèse](docs/reference/processus/readme.md#les-pratiques) les compte) attendent leur
+  implémentation ; chacune est une pull request bien délimitée, citée par son
   identifiant (`INC-15`, `REQ-24`…). Commencer par le
   [mode d'emploi](docs/reference/processus/readme.md#mode-demploi-pour-implémenter-une-règle).
 - 🧩 **Première contribution ?** Les issues
@@ -312,8 +313,9 @@ place, NIS 2 built in.**
   clean-up) and manager-maintained incident and problem categories.
 - **On every record**: comments (public or work notes), history, in-app notifications,
   links between records, hybrid search (keywords + semantic, local `bge-m3` model).
-- **Roadmap**: regulatory incident notifications (NIS 2, GDPR), attachments, e-mail
-  notifications, imported compliance frameworks, CMDB bulk import.
+- **Roadmap**: imported compliance frameworks (ISO 27002, CR-CMM…), a lightweight discovery
+  agent for remote devices and NIS 2 evidence from discovery, attachment text search,
+  production hardening.
 - **Stack**: ASP.NET Core 10 (LTS), EF Core, PostgreSQL 16, React 19 + Vite, Docker Compose.
 - **Try it**: `docker compose -f docker-compose.yml -f docker-compose.demo.yml up -d`,
   then sign in at http://localhost as `demo.admin` / `Demo-Admin-2026` (a demo directory

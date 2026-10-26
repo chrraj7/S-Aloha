@@ -236,6 +236,8 @@ publiée, dans les [releases](https://github.com/chrraj7/S-Aloha/releases).
 
 ### Sécurité
 
+- **Historique d'un enregistrement** (SOC-20) : il suit désormais la visibilité de la fiche
+  (PER-05) ; l'historique des périmètres et des paramètres est réservé à l'Admin.
 - **Jeton de session en cookie HttpOnly** (S5) : le jeton n'est plus lisible par les scripts
   de la page ; cookie `SameSite=Strict`, `Secure` en HTTPS, protection CSRF par l'en-tête
   `X-S-Aloha`, déconnexion côté serveur ; nginx sert une politique de sécurité du contenu

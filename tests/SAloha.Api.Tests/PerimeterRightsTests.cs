@@ -154,6 +154,31 @@ public class PerimeterRightsTests(ApiFixture api)
     }
 
     [Fact]
+    public async Task PER_05_historique_soumis_a_la_visibilite_de_la_fiche()
+    {
+        var (siege, usine, lova, tiana, _) = await Setup("per05h");
+        var t = api.Client("User", tiana);
+        var l = api.Client("User", lova);
+        var inc = await Json(await l.PostAsJsonAsync("/api/incidents",
+            new { title = "Presse Usine", impact = "Faible", urgency = "Faible", perimeterId = usine }));
+        Assert.Equal(HttpStatusCode.NotFound, (await t.GetAsync($"/api/incidents/{Id(inc)}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await t.GetAsync($"/api/audit?type=incident&id={Id(inc)}")).StatusCode);
+        Assert.NotEmpty((await Json(await l.GetAsync($"/api/audit?type=incident&id={Id(inc)}"))).EnumerateArray());
+
+        // Référentiel partagé (D2) : l'historique suit la fiche, lisible de tous.
+        var svc = await Json(await api.Client().PostAsJsonAsync("/api/services", new
+        {
+            title = "Supervision Usine per05h", status = "En conception", criticality = "Moyenne", serviceHours = "24/7", perimeterId = usine
+        }));
+        Assert.Equal(HttpStatusCode.OK, (await t.GetAsync($"/api/audit?type=service&id={Id(svc)}")).StatusCode);
+
+        // Types hors enregistrements (périmètres, paramètres) : Admin seulement.
+        Assert.Equal(HttpStatusCode.NotFound, (await t.GetAsync($"/api/audit?type=perimeter&id={siege}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await api.Client("Manager", "chef.per05h").GetAsync($"/api/audit?type=perimeter&id={siege}")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await api.Client().GetAsync($"/api/audit?type=perimeter&id={siege}")).StatusCode);
+    }
+
+    [Fact]
     public async Task PER_10_un_compte_sans_affectation_garde_Organisation()
     {
         await Setup("per10");   // des affectations existent pour d'autres comptes
