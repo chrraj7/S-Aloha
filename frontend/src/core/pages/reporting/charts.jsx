@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 // Graphiques du tableau de bord (guide de visualisation) : traits de 2 px,
 // grille fine, légende dès deux séries, étiquettes directes en bout de courbe,
@@ -13,18 +13,20 @@ const CHART_H = 220
 /**
  * Largeur réelle du conteneur, pour dessiner le SVG à l'échelle 1 : un viewBox
  * étiré agrandirait aussi les graduations (18 px sur une carte pleine largeur).
+ * Le nœud passe par un callback ref : le conteneur n'existe pas encore quand
+ * le graphique est monté sans données, et il est recréé après la vue tableau.
  * Sans ResizeObserver (tests), largeur de repli.
  */
 function useWidth(fallback = 640) {
-  const ref = useRef(null)
+  const [node, setNode] = useState(null)
   const [width, setWidth] = useState(fallback)
   useEffect(() => {
-    if (!ref.current || typeof ResizeObserver === 'undefined') return
+    if (!node || typeof ResizeObserver === 'undefined') return
     const ro = new ResizeObserver(([e]) => { const w = Math.round(e.contentRect.width); if (w > 0) setWidth(w) })
-    ro.observe(ref.current)
+    ro.observe(node)
     return () => ro.disconnect()
-  }, [])
-  return [ref, width]
+  }, [node])
+  return [setNode, width]
 }
 
 /**
