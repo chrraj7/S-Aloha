@@ -256,14 +256,18 @@ Détails (registre des modules, thème, design) : [frontend.md](frontend.md).
 push sur `main` et sur chaque pull request, en sept jobs : **API** (tests ci-dessus et
 `dotnet list package --vulnerable`), **Interface** (`npm ci`, tests, build,
 `npm audit --audit-level=high`), **Documentation** (`scripts/check-docs.py`) et
-**Images Docker** (build des deux images, sans publication) et, sur une pull request
-seulement, **DCO** (chaque commit porte le `Signed-off-by` de son auteur, bots exceptés ;
-[ADR-0010](../decisions/adr-0010-certificat-d-origine-dco.md)) et **Hygiène**
+**Images Docker** (build des deux images, sans publication), **DCO** (chaque commit porte le
+`Signed-off-by` de son auteur, bots exceptés ;
+[ADR-0010](../decisions/adr-0010-certificat-d-origine-dco.md) ; sur `main`, les commits
+arrivés par la fusion, pour repérer un squash dont le message a perdu la signature) et, sur
+une pull request seulement, **Hygiène**
 (`scripts/check-hygiene.py` : trailers autres que `Signed-off-by` et termes réservés, lus dans
 le secret `HYGIENE_TERMES` ; avertissements seulement pour l'instant, non exigé pour
 fusionner) ; sur un push sur `main` seulement, une fois les quatre premiers verts,
 **Images edge** publie l'état de `main` sur ghcr.io sous le tag `edge`
 ([exploitation § Versions et images](exploitation.md#versions-et-images)). Actions épinglées
 par SHA, jeton en lecture seule (écriture des paquets pour le seul job Images edge). CodeQL (C#, JavaScript) et Dependabot
-([`.github/dependabot.yml`](../../.github/dependabot.yml)) complètent : voir
+([`.github/dependabot.yml`](../../.github/dependabot.yml)) complètent ; les mises à jour
+Dependabot mineures ou correctives se fusionnent d'elles-mêmes une fois la CI au vert
+([`.github/workflows/dependabot.yml`](../../.github/workflows/dependabot.yml)). Voir
 [sécurité § Contrôles du dépôt](securite.md#contrôles-du-dépôt).

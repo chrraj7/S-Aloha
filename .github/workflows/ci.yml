@@ -1,7 +1,7 @@
 # Contrôles de chaque push sur main et de chaque pull request : tests de l'API
 # (PostgreSQL réel via Testcontainers), tests et build de l'interface, santé
-# de la documentation, build des deux images ; sur une pull request, signature
-# DCO de chaque commit (ADR-0010). Sur main, une fois tout vert, images de
+# de la documentation, build des deux images, signature DCO de chaque commit
+# (ADR-0010). Sur main, une fois tout vert, images de
 # développement « edge » publiées sur ghcr.io (aucun tag git, aucune release).
 # Actions épinglées par SHA (tenues à jour par Dependabot) ; jeton en lecture seule.
 name: CI
@@ -102,19 +102,20 @@ jobs:
         run: bash scripts/publier-images.sh edge
 
   dco:
+    # Sur une pull request : les commits de la branche. Sur main : les commits arrivés par la
+    # fusion, car un squash dont le message a été réécrit peut perdre le Signed-off-by.
     name: DCO
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Signed-off-by de l'auteur sur chaque commit
         env:
-          BASE: ${{ github.event.pull_request.base.sha }}
-          HEAD: ${{ github.event.pull_request.head.sha }}
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           fail=0
           for c in $(git rev-list --no-merges "$BASE..$HEAD"); do
@@ -130,8 +131,12 @@ jobs:
             fi
           done
           if [ "$fail" = 1 ]; then
-            echo "Signez vos commits : git commit -s (voir CONTRIBUTING.md § Certificat d'origine)."
-            echo "Rattrapage : git rebase --signoff $BASE puis git push --force-with-lease."
+            if [ "$GITHUB_EVENT_NAME" = push ]; then
+              echo "Fusion sans signature : main ne se réécrit pas, le noter au journal (ADR-0010)."
+            else
+              echo "Signez vos commits : git commit -s (voir CONTRIBUTING.md § Certificat d'origine)."
+              echo "Rattrapage : git rebase --signoff $BASE puis git push --force-with-lease."
+            fi
           fi
           exit $fail
 
