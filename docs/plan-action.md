@@ -100,7 +100,7 @@ Détail : [sécurité § Points de durcissement](reference/securite.md#points-de
 | Q2 | **CI** : build backend et frontend, `python3 scripts/check-docs.py` | code |
 | Q4 | Créer les issues GitHub des sections 1 à 7 et les lier ici ; premières **good first issue** ouvertes le 2026-10-19 pour la communauté : [#120](https://github.com/chrraj7/S-Aloha/issues/120) à [#126](https://github.com/chrraj7/S-Aloha/issues/126) | action |
 | Q5 | Mesure de la couverture de tests (coverlet) publiée en CI, sans seuil bloquant ; `dotnet format` ([audit du 2026-10-16](archives/audit-code-2026-10-16.md) § 8) ; couverture : [#123](https://github.com/chrraj7/S-Aloha/issues/123) | code |
-| Q6 | `.dockerignore` pour `backend` et `frontend` ([audit du 2026-10-16](archives/audit-code-2026-10-16.md) § 9) : [#120](https://github.com/chrraj7/S-Aloha/issues/120) | code |
+| ~~Q6~~ | ~~`.dockerignore` pour `backend` et `frontend`~~ — soldé le 2026-10-26 ([audit du 2026-10-16](archives/audit-code-2026-10-16.md) § 9, [#120](https://github.com/chrraj7/S-Aloha/issues/120)) : contexte de construction limité aux sources ([exploitation](reference/exploitation.md)) | code |
 
 ## 7. Feuille de route fonctionnelle
 
