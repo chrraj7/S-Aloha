@@ -239,6 +239,9 @@ publiée, dans les [releases](https://github.com/chrraj7/S-Aloha/releases).
 
 ### Sécurité
 
+- **Notifications d'un enregistrement déplacé** (SOC-23, PER-07) : quand un enregistrement
+  change de périmètre, ses notifications le suivent ; elles se lisent selon le nouveau
+  périmètre, dans la cloche comme dans le résumé par courriel.
 - **Historique d'un enregistrement** (SOC-20) : il suit désormais la visibilité de la fiche
   (PER-05) ; l'historique des périmètres et des paramètres est réservé à l'Admin.
 - **Jeton de session en cookie HttpOnly** (S5) : le jeton n'est plus lisible par les scripts
