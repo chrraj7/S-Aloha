@@ -58,7 +58,7 @@
 
 | ID | Règle | Statut |
 |---|---|---|
-| ADM-50 | **Liste des catégories** par pratique (incidents, problèmes), tenue par les gestionnaires dans Paramétrage : nom unique par pratique (casse ignorée), active ou non ; une catégorie utilisée se désactive au lieu de se supprimer (409) | ✅ |
+| ADM-50 | **Liste des catégories** par pratique (incidents, problèmes), tenue par les gestionnaires dans Paramétrage (gestionnaire d'au moins un périmètre, [PER-13](perimetres.md)) : nom unique par pratique (casse ignorée), active ou non ; une catégorie utilisée se désactive au lieu de se supprimer (409) | ✅ |
 | ADM-51 | Les fiches d'incident et de problème proposent les **catégories actives** de leur pratique ; dès que la pratique a au moins une catégorie active, l'API refuse (400) une catégorie hors liste à la création et quand la catégorie change, et ramène la saisie au nom exact de la liste (casse, espaces). Sans catégorie active (installation neuve), la saisie reste libre. Une catégorie inactive reste lisible sur les enregistrements qui la portent | ✅ |
 | ADM-52 | **Reprise** : à la migration, les catégories déjà saisies sur les incidents et les problèmes deviennent des catégories actives de leur pratique (sans tenir compte de la casse) | ✅ |
 | ADM-53 | Le service affecté reste tiré du catalogue ([SLM-10](processus/gestion-des-niveaux-de-service.md)) ; SOC-27 est réalisée avec ADM-50 à ADM-52 | ✅ |
@@ -85,4 +85,4 @@ deux sont désactivés tant que l'Admin ne les a pas réglés.
 | `GET /api/admin/duplicates`, `POST /api/admin/duplicates/merge`, `POST /api/admin/duplicates/dismiss` | Admin | Doublons, fusion, « pas un doublon » (ADM-40 à ADM-42) |
 | `GET/PUT /api/admin/settings/mail`, `POST …/mail/test` (`to`) | Admin | SMTP, courriel d'essai (ADM-60, ADM-62, ADM-63) |
 | `GET/PUT /api/admin/settings/storage`, `POST …/storage/test` | Admin | Stockage S3, essai de dépôt (ADM-61 à ADM-63) |
-| `GET /api/categories?practice=`, `POST`, `PUT /{id}`, `DELETE /{id}` | User (lecture), Manager (écriture) | Catégories (ADM-50 à ADM-52) |
+| `GET /api/categories?practice=`, `POST`, `PUT /{id}`, `DELETE /{id}` | User (lecture), gestionnaire d'un périmètre ([PER-13](perimetres.md)) (écriture) | Catégories (ADM-50 à ADM-52) |

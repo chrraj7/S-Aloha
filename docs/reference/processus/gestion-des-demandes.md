@@ -33,7 +33,7 @@ une modification non standard du SI (→ [changement](habilitation-des-changemen
 | Soumettre, modifier, traiter une demande approuvée | ✔ | ✔ | ✔ | ✅ |
 | Approuver / rejeter | ✘ | ✔ | ✔ | ✅ |
 | Annuler sa propre demande avant traitement | Demandeur | ✔ | ✔ | ✅ REQ-09 |
-| Tenir le catalogue de demandes | ✘ | ✔ | ✔ | ✅ REQ-20 |
+| Tenir le catalogue de demandes | ✘ | ✔ | ✔ | ✅ REQ-20, PER-13 |
 | Modifier l'échéance d'une demande issue d'un modèle | ✘ | ✔ | ✔ | ✅ REQ-22 |
 | Supprimer | ✘ | ✘ | ✔ | ✅ |
 
@@ -179,7 +179,7 @@ prises en charge depuis plus d'un jour ouvré (Relances, lot 2).
 | `POST /api/requests/{id}/satisfaction` (`score`, `comment`) | Demandeur, bénéficiaire | Enquête de satisfaction d'une demande close (REQ-32) |
 | `POST /api/requests/{id}/requalify` (`target` : `change` ou `incident`, `reason`) | Demandeur, Manager | Requalification d'un besoin non standard : changement ou incident créé et relié, demande annulée (REQ-12) |
 | `GET /api/request-catalog` (`?all=true` : désactivés compris), `GET /api/request-catalog/{id}` | User | Catalogue de demandes (REQ-20) |
-| `POST/PUT /api/request-catalog[/{id}]` | Manager | Tenue du catalogue |
+| `POST/PUT /api/request-catalog[/{id}]` | gestionnaire d'un périmètre ([PER-13](../perimetres.md)) | Tenue du catalogue |
 | `DELETE /api/request-catalog/{id}` | Admin | Suppression d'un modèle dont aucune demande ne vient |
 
 ## 10. Scénarios d'acceptation

@@ -239,6 +239,11 @@ publiée, dans les [releases](https://github.com/chrraj7/S-Aloha/releases).
 
 ### Sécurité
 
+- **Référentiels sans périmètre** (PER-13) : périodes de gel, modèles de changement standard,
+  catalogue de demandes, fins de support et catégories se tiennent en Admin ou en gestionnaire
+  d'au moins un périmètre, selon le rôle par périmètre et non plus selon le groupe AD (ADR-0014
+  D4). Un compte du groupe AD Manager affecté User partout n'y écrit plus ; un User AD
+  gestionnaire d'un périmètre y écrit.
 - **Historique d'un enregistrement** (SOC-20) : il suit désormais la visibilité de la fiche
   (PER-05) ; l'historique des périmètres et des paramètres est réservé à l'Admin.
 - **Jeton de session en cookie HttpOnly** (S5) : le jeton n'est plus lisible par les scripts
