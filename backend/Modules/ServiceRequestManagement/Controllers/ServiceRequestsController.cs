@@ -31,8 +31,11 @@ public class ServiceRequestsController(AppDbContext db) : RecordController<Servi
         // REQ-22 : l'échéance d'une demande issue d'un modèle à délai cible est calculée ; seul un
         // gestionnaire la modifie ensuite. Sans délai cible, l'échéance souhaitée reste libre.
         var due = Dates.Utc(dto.DueDate);
+        // Le formulaire ne montre que le jour et le renvoie à minuit UTC : le même jour n'est pas
+        // une modification, et l'heure calculée est gardée (REQ-41 compare à l'heure près).
+        var sameDay = due is { TimeOfDay.Ticks: 0 } && due?.Date == e.DueDate?.Date;
         if (creating || e.CatalogItemId is null) e.DueDate = due;
-        else if (due != e.DueDate)
+        else if (due != e.DueDate && !sameDay)
         {
             if (!IsManager) return "Seul un gestionnaire modifie l'échéance d'une demande du catalogue.";
             e.DueDate = due;

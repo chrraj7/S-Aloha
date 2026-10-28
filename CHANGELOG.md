@@ -208,6 +208,10 @@ publiée, dans les [releases](https://github.com/chrraj7/S-Aloha/releases).
 
 ### Corrigé
 
+- **Échéance d'une demande du catalogue** (REQ-22) : enregistrer la fiche d'une demande issue
+  d'un modèle à délai cible était refusé à un User (« Seul un gestionnaire modifie
+  l'échéance… »), et ramenait l'échéance à minuit pour un gestionnaire ; le même jour renvoyé
+  par le formulaire garde désormais l'échéance calculée, heure comprise.
 - **Graphiques du reporting** : un graphique affiché d'abord vide (« Aucune donnée sur la
   période »), ou réaffiché après « Voir les données », gardait une largeur de repli étirée à
   sa carte, avec des graduations agrandies ; il suit de nouveau la largeur de sa carte.
