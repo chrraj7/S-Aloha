@@ -208,6 +208,10 @@ publiée, dans les [releases](https://github.com/chrraj7/S-Aloha/releases).
 
 ### Corrigé
 
+- **« Ouvrir un problème lié »** (INC-14) : le bouton de la fiche d'un incident échouait pour
+  un utilisateur de plusieurs périmètres (« Choisir le périmètre de l'enregistrement. ») et,
+  pour un Admin, créait le problème dans le périmètre par défaut ; le problème est désormais
+  créé dans le périmètre de l'incident.
 - **Graphiques du reporting** : un graphique affiché d'abord vide (« Aucune donnée sur la
   période »), ou réaffiché après « Voir les données », gardait une largeur de repli étirée à
   sa carte, avec des graduations agrandies ; il suit de nouveau la largeur de sa carte.
