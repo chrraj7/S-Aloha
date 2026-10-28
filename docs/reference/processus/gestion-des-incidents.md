@@ -133,7 +133,7 @@ alerte précoce sous 24 h ; RGPD : notification sous 72 h) :
 | ID | Règle | Statut | Lot |
 |---|---|---|---|
 | INC-40 | **Nature sécurité (cyber)** : un incident est marqué « sécurité » (`IsSecurity`) à la création ou en cours de traitement, par tout rôle ; la fiche l'affiche en tête | ✅ | 2 |
-| INC-41 | **Qualification réglementaire** : un incident cyber est qualifié par un Manager — *incident important* au sens NIS 2 (oui / non, motif) et *violation de données personnelles* (oui / non, motif). Tant qu'il ne l'est pas, il figure dans le bloc « Urgent » des gestionnaires ; la qualification est attendue dans les 24 h suivant la prise de connaissance | ✅ | 2 |
+| INC-41 | **Qualification réglementaire** : un incident cyber est qualifié par un Manager du périmètre de l'incident (PER-06) — *incident important* au sens NIS 2 (oui / non, motif) et *violation de données personnelles* (oui / non, motif). Tant qu'il ne l'est pas, il figure dans le bloc « Urgent » des gestionnaires ; la qualification est attendue dans les 24 h suivant la prise de connaissance | ✅ | 2 |
 | INC-42 | **Déclarations associées** : la qualification crée, pour chaque régime retenu (NIS 2 si *important*, RGPD si *violation de données*), une **déclaration réglementaire** reliée à l'incident, au statut À déclarer ; une qualification « non » sur les deux régimes est tracée et ne crée rien | ✅ | 2 |
 | INC-43 | Un incident cyber ne passe pas à **Clos** tant qu'une de ses déclarations n'est ni Close ni Non requise (400, avec les références en cause) | ✅ | 2 |
 | INC-44 | Un incident cyber qualifié *important* au sens NIS 2 est proposé comme **incident majeur** (INC-13 : décision d'un Manager) | ✅ | 2 |
