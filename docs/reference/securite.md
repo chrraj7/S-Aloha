@@ -45,7 +45,8 @@ Trois policies imbriquées dans `backend/Program.cs` :
 | `Manager` | Manager, Admin |
 | `Admin` | Admin |
 
-Toute route sauf `/api/auth/login` exige au minimum `User`. Au-delà des policies, le
+Toute route sauf `/api/auth/login` et les sondes `/health/live` et `/health/ready` (état seul,
+sans détail, O1) exige au minimum `User`. Au-delà des policies, le
 **rôle effectif par périmètre** (`Core/Perimeters/PerimeterAccess`, [périmètres](perimetres.md))
 décide de la visibilité (404 hors de ses périmètres) et des décisions de gestionnaire (403),
 dans le socle des pratiques et le module Problèmes. Le frontend masque des
