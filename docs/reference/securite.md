@@ -101,7 +101,7 @@ est toujours vérifié ; « Aucun » chiffrement ne convient qu'à un relais du 
 | Secrets | Valeurs **d'exemple** de `Jwt:Key`, de `Discovery:VaultKey`, du mot de passe PostgreSQL et de `BindPassword` dans `appsettings.json` et `docker-compose.yml` ; hors développement, l'API **refuse de démarrer** avec elles ou avec une clé JWT de moins de 64 caractères (S7), sauf en démonstration (`Security:AllowSampleSecrets`, avertissement au journal) | Secrets Docker ou variables d'environnement injectées, clé JWT aléatoire ≥ 64 caractères, clé du coffre aléatoire ≥ 32 caractères fixée avant le premier identifiant |
 | LDAP | `UseSsl: false`, port 389 : mots de passe utilisateurs en clair sur le réseau | LDAPS (636) |
 | Transport | HTTP sur le port 80 | HTTPS (reverse proxy TLS) |
-| CORS | `AllowAnyOrigin` | Origine du frontend uniquement |
+| CORS | ✅ Aucune origine externe par défaut ; `Cors:AllowedOrigins` les liste, sans cookie (S3) | Laisser vide si le frontend passe par nginx (même origine) |
 | Exposition | API et Swagger publiés sur 8080 | API joignable seulement via nginx ; Swagger désactivé en production |
 | Jeton côté navigateur | ✅ Cookie `HttpOnly`, `SameSite=Strict`, en-tête anti-CSRF, CSP servie par nginx ([ADR-0018](../decisions/adr-0018-jeton-en-cookie-httponly-et-csp.md)) ; non `Secure` en HTTP seul | HTTPS (S2) pour un cookie `Secure` |
 | Révocation | Aucune avant expiration | Durée courte et/ou contrôle de l'appartenance AD |
