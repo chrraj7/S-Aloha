@@ -129,9 +129,13 @@ function Field({ fd, form, onChange, disabled }) {
   )
 }
 
-/** Grille de champs ; `onChange` reçoit un objet partiel à fusionner dans `form`. */
-export default function RecordForm({ fields, form, onChange, disabled, creating }) {
-  const isManager = ['Admin', 'Manager'].includes(getUser()?.role)
+/**
+ * Grille de champs ; `onChange` reçoit un objet partiel à fusionner dans `form`.
+ * `isManager` : rôle de gestionnaire sur le périmètre de l'enregistrement (PER-06), calculé
+ * par la fiche ; sans lui, le rôle AD.
+ */
+export default function RecordForm({ fields, form, onChange, disabled, creating, isManager: managerHere }) {
+  const isManager = managerHere ?? ['Admin', 'Manager'].includes(getUser()?.role)
   return (
     <div className="form-grid">
       {fields.filter(fd => !(creating && fd.create === false) && !(!creating && fd.onlyCreate) && applies(fd, form)).map(fd =>
