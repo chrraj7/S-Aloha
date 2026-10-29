@@ -246,7 +246,7 @@ action et gestionnaire) ne s'affiche et ne se compte qu'une fois.
 |---|---|---|---|
 | SOC-21 | Chaque événement listé au § 6 des documents de pratique notifie ses destinataires (responsable, groupe, demandeur, gestionnaires) dans l'application ; toute affectation notifie le nouveau responsable | ✅ (événements déclenchés par une action ; événements datés relevés par une tâche périodique : SLA en risque ou dépassé, P1 ouvert, J-1 d'un changement, action en retard, revues échues, SLA expirant) | |
 | SOC-22 | Envoi par **courriel** des mêmes notifications, configurable par utilisateur (aucun, immédiat, résumé quotidien) | ✅ (page « Mes préférences » : choix et adresse de réception ; envoi au relevé périodique, par le SMTP de la console (ADM-60) : « immédiat » à chaque relevé (15 minutes par défaut), « résumé quotidien » une fois par 24 h ; mêmes notifications que la cloche, une par événement, 24 h au plus en arrière, 50 par courriel, lien vers la fiche si l'adresse de l'interface est réglée ; rôle et groupes du compte relevés au choix puis à chaque connexion ; SMTP non activé : rien ne part ; envoi en échec réessayé au relevé suivant) | 3 |
-| SOC-23 | Une notification porte la référence, le titre, l'événement et un lien vers la fiche ; jamais de donnée au-delà de ce que le destinataire peut consulter (filtrée par ses périmètres à la lecture) | ✅ | |
+| SOC-23 | Une notification porte la référence, le titre, l'événement et un lien vers la fiche ; jamais de donnée au-delà de ce que le destinataire peut consulter (filtrée par ses périmètres à la lecture) ; quand l'enregistrement change de périmètre ([PER-07](perimetres.md)), ses notifications le suivent | ✅ | |
 
 ## 9. Traçabilité, commentaires, administration
 

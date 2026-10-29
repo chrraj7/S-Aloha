@@ -1,9 +1,16 @@
 // Export de l'onglet actif (REP-08) : CSV à séparateur « ; » et BOM UTF-8,
 // ouvert tel quel par Excel en français (accents et décimales conservés).
 
+// Un texte qui commence par = + - @, tabulation ou retour chariot serait évalué
+// comme une formule par le tableur (OWASP « CSV Injection ») : l'apostrophe le
+// garde en texte. Un nombre, même formaté (« -3,5 »), reste un nombre.
+const formula = /^[=+\-@\t\r]/
+const number = /^[+-]?\d[\d\s]*([.,]\d+)?%?$/
+
 const cell = (v) => {
   if (v == null) return ''
-  const s = typeof v === 'number' ? v.toLocaleString('fr-FR', { useGrouping: false }) : String(v)
+  let s = typeof v === 'number' ? v.toLocaleString('fr-FR', { useGrouping: false }) : String(v)
+  if (formula.test(s) && !number.test(s)) s = `'${s}`
   return /[";\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }
 
