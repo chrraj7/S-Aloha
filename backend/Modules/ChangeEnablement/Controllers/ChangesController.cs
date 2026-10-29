@@ -89,15 +89,43 @@ public class ChangesController(AppDbContext db) : RecordController<Change, Chang
     /// de l'autorité de changement). Un standard reste pré-autorisé quand on
     /// ne fait que le replanifier : son autorisation vient du modèle, pas du créneau.
     /// </summary>
-    protected override string? StatusAfterEdit(Change e, ChangeDto dto)
+    protected override string? StatusAfterEdit(Change e, ChangeDto dto) => Modified(e, dto) ? "Évalué" : null;
+
+    private static bool Modified(Change e, ChangeDto dto)
     {
-        if (e.Status is not ("Autorisé" or "Planifié")) return null;
+        if (e.Status is not ("Autorisé" or "Planifié")) return false;
         var rescheduled = Dates.Utc(dto.PlannedStart) != e.PlannedStart || Dates.Utc(dto.PlannedEnd) != e.PlannedEnd;
-        var modified = dto.ChangeType != e.ChangeType || dto.Risk != e.Risk
-                       || (dto.ImplementationPlan ?? "") != e.ImplementationPlan
-                       || (dto.BackoutPlan ?? "") != e.BackoutPlan
-                       || (rescheduled && e.ChangeType != "Standard");
-        return modified ? "Évalué" : null;
+        return dto.ChangeType != e.ChangeType || dto.Risk != e.Risk
+               || (dto.ImplementationPlan ?? "") != e.ImplementationPlan
+               || (dto.BackoutPlan ?? "") != e.BackoutPlan
+               || (rescheduled && e.ChangeType != "Standard");
+    }
+
+    /// <summary>
+    /// CHG-07 : la modification d'un gestionnaire vaut autorisation, à son nom — sauf s'il est le
+    /// demandeur (CHG-21, hors Admin), si le changement relève du CAB (CHG-20, Normal à risque
+    /// Élevé) ou si le nouveau créneau crée un conflit sans commentaire de l'autorité (CHG-22) :
+    /// retour à Évalué, comme pour un User (décisions du 2026-10-29, #209 et #210).
+    /// </summary>
+    protected override async Task<string?> StatusAfterManagerEditAsync(Change e, ChangeDto dto)
+    {
+        if (!Modified(e, dto)) return null;
+        if (!User.IsInRole("Admin") && string.Equals(e.CreatedBy, Me, StringComparison.OrdinalIgnoreCase)) return "Évalué";
+        if (dto.ChangeType == "Normal" && dto.Risk == "Élevé") return "Évalué";
+        if (await NewConflictAsync(e, dto)) return "Évalué";
+        (e.AuthorizedAt, e.AuthorizedBy) = (DateTime.UtcNow, MyDisplay);
+        return null;
+    }
+
+    /// <summary>CHG-22 : le créneau demandé ajoute un conflit, et le commentaire de l'autorité n'a pas changé.</summary>
+    private async Task<bool> NewConflictAsync(Change e, ChangeDto dto)
+    {
+        var (start, end) = (Dates.Utc(dto.PlannedStart), Dates.Utc(dto.PlannedEnd));
+        if (start is null || (start == e.PlannedStart && end == e.PlannedEnd)) return false;
+        var comment = string.IsNullOrWhiteSpace(dto.ConflictComment) ? null : dto.ConflictComment.Trim();
+        if (comment is not null && comment != e.ConflictComment) return false;
+        var before = (await ConflictsAsync()).GetValueOrDefault(e.Id, []).Select(c => c.ChangeId).ToHashSet();
+        return (await ConflictsAsync((e.Id, start.Value, end))).GetValueOrDefault(e.Id, []).Any(c => !before.Contains(c.ChangeId));
     }
 
     // Un changement standard suit un modèle déjà évalué : il est pré-autorisé.
@@ -316,7 +344,7 @@ public class ChangesController(AppDbContext db) : RecordController<Change, Chang
     /// CI (liens inter-processus) et que leurs créneaux se chevauchent. Sans
     /// fin planifiée, un changement occupe une heure.
     /// </summary>
-    private async Task<Dictionary<int, List<Conflict>>> ConflictsAsync()
+    private async Task<Dictionary<int, List<Conflict>>> ConflictsAsync((int Id, DateTime Start, DateTime? End)? draft = null)
     {
         var planned = (await Db.Changes.AsNoTracking()
                 .Where(c => c.PlannedStart != null && c.Status != "Rejeté")
@@ -324,6 +352,9 @@ public class ChangesController(AppDbContext db) : RecordController<Change, Chang
                 .ToListAsync())
             .ToDictionary(c => c.Id, c => (c.Reference, c.Title, Start: c.PlannedStart!.Value,
                                            End: c.PlannedEnd ?? c.PlannedStart!.Value.AddHours(1)));
+        // Créneau pas encore enregistré (modification en cours, CHG-22) à la place de celui en base.
+        if (draft is { } d && planned.TryGetValue(d.Id, out var current))
+            planned[d.Id] = (current.Reference, current.Title, d.Start, d.End ?? d.Start.AddHours(1));
         // Les liens se lisent dans les deux sens : changement → CI ou CI → changement.
         var touches = (await Db.ItemLinks.AsNoTracking()
                 .Where(l => (l.FromType == "change" && l.ToType == "ci") || (l.FromType == "ci" && l.ToType == "change"))

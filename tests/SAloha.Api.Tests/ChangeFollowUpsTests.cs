@@ -67,6 +67,35 @@ public class ChangeFollowUpsTests(ApiFixture api)
     }
 
     [Fact]
+    public async Task CHG_22_un_gestionnaire_qui_replanifie_en_conflit_sans_commentaire_renvoie_a_l_evaluation()
+    {
+        var requester = api.Client("Manager", "chg22r.demandeur");
+        var authority = api.Client("Manager", "chg22r.autorite");
+        var slot = DateTime.UtcNow.Date.AddDays(85).AddHours(20);
+        var ci = await Ci(requester, $"chg22r-{Guid.NewGuid():N}"[..15]);
+        var other = await Json(await requester.PostAsJsonAsync("/api/changes", Change("Replanif 22 autre", "Normal", "Moyen", null, slot, "chg22r.demandeur")));
+        await Link(requester, Id(other), ci);
+        async Task<string> Authorized()
+        {
+            var c = await Json(await requester.PostAsJsonAsync("/api/changes", Change("Replanif 22", "Normal", "Moyen", null, slot.AddDays(1), "chg22r.demandeur")));
+            await Link(requester, Id(c), ci);
+            await Json(await requester.PutAsJsonAsync($"/api/changes/{Id(c)}", Change("Replanif 22", "Normal", "Moyen", "Évalué", slot.AddDays(1), "chg22r.demandeur")));
+            await Json(await authority.PutAsJsonAsync($"/api/changes/{Id(c)}", Change("Replanif 22", "Normal", "Moyen", "Autorisé", slot.AddDays(1), "chg22r.demandeur")));
+            return $"/api/changes/{Id(c)}";
+        }
+
+        // Replanifié sur le créneau de l'autre changement, sans commentaire : retour à Évalué.
+        var url = await Authorized();
+        var moved = await Json(await authority.PutAsJsonAsync(url, Change("Replanif 22", "Normal", "Moyen", "Autorisé", slot.AddHours(1), "chg22r.demandeur")));
+        Assert.Equal("Évalué", moved.GetProperty("status").GetString());
+        // Avec le commentaire de l'autorité, la modification vaut autorisation (CHG-07).
+        url = await Authorized();
+        var commented = await Json(await authority.PutAsJsonAsync(url, Change("Replanif 22", "Normal", "Moyen", "Autorisé", slot.AddHours(1), "chg22r.demandeur",
+            conflictComment: "Enchaînement prévu avec l'autre intervention")));
+        Assert.Equal("Autorisé", commented.GetProperty("status").GetString());
+    }
+
+    [Fact]
     public async Task CHG_30_CHG_31_changements_a_relancer_au_responsable_et_aux_gestionnaires()
     {
         var owner = api.Client("User", "chg30.responsable");

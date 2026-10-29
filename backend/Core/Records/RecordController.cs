@@ -144,9 +144,16 @@ public abstract class RecordController<T, TDto, TView>(AppDbContext db) : Contro
     /// l'enregistrement, ou null : un article publié retouché repasse en
     /// brouillon, un changement autorisé modifié redemande une autorisation.
     /// Appelé avant la recopie du DTO : <c>e</c> porte encore les valeurs
-    /// enregistrées. La modification d'un gestionnaire vaut validation.
+    /// enregistrées. La modification d'un gestionnaire vaut validation, sauf ce que
+    /// <see cref="StatusAfterManagerEditAsync"/> décide.
     /// </summary>
     protected virtual string? StatusAfterEdit(T e, TDto dto) => null;
+    /// <summary>
+    /// Variante pour un gestionnaire : les cas où sa modification ne vaut pas validation
+    /// (changement renvoyé au CAB, demandeur qui réécrit son propre changement…). Appelée,
+    /// comme <see cref="StatusAfterEdit"/>, avant la recopie du DTO.
+    /// </summary>
+    protected virtual Task<string?> StatusAfterManagerEditAsync(T e, TDto dto) => Task.FromResult<string?>(null);
     /// <summary>Effets d'un changement de statut (horodatages) ; <c>from</c> vide à la création.</summary>
     protected virtual void OnStatusChanged(T e, string from) { }
     /// <summary>
@@ -282,7 +289,7 @@ public abstract class RecordController<T, TDto, TView>(AppDbContext db) : Contro
             if (moveForbidden) return Forbid();
             if (moveError is not null) return BadRequest(new { message = moveError });
         }
-        var demoted = IsManager ? null : StatusAfterEdit(e, dto);
+        var demoted = IsManager ? await StatusAfterManagerEditAsync(e, dto) : StatusAfterEdit(e, dto);
         var ownerBefore = (e.OwnerType, e.OwnerId);
         string? left = null;
         var error = Fill(e, dto, false) ?? await ValidateAsync(e);

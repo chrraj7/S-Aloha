@@ -93,7 +93,7 @@ transitions sont libres. **Cible (🔜 CHG-11, lot 1)** : seules ces transitions
 | Évalué → Autorisé | Manager (CAB si Normal à risque Élevé) ; pas le demandeur (CHG-21) | | `AuthorizedAt`, `AuthorizedBy` (« CAB : … ») | ✅ |
 | Évalué → Rejeté | Manager | Motif | | ✅ |
 | Autorisé → Planifié | Tous | Début et fin planifiés ; hors période de gel (sauf Urgent) | Inscrit au calendrier | ✅ |
-| Autorisé, Planifié → Évalué | Auto | Modification d'un champ d'évaluation par un User (CHG-07) | Autorisation effacée | ✅ |
+| Autorisé, Planifié → Évalué | Auto | Modification d'un champ d'évaluation par un User, ou par un gestionnaire dans les cas de CHG-07 (demandeur, CAB, conflit) | Autorisation effacée | ✅ |
 | Planifié → Mis en œuvre | Responsable, Manager | Début réel | `ActualStart` | ✅ CHG-14 |
 | Mis en œuvre → Clos | Responsable, Manager | Résultat ; fin réelle ; revue si requise (CHG-15) | `ClosedAt` | ✅ |
 | Rejeté, Clos → … | — | Statuts finaux | | 🔜 CHG-11 |
@@ -108,7 +108,7 @@ transitions sont libres. **Cible (🔜 CHG-11, lot 1)** : seules ces transitions
 | CHG-04 | **Planifié**, **Mis en œuvre** et **Clos** exigent un changement autorisé ; **Planifié** exige un début planifié ; **Clos** exige le résultat (*Réussi* ou *Échoué*) | ✅ | |
 | CHG-05 | Un changement **rejeté est terminé** : ni planifié, ni mis en œuvre, ni clos | ✅ | |
 | CHG-06 | Revenir à Demandé ou Évalué **efface l'autorisation** ; la fin planifiée ne peut précéder le début | ✅ | |
-| CHG-07 | **Modifier un changement autorisé** (Autorisé ou Planifié) — type, risque, plans ou créneau — le **ramène à Évalué** et efface l'autorisation. Exceptions : la modification par un gestionnaire vaut autorisation ; replanifier un changement **standard** ne retire pas son autorisation ; titre, description et responsable se modifient librement | ✅ | |
+| CHG-07 | **Modifier un changement autorisé** (Autorisé ou Planifié) — type, risque, plans ou créneau — le **ramène à Évalué** et efface l'autorisation. Exceptions : la modification par un gestionnaire vaut autorisation, à son nom (`AuthorizedBy`, `AuthorizedAt`), **sauf** s'il est le demandeur (CHG-21, hors Admin), si le changement relève du CAB après modification (Normal à risque Élevé, CHG-20) ou si le nouveau créneau crée un conflit sans nouveau commentaire de l'autorité (CHG-22) : retour à Évalué ; replanifier un changement **standard** ne retire pas son autorisation ; titre, description et responsable se modifient librement | ✅ | |
 | CHG-08 | **Calendrier des changements** : changements non rejetés ayant un début planifié, depuis une semaine, regroupés par semaine | ✅ | |
 | CHG-09 | **Conflit de calendrier** : deux changements non rejetés liés à un **même CI** (lien dans un sens ou dans l'autre) dont les créneaux **se chevauchent** (bout à bout : pas de chevauchement ; sans fin, un changement occupe une heure). Signalé sur le calendrier et la fiche, avec le changement et le CI en cause ; non bloquant | ✅ | |
 | CHG-10 | Recherche (titre, référence) insensible à la casse ; le registre ne renvoie pas les plans (SOC-13) | ✅ | |
@@ -189,7 +189,7 @@ et de l'équipe (Relances, gestionnaires), avec une notification au responsable 
 
 - **CHG-02** — *Quand* on crée un changement Standard, *alors* il est Autorisé, `AuthorizedBy` = « Modèle standard (pré-autorisé) ».
 - **CHG-05** — *Étant donné* un changement Rejeté, *quand* on le passe Planifié, *alors* 400.
-- **CHG-07** — *Étant donné* un changement Normal Planifié, *quand* un User change son risque, *alors* il revient à Évalué et `AuthorizedAt` est vide ; si c'est un Manager, il reste Planifié.
+- **CHG-07** — *Étant donné* un changement Normal Planifié, *quand* un User change son risque, *alors* il revient à Évalué et `AuthorizedAt` est vide ; si c'est un Manager autre que le demandeur, il reste Planifié, autorisé à son nom. *Quand* ce Manager passe le risque à Élevé, ou *quand* le demandeur, même Manager, réécrit ses plans, *alors* il revient à Évalué (CHG-20, CHG-21).
 - **CHG-09** — *Étant donné* deux changements liés au CI `VPN-GW-01`, de 10 h à 12 h et de 11 h à 13 h le même jour, *alors* chacun signale un conflit avec l'autre ; de 10 h à 11 h et de 11 h à 12 h, aucun.
 - **CHG-15** — *Étant donné* un changement Urgent Mis en œuvre avec résultat Réussi et sans revue, *quand* on le clôt, *alors* 400 « revue post-implémentation requise ».
 - **CHG-20** — *Étant donné* un changement Normal à risque Élevé, *quand* un premier Manager l'approuve, *alors* il reste Évalué (1 approbation sur 2) ; au second Manager distinct, il passe Autorisé.

@@ -251,6 +251,11 @@ publiée, dans les [releases](https://github.com/chrraj7/S-Aloha/releases).
 
 ### Sécurité
 
+- **Changement autorisé modifié par un gestionnaire** (CHG-07, CHG-20, CHG-21, CHG-22) : la
+  modification revient à l'évaluation quand elle est faite par le demandeur, quand le
+  changement relève du CAB (Normal à risque Élevé) ou quand le nouveau créneau crée un conflit
+  sans commentaire de l'autorité ; sinon, elle vaut autorisation au nom du gestionnaire qui
+  l'a faite, et non plus de celui qui avait autorisé la version précédente.
 - **Exports CSV : cellules neutralisées** (ADM-31, REP-08, inventaire, synthèse de conformité) :
   une valeur texte qui commence par `=`, `+`, `-`, `@`, une tabulation ou un retour chariot
   est précédée d'une apostrophe, pour que le tableur la lise comme du texte ; les nombres
