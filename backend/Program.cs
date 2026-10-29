@@ -97,7 +97,14 @@ builder.Services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>
 
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy("Admin", p => p.RequireRole("Admin"))
-    .AddPolicy("Manager", p => p.RequireRole("Admin", "Manager"))
+    // PER-13 : les référentiels sans périmètre (gels, modèles standard, catalogue, fins de vie,
+    // catégories) se gèrent en gestionnaire d'au moins un périmètre, pas par le rôle AD (D4).
+    .AddPolicy("Manager", p => p.RequireAssertion(async ctx =>
+    {
+        if (ctx.Resource is not HttpContext http) return false;
+        var scope = await http.RequestServices.GetRequiredService<SAloha.Api.Core.Perimeters.PerimeterAccess>().GetAsync();
+        return scope.Global || scope.ManagedIds.Count > 0;
+    }))
     .AddPolicy("User", p => p.RequireRole("Admin", "Manager", "User"));
 
 // Les entités EF portent leurs navigations dans les deux sens (Problem ↔
