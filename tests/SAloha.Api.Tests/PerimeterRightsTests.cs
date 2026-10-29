@@ -44,6 +44,31 @@ public class PerimeterRightsTests(ApiFixture api)
     };
 
     [Fact]
+    public async Task PER_13_referentiels_sans_perimetre_geres_par_un_gestionnaire_d_au_moins_un_perimetre()
+    {
+        var (siege, _, lova, _, group) = await Setup("per13");
+        var admin = api.Client();
+        await Json(await admin.PostAsJsonAsync($"/api/admin/perimeters/{siege}/assignments",
+            new { principalType = "User", principalId = "rado.per13", principalDisplayName = "Rado", role = "User" }));
+        // Corps vides : une écriture autorisée échoue à la validation (400), jamais à l'autorisation.
+        var writes = new (string Method, string Url)[]
+        {
+            ("POST", "/api/change-freezes"), ("POST", "/api/standard-changes"), ("PUT", "/api/standard-changes/0"),
+            ("POST", "/api/standard-changes/0/review"), ("POST", "/api/request-catalog"), ("POST", "/api/discovery/end-of-life"),
+            ("POST", "/api/categories"), ("DELETE", "/api/categories/0"),
+        };
+        async Task<HttpStatusCode[]> Try(HttpClient c) => await Task.WhenAll(writes.Select(async w =>
+            (await c.SendAsync(new HttpRequestMessage(new HttpMethod(w.Method), w.Url) { Content = JsonContent.Create(new { }) })).StatusCode));
+
+        // Rado : groupe AD Manager, mais seulement User du Siège (D4) — le rôle AD ne suffit pas.
+        Assert.All(await Try(api.Client("Manager", "rado.per13")), s => Assert.Equal(HttpStatusCode.Forbidden, s));
+        Assert.All(await Try(api.Client("User", "anonyme.per13")), s => Assert.Equal(HttpStatusCode.Forbidden, s));
+        // Gestionnaire d'un périmètre, directement ou par son groupe, quel que soit son rôle AD ; Manager AD sans affectation (PER-10) ; Admin.
+        foreach (var c in new[] { api.Client("User", lova), api.Client("User", "membre.per13", group), api.Client("Manager", "chef.per13"), admin })
+            Assert.All(await Try(c), s => Assert.NotEqual(HttpStatusCode.Forbidden, s));
+    }
+
+    [Fact]
     public async Task PER_06_decisions_de_gestionnaire_limitees_au_perimetre()
     {
         var (siege, usine, lova, _, group) = await Setup("per06");

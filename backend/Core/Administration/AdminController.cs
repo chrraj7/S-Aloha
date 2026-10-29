@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -259,7 +260,14 @@ public class AdminController(AppDbContext db, LdapService directory, IDirectoryR
     public async Task<IActionResult> AuditExport([FromQuery] AuditQuery f)
     {
         var rows = await Filter(f).Take(ExportLimit).ToListAsync();
-        static string Cell(string? v) => v is null ? "" : v.IndexOfAny([';', '"', '\n', '\r']) >= 0 ? $"\"{v.Replace("\"", "\"\"")}\"" : v;
+        // Un texte qui commence par = + - @, tabulation ou retour chariot serait évalué comme une formule
+        // par le tableur (OWASP « CSV Injection ») : l'apostrophe le garde en texte. Un nombre (« -3,5 ») reste un nombre.
+        static string Cell(string? v)
+        {
+            if (v is null) return "";
+            if (v.Length > 0 && "=+-@\t\r".Contains(v[0]) && !Regex.IsMatch(v, @"^[+-]?\d+([.,]\d+)?$")) v = "'" + v;
+            return v.IndexOfAny([';', '"', '\n', '\r']) >= 0 ? $"\"{v.Replace("\"", "\"\"")}\"" : v;
+        }
         var csv = new StringBuilder("Date;Auteur;Type;Référence;Action;Champ;Ancienne valeur;Nouvelle valeur;Motif\r\n");
         foreach (var a in rows)
             csv.Append(string.Join(';', new[]

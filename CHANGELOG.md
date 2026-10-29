@@ -239,6 +239,15 @@ publiée, dans les [releases](https://github.com/chrraj7/S-Aloha/releases).
 
 ### Sécurité
 
+- **Exports CSV : cellules neutralisées** (ADM-31, REP-08, inventaire, synthèse de conformité) :
+  une valeur texte qui commence par `=`, `+`, `-`, `@`, une tabulation ou un retour chariot
+  est précédée d'une apostrophe, pour que le tableur la lise comme du texte ; les nombres
+  restent des nombres.
+- **Référentiels sans périmètre** (PER-13) : périodes de gel, modèles de changement standard,
+  catalogue de demandes, fins de support et catégories se tiennent en Admin ou en gestionnaire
+  d'au moins un périmètre, selon le rôle par périmètre et non plus selon le groupe AD (ADR-0014
+  D4). Un compte du groupe AD Manager affecté User partout n'y écrit plus ; un User AD
+  gestionnaire d'un périmètre y écrit.
 - **Notifications d'un enregistrement déplacé** (SOC-23, PER-07) : quand un enregistrement
   change de périmètre, ses notifications le suivent ; elles se lisent selon le nouveau
   périmètre, dans la cloche comme dans le résumé par courriel.
