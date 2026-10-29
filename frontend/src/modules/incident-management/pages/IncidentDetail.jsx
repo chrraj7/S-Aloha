@@ -9,8 +9,12 @@ import { incidentConfig } from '../config'
 import { useServiceConfig } from '../../../core/useServices'
 import { useCategoryConfig } from '../../../core/useCategories'
 
-/** Un incident récurrent ou de cause inconnue ouvre un problème, relié à l'incident. */
-function OpenProblem({ incident }) {
+/**
+ * Un incident récurrent ou de cause inconnue ouvre un problème, relié à l'incident (INC-14),
+ * dans le périmètre de l'incident : sans lui, l'API refuse pour un utilisateur de plusieurs
+ * périmètres et prend le périmètre par défaut pour un Admin (PER-04).
+ */
+export function OpenProblem({ incident }) {
   const [error, setError] = useState('')
   const nav = useNavigate()
   const open = async () => {
@@ -18,7 +22,7 @@ function OpenProblem({ incident }) {
       const p = await api.problems.create({
         title: incident.title, description: incident.description, impact: incident.impact,
         urgency: incident.urgency, category: incident.category, affectedService: incident.affectedService,
-        serviceId: incident.serviceId
+        serviceId: incident.serviceId, perimeterId: incident.perimeterId
       })
       await api.links.create({ fromType: 'incident', fromId: incident.id, toReference: p.reference })
       nav('/problems/' + p.id)
