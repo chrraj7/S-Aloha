@@ -212,6 +212,10 @@ publiée, dans les [releases](https://github.com/chrraj7/S-Aloha/releases).
   un utilisateur de plusieurs périmètres (« Choisir le périmètre de l'enregistrement. ») et,
   pour un Admin, créait le problème dans le périmètre par défaut ; le problème est désormais
   créé dans le périmètre de l'incident.
+- **Qualification réglementaire d'un incident de sécurité** (INC-41, PER-06) : le formulaire
+  « Qualifier » suivait le rôle de l'annuaire ; il suit désormais le rôle sur le périmètre de
+  l'incident, comme l'API — un gestionnaire du périmètre le voit, un Manager de l'annuaire
+  simple utilisateur de ce périmètre ne le voit plus.
 - **Graphiques du reporting** : un graphique affiché d'abord vide (« Aucune donnée sur la
   période »), ou réaffiché après « Voir les données », gardait une largeur de repli étirée à
   sa carte, avec des graduations agrandies ; il suit de nouveau la largeur de sa carte.
