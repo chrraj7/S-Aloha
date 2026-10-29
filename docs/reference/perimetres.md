@@ -10,7 +10,8 @@
 > **Avancement** : modèle, reprise des données et API d'administration (PER-01, PER-02,
 > PER-10 à PER-12) ; rôle effectif, création, visibilité, décisions et déplacement par
 > périmètre (PER-03 à PER-07) ; liens, console, reporting et recherche limités au périmètre
-> (PER-08, PER-09) ; écran Administration › Périmètres. Étape 6 terminée le 2026-10-13.
+> (PER-08, PER-09) ; référentiels sans périmètre tenus par les gestionnaires (PER-13) ; écran
+> Administration › Périmètres. Étape 6 terminée le 2026-10-13.
 
 ## 1. Pourquoi
 
@@ -58,6 +59,7 @@ erDiagram
 | PER-10 | **Reprise des données** : à la mise à niveau, un périmètre « Organisation » est créé et reçoit tous les enregistrements ; un compte qu'**aucune affectation** ne désigne (ni directement ni par ses groupes) est réputé affecté à ce périmètre avec son rôle AD (comportement inchangé) (ADR-0014, D3). *Amendé le 2026-10-12 : la règle valait « tant qu'aucune affectation n'existe » ; la première affectation créée par l'Admin aurait alors coupé l'accès de tous les autres comptes* | ✅ (rattachement par la migration `Perimeters`) | |
 | PER-11 | Créations, modifications, suppressions de périmètres et d'affectations sont **tracées** au journal d'audit (SOC-20) | ✅ | |
 | PER-12 | Fiche d'un périmètre : compteurs des enregistrements rattachés par pratique et liste des affectations | ✅ | |
+| PER-13 | **Référentiels sans périmètre** (périodes de gel CHG-25, modèles de changement standard et leur revue CHG-26, CHG-27, catalogue de demandes REQ-20, fins de support CFG-47, catégories ADM-50) : tenus par l'**Admin** ou par un **gestionnaire d'au moins un périmètre**, directement ou par un groupe, quel que soit son rôle AD (D4) ; un compte du groupe AD Manager affecté User partout n'y écrit pas (403). Un compte sans affectation garde son rôle AD sur « Organisation » (PER-10). *Décision du mainteneur du 2026-10-26* | ✅ | |
 
 ## 4. Administration
 
