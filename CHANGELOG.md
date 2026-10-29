@@ -239,6 +239,10 @@ publiée, dans les [releases](https://github.com/chrraj7/S-Aloha/releases).
 
 ### Sécurité
 
+- **Exports CSV : cellules neutralisées** (ADM-31, REP-08, inventaire, synthèse de conformité) :
+  une valeur texte qui commence par `=`, `+`, `-`, `@`, une tabulation ou un retour chariot
+  est précédée d'une apostrophe, pour que le tableur la lise comme du texte ; les nombres
+  restent des nombres.
 - **Historique d'un enregistrement** (SOC-20) : il suit désormais la visibilité de la fiche
   (PER-05) ; l'historique des périmètres et des paramètres est réservé à l'Admin.
 - **Jeton de session en cookie HttpOnly** (S5) : le jeton n'est plus lisible par les scripts

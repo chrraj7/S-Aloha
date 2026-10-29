@@ -43,7 +43,7 @@
 | ID | Règle | Statut |
 |---|---|---|
 | ADM-30 | **Journal global** ([SOC-20](regles-metier.md#9-traçabilité-commentaires-administration)) : toutes pratiques, du plus récent au plus ancien, filtrable par auteur, type d'enregistrement (pratique), action, référence et période (30 derniers jours par défaut) ; pages de 100 lignes ; chaque ligne mène à la fiche | ✅ |
-| ADM-31 | **Export CSV** des lignes filtrées (séparateur « ; », BOM UTF-8, comme [REP-08](reporting.md)), 10 000 lignes au plus | ✅ |
+| ADM-31 | **Export CSV** des lignes filtrées (séparateur « ; », BOM UTF-8, comme [REP-08](reporting.md)), 10 000 lignes au plus ; une valeur texte qui commence par `=`, `+`, `-`, `@`, une tabulation ou un retour chariot est précédée d'une apostrophe, pour que le tableur la lise comme du texte | ✅ |
 
 ## 5. Nettoyage des doublons
 
