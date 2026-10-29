@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using SAloha.Api.Core.Audit;
@@ -117,6 +118,8 @@ builder.Services.AddControllers().AddJsonOptions(o =>
     // A2 (ADR-0016) : aucune entité EF dans une réponse ni une requête.
     o.JsonSerializerOptions.Converters.Add(new EntityGuard());
 });
+// O1 : sondes de l'orchestrateur ; seule la disponibilité interroge la base.
+builder.Services.AddHealthChecks().AddCheck<DatabaseReady>("database", tags: ["ready"]);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
@@ -148,6 +151,10 @@ app.UseAuthentication();
 app.Use(SessionCookie.CsrfGuard);
 app.UseAuthorization();
 app.MapControllers();
+// O1 : vie = le processus répond ; disponibilité = la base aussi (503 sinon). Sans jeton,
+// réponse réduite à l'état (« Healthy », « Unhealthy »).
+app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false }).AllowAnonymous();
+app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = c => c.Tags.Contains("ready") }).AllowAnonymous();
 app.Run();
 
 // Exposé aux tests d'intégration (WebApplicationFactory<Program>).

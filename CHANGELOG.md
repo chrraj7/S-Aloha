@@ -17,6 +17,10 @@ publiée, dans les [releases](https://github.com/chrraj7/S-Aloha/releases).
 
 ### Ajouté
 
+- **Sondes de santé de l'API** (O1) : `GET /health/live` (le processus répond) et
+  `GET /health/ready` (la base aussi, 503 sinon), sans jeton et sans détail, pour Docker et
+  Kubernetes ; healthcheck du service `api` dans `docker-compose.yml`.
+
 - **Indicateurs de conformité et de configuration** : écarts NIS 2 traités et évolution du score
   (NIS-30, NIS-31), disponibilité des services sous SLA (SLM-31), délais et abandons des
   améliorations (CSI-30 à CSI-32), usage et fraîcheur des articles (KB-30 à KB-32), délai de
