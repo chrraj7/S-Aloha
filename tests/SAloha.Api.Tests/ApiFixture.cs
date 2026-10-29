@@ -23,6 +23,8 @@ namespace SAloha.Api.Tests;
 public sealed class ApiFixture : IAsyncLifetime
 {
     internal const string JwtKey = "cle-de-test-uniquement-0123456789abcdef0123456789abcdef0123";
+    // S3 : seule origine externe admise par le CORS des tests.
+    internal const string AllowedOrigin = "https://frontend.example";
 
     // Image déjà présente localement : aucun téléchargement au lancement.
     private readonly PostgreSqlContainer _db = new PostgreSqlBuilder("postgres:18-alpine").Build();
@@ -36,6 +38,7 @@ public sealed class ApiFixture : IAsyncLifetime
             .UseSetting("ConnectionStrings:Default", _db.GetConnectionString())
             .UseSetting("Jwt:Key", JwtKey)
             .UseSetting("Jwt:Issuer", "S-Aloha")
+            .UseSetting("Cors:AllowedOrigins:0", AllowedOrigin)
             // Découverte : pas de lancement planifié (seuls les lancements des tests), coffre configuré.
             .UseSetting("Discovery:IntervalMinutes", "0")
             .UseSetting("Discovery:VaultKey", "cle-du-coffre-de-test-uniquement-0123456789")

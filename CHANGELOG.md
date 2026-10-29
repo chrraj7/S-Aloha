@@ -251,6 +251,9 @@ publiée, dans les [releases](https://github.com/chrraj7/S-Aloha/releases).
 
 ### Sécurité
 
+- **CORS limité aux origines configurées** (S3) : l'API n'accepte plus les requêtes de
+  n'importe quelle origine. `Cors:AllowedOrigins` liste les origines externes admises ; vide
+  par défaut, ce qui suffit au frontend fourni (même origine, par nginx).
 - **Exports CSV : cellules neutralisées** (ADM-31, REP-08, inventaire, synthèse de conformité) :
   une valeur texte qui commence par `=`, `+`, `-`, `@`, une tabulation ou un retour chariot
   est précédée d'une apostrophe, pour que le tableur la lise comme du texte ; les nombres
