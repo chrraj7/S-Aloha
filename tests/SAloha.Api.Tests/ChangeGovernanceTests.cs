@@ -58,6 +58,46 @@ public class ChangeGovernanceTests(ApiFixture api)
     }
 
     [Fact]
+    public async Task CHG_07_la_modification_par_un_gestionnaire_ne_contourne_ni_le_CAB_ni_la_separation_des_taches()
+    {
+        var requester = api.Client("Manager", "chg07.demandeur");
+        var a = api.Client("Manager", "chg07.autorite");
+        var c = api.Client("Manager", "chg07.autre");
+        var slot = DateTime.UtcNow.Date.AddDays(75).AddHours(20);
+        object Body(string risk, string? status, string plan = "Appliquer") => new
+        {
+            title = "Gouvernance CHG-07", changeType = "Normal", risk, status,
+            plannedStart = slot, plannedEnd = slot.AddHours(2), implementationPlan = plan, backoutPlan = "Restaurer"
+        };
+        async Task<string> Authorized()
+        {
+            var e = await Json(await requester.PostAsJsonAsync("/api/changes", Body("Moyen", null)));
+            await ChangeTestData.LinkCiAsync(requester, Id(e));
+            await Json(await requester.PutAsJsonAsync($"/api/changes/{Id(e)}", Body("Moyen", "Évalué")));
+            var ok = await Json(await a.PutAsJsonAsync($"/api/changes/{Id(e)}", Body("Moyen", "Autorisé")));
+            Assert.Equal(("Autorisé", "chg07.autorite"), (ok.GetProperty("status").GetString(), ok.GetProperty("authorizedBy").GetString()));
+            return $"/api/changes/{Id(e)}";
+        }
+        static (string?, bool) State(JsonElement e) =>
+            (e.GetProperty("status").GetString(), e.GetProperty("authorizedAt").ValueKind == JsonValueKind.Null);
+
+        // #209, CHG-20 l'emporte : un gestionnaire qui passe le risque à Élevé renvoie le changement au CAB.
+        var url = await Authorized();
+        Assert.Equal(("Évalué", true), State(await Json(await a.PutAsJsonAsync(url, Body("Élevé", "Autorisé")))));
+        Assert.Equal(HttpStatusCode.BadRequest, (await a.PutAsJsonAsync(url, Body("Élevé", "Autorisé"))).StatusCode);
+
+        // #210 : le demandeur gestionnaire qui réécrit son changement autorisé le renvoie à l'évaluation.
+        url = await Authorized();
+        Assert.Equal(("Évalué", true), State(await Json(await requester.PutAsJsonAsync(url, Body("Moyen", "Autorisé", "Tout autre plan")))));
+
+        // Un autre gestionnaire garde l'exception de CHG-07 : sa modification vaut autorisation, à son nom.
+        url = await Authorized();
+        var kept = await Json(await c.PutAsJsonAsync(url, Body("Moyen", "Autorisé", "Plan revu")));
+        Assert.Equal(("Autorisé", false), State(kept));
+        Assert.Equal("chg07.autre", kept.GetProperty("authorizedBy").GetString());
+    }
+
+    [Fact]
     public async Task CHG_25_pas_de_planification_dans_une_periode_de_gel_sauf_urgent()
     {
         var m = api.Client("Manager", "chg25.manager");

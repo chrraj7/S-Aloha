@@ -107,8 +107,10 @@ public class ValidationRulesTests(ApiFixture api)
         await Json(await m.PutAsJsonAsync(url, Change("Évalué", "Procédure")));
         Assert.Contains("Motiver le rejet", await Refused(await m.PutAsJsonAsync(url, Change("Rejeté", "Procédure"))));
 
-        await Json(await api.Client("Manager", "chef.chg12").PutAsJsonAsync(url, Change("Autorisé", "Procédure")));   // CHG-21
-        Assert.Contains("fin planifiés", await Refused(await m.PutAsJsonAsync(url, Change("Planifié", "Procédure", end: false))));
+        var authority = api.Client("Manager", "chef.chg12");
+        await Json(await authority.PutAsJsonAsync(url, Change("Autorisé", "Procédure")));   // CHG-21
+        // L'autorité, pas le demandeur : le créneau modifié par le demandeur renverrait à Évalué (CHG-07).
+        Assert.Contains("fin planifiés", await Refused(await authority.PutAsJsonAsync(url, Change("Planifié", "Procédure", end: false))));
         await Json(await m.PutAsJsonAsync(url, Change("Planifié", "Procédure")));
 
         var other = await Json(await m.PostAsJsonAsync("/api/changes", Change(null, "Procédure")));
