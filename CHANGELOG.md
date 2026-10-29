@@ -208,6 +208,10 @@ publiée, dans les [releases](https://github.com/chrraj7/S-Aloha/releases).
 
 ### Corrigé
 
+- **« Ouvrir un problème lié »** (INC-14) : le bouton de la fiche d'un incident échouait pour
+  un utilisateur de plusieurs périmètres (« Choisir le périmètre de l'enregistrement. ») et,
+  pour un Admin, créait le problème dans le périmètre par défaut ; le problème est désormais
+  créé dans le périmètre de l'incident.
 - **Qualification réglementaire d'un incident de sécurité** (INC-41, PER-06) : le formulaire
   « Qualifier » suivait le rôle de l'annuaire ; il suit désormais le rôle sur le périmètre de
   l'incident, comme l'API — un gestionnaire du périmètre le voit, un Manager de l'annuaire
@@ -243,6 +247,18 @@ publiée, dans les [releases](https://github.com/chrraj7/S-Aloha/releases).
 
 ### Sécurité
 
+- **Exports CSV : cellules neutralisées** (ADM-31, REP-08, inventaire, synthèse de conformité) :
+  une valeur texte qui commence par `=`, `+`, `-`, `@`, une tabulation ou un retour chariot
+  est précédée d'une apostrophe, pour que le tableur la lise comme du texte ; les nombres
+  restent des nombres.
+- **Référentiels sans périmètre** (PER-13) : périodes de gel, modèles de changement standard,
+  catalogue de demandes, fins de support et catégories se tiennent en Admin ou en gestionnaire
+  d'au moins un périmètre, selon le rôle par périmètre et non plus selon le groupe AD (ADR-0014
+  D4). Un compte du groupe AD Manager affecté User partout n'y écrit plus ; un User AD
+  gestionnaire d'un périmètre y écrit.
+- **Notifications d'un enregistrement déplacé** (SOC-23, PER-07) : quand un enregistrement
+  change de périmètre, ses notifications le suivent ; elles se lisent selon le nouveau
+  périmètre, dans la cloche comme dans le résumé par courriel.
 - **Historique d'un enregistrement** (SOC-20) : il suit désormais la visibilité de la fiche
   (PER-05) ; l'historique des périmètres et des paramètres est réservé à l'Admin.
 - **Jeton de session en cookie HttpOnly** (S5) : le jeton n'est plus lisible par les scripts

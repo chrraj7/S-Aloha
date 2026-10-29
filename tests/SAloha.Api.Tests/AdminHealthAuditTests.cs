@@ -63,4 +63,24 @@ public class AdminHealthAuditTests(ApiFixture api)
 
         Assert.Equal(HttpStatusCode.Forbidden, (await api.Client("Manager", "chef.adm30").GetAsync("/api/admin/audit")).StatusCode);
     }
+
+    [Fact]
+    public async Task ADM_31_une_valeur_commencant_par_un_signe_de_formule_est_neutralisee()
+    {
+        var author = api.Client("User", "auteur.adm31");
+        var incident = new { description = "d", impact = "Faible", urgency = "Faible", category = "Test", affectedService = "Test" };
+        var created = await Json(await author.PostAsJsonAsync("/api/incidents", new
+        {
+            title = "Formule adm31", incident.description, incident.impact, incident.urgency, incident.category, incident.affectedService
+        }));
+        await Json(await author.PutAsJsonAsync($"/api/incidents/{created.GetProperty("id").GetInt32()}", new
+        {
+            title = "=1+1", incident.description, incident.impact, incident.urgency, incident.category, incident.affectedService
+        }));
+
+        var csv = await (await api.Client("Admin", "admin.adm31")
+            .GetAsync($"/api/admin/audit/export?reference={created.GetProperty("reference").GetString()}")).Content.ReadAsStringAsync();
+        var line = csv.Split("\r\n").Single(l => l.Contains(";title;"));
+        Assert.EndsWith(";Formule adm31;'=1+1;", line);
+    }
 }

@@ -51,7 +51,7 @@ et l'arbitrage du portefeuille (choix d'investissement entre applications ou pro
 | Supprimer une tâche de scan | ✘ | ✘ | ✔ | ✅ |
 | Lire la liste du coffre (noms et types, jamais les secrets) | ✘ | ✔ | ✔ | ✅ CFG-45 |
 | Créer, modifier, remplacer le secret, supprimer un identifiant du coffre | ✘ | ✘ | ✔ | ✅ CFG-45 |
-| Tenir le référentiel des fins de support | ✘ | ✔ | ✔ | ✅ CFG-47 |
+| Tenir le référentiel des fins de support | ✘ | ✔ | ✔ | ✅ CFG-47, PER-13 |
 | Importer la base des constructeurs (registre OUI de l'IEEE) | ✘ | ✘ | ✔ | ✅ CFG-50 |
 | Consulter les clés d'hôte SSH et certificats retenus | ✘ | ✔ | ✔ | ✅ CFG-53 |
 | Accepter une clé ou un certificat changé, oublier un hôte | ✘ | ✘ | ✔ | ✅ CFG-53 |
@@ -457,7 +457,7 @@ Indicateurs du tableau de bord : onglet [Configuration & inventaire](../reportin
 | `GET /api/discovery/credentials` | User, gestionnaire d'un périmètre | Liste du coffre de ses périmètres, sans secret (CFG-45) |
 | `POST /api/discovery/credentials`, `PUT …/credentials/{id}`, `DELETE …/credentials/{id}` | Admin | Coffre : création, modification et rotation du secret, suppression (CFG-45) |
 | `GET /api/discovery/end-of-life` | User | Référentiel des fins de support (CFG-47) |
-| `POST /api/discovery/end-of-life`, `PUT …/end-of-life/{id}`, `DELETE …/end-of-life/{id}` | Manager | Tenue du référentiel (CFG-47) |
+| `POST /api/discovery/end-of-life`, `PUT …/end-of-life/{id}`, `DELETE …/end-of-life/{id}` | gestionnaire d'un périmètre ([PER-13](../perimetres.md)) | Tenue du référentiel (CFG-47) |
 | `GET /api/discovery/mac-vendors` | User | État de la base des constructeurs : nombre de préfixes, dernier import (CFG-50) |
 | `GET /api/discovery/ssh-host-keys` | User, gestionnaire d'un périmètre | Clés d'hôte SSH retenues, clés changées en tête (CFG-53) |
 | `POST /api/discovery/ssh-host-keys/{id}/accept`, `DELETE …/ssh-host-keys/{id}` | Admin | Acceptation d'une clé changée, oubli d'un hôte (CFG-53) |

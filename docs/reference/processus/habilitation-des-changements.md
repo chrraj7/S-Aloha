@@ -32,8 +32,8 @@ réaliser techniquement le changement (outils de déploiement).
 |---|---|---|---|---|
 | Créer, évaluer, planifier, mettre en œuvre, clore | ✔ | ✔ | ✔ | ✅ |
 | Autoriser / rejeter | ✘ | ✔ | ✔ | ✅ |
-| Définir les périodes de gel | ✘ | ✔ | ✔ | ✅ CHG-25 |
-| Tenir les modèles de changement standard | ✘ | ✔ | ✔ | ✅ CHG-26 |
+| Définir les périodes de gel | ✘ | ✔ | ✔ | ✅ CHG-25, PER-13 |
+| Tenir les modèles de changement standard | ✘ | ✔ | ✔ | ✅ CHG-26, PER-13 |
 | Supprimer | ✘ | ✘ | ✔ | ✅ |
 
 ## 3. Données
@@ -181,9 +181,9 @@ et de l'équipe (Relances, gestionnaires), avec une notification au responsable 
 | `POST /api/changes`, `PUT /api/changes/{id}` | User (Autorisé/Rejeté : Manager) | Création, modification, transitions |
 | `DELETE /api/changes/{id}` | Admin | Suppression |
 | `GET /api/changes/{id}/approvals`, `POST /api/changes/{id}/approvals` (`{ approve, comment }`) | User ; décision : Manager du périmètre, pas le demandeur | Décisions du CAB (CHG-20) |
-| `GET /api/change-freezes`, `POST`, `DELETE /api/change-freezes/{id}` | User (lecture), Manager (écriture) | Périodes de gel (CHG-25), communes à l'organisation |
-| `GET /api/standard-changes` (`?all=true`), `POST/PUT /api/standard-changes[/{id}]`, `DELETE` | User (lecture), Manager (écriture), Admin (suppression d'un modèle inutilisé) | Modèles de changement standard (CHG-26) |
-| `POST /api/standard-changes/{id}/review` (`note`, `keep`) | Manager | Revue d'un modèle suspendu : remise en service ou désactivation (CHG-27) |
+| `GET /api/change-freezes`, `POST`, `DELETE /api/change-freezes/{id}` | User (lecture), gestionnaire d'un périmètre ([PER-13](../perimetres.md)) (écriture) | Périodes de gel (CHG-25), communes à l'organisation |
+| `GET /api/standard-changes` (`?all=true`), `POST/PUT /api/standard-changes[/{id}]`, `DELETE` | User (lecture), gestionnaire d'un périmètre ([PER-13](../perimetres.md)) (écriture), Admin (suppression d'un modèle inutilisé) | Modèles de changement standard (CHG-26) |
+| `POST /api/standard-changes/{id}/review` (`note`, `keep`) | gestionnaire d'un périmètre ([PER-13](../perimetres.md)) | Revue d'un modèle suspendu : remise en service ou désactivation (CHG-27) |
 
 ## 10. Scénarios d'acceptation
 

@@ -315,6 +315,10 @@ public abstract class RecordController<T, TDto, TView>(AppDbContext db) : Contro
         e.UpdatedAt = DateTime.UtcNow;
         await BeforeSaveAsync(e, false);
         await db.SaveChangesAsync();
+        // SOC-23 : la lecture filtre sur le périmètre copié dans la notification ; il suit le déplacement.
+        if (moveTo is not null)
+            await db.Notifications.Where(n => n.TargetType == LinkType && n.TargetId == id)
+                .ExecuteUpdateAsync(u => u.SetProperty(n => n.PerimeterId, moveTo.Value));
         await NotifyAsync(e, left, ownerBefore);
         return Ok(View(e));
     }
