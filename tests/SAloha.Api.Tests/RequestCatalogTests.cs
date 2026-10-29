@@ -79,6 +79,29 @@ public class RequestCatalogTests(ApiFixture api)
     }
 
     [Fact]
+    public async Task REQ_22_echeance_renvoyee_au_jour_pres_par_le_formulaire()
+    {
+        // Le formulaire de la fiche ne montre que le jour de l'échéance et la renvoie à minuit UTC.
+        var m = api.Client("Manager", "req22j.manager");
+        var u = api.Client("User", "req22j.user");
+        var item = await Json(await m.PostAsJsonAsync("/api/request-catalog", Item("REQ-22 Écran", false, hours: 24, group: "GRP-ECRANS-REQ22J")));
+        var req = await Json(await u.PostAsJsonAsync("/api/requests", new { title = "Écran en panne", catalogItemId = Id(item) }));
+        // Valeur relue en base (précision de PostgreSQL), pour la comparer aux réponses suivantes.
+        var due = (await Json(await u.GetAsync($"/api/requests/{Id(req)}"))).GetProperty("dueDate").GetDateTime().ToUniversalTime();
+        object Dto(string status) => new { title = "Écran en panne", requestedItem = "REQ-22 Écran", status,
+            dueDate = DateTime.SpecifyKind(due.Date, DateTimeKind.Utc),
+            ownerType = "Group", ownerId = "GRP-ECRANS-REQ22J", ownerDisplayName = "GRP-ECRANS-REQ22J" };
+
+        // Le User d'exécution prend la demande en charge : même jour, échéance inchangée, heure comprise.
+        var taken = await Json(await u.PutAsJsonAsync($"/api/requests/{Id(req)}", Dto("En cours")));
+        Assert.Equal("En cours", taken.GetProperty("status").GetString());
+        Assert.Equal(due, taken.GetProperty("dueDate").GetDateTime().ToUniversalTime());
+        // Le gestionnaire qui enregistre la fiche sans toucher l'échéance ne la ramène pas à minuit.
+        var saved = await Json(await m.PutAsJsonAsync($"/api/requests/{Id(req)}", Dto("En cours")));
+        Assert.Equal(due, saved.GetProperty("dueDate").GetDateTime().ToUniversalTime());
+    }
+
+    [Fact]
     public async Task REQ_30_demande_en_retard_signalee()
     {
         var m = api.Client("Manager", "req30.manager");
