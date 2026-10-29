@@ -5,15 +5,17 @@ import { MemoryRouter } from 'react-router-dom'
 import { Regulatory } from './IncidentDetail'
 
 let role = 'Manager'
+let mine = []
 const qualify = vi.fn(() => Promise.resolve({ created: ['DRG-2026-0001'], proposeMajor: true }))
 vi.mock('../../../api', () => ({
   getUser: () => ({ role }),
   api: {
     incidents: { qualify: (...a) => qualify(...a) },
     regulatoryNotifications: { list: () => Promise.resolve([]) },
+    perimeters: { mine: () => Promise.resolve(mine) },
   }
 }))
-afterEach(() => { cleanup(); vi.clearAllMocks(); role = 'Manager' })
+afterEach(() => { cleanup(); vi.clearAllMocks(); role = 'Manager'; mine = [] })
 
 const incident = { id: 7, isSecurity: true, qualifiedAt: null }
 const page = (i = incident) => render(<MemoryRouter><Regulatory incident={i} reload={() => {}} /></MemoryRouter>)
@@ -38,6 +40,21 @@ it('INC-40 : rien pour un incident ordinaire ; un User ne qualifie pas', async (
   cleanup()
   role = 'User'
   page()
+  expect(await screen.findByText(/À qualifier par un gestionnaire/)).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'Qualifier' })).toBeNull()
+})
+
+it('PER-06 : le rôle sur le périmètre de l’incident prime sur le rôle AD', async () => {
+  // usePerimeters garde sa liste pour la session de page : un module neuf la relit.
+  vi.resetModules()
+  const { Regulatory: Fresh } = await import('./IncidentDetail')
+  role = 'User'
+  mine = [{ id: 2, name: 'Siège', role: 'Manager' }, { id: 3, name: 'Usine', role: 'User' }]
+  render(<MemoryRouter><Fresh incident={{ ...incident, perimeterId: 2 }} reload={() => {}} /></MemoryRouter>)
+  expect(await screen.findByRole('button', { name: 'Qualifier' })).toBeTruthy()
+  cleanup()
+  role = 'Manager'
+  render(<MemoryRouter><Fresh incident={{ ...incident, perimeterId: 3 }} reload={() => {}} /></MemoryRouter>)
   expect(await screen.findByText(/À qualifier par un gestionnaire/)).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Qualifier' })).toBeNull()
 })

@@ -8,9 +8,14 @@ import SimilarCases from '../../../core/components/SimilarCases'
 import { incidentConfig } from '../config'
 import { useServiceConfig } from '../../../core/useServices'
 import { useCategoryConfig } from '../../../core/useCategories'
+import usePerimeters from '../../../core/usePerimeters'
 
-/** Un incident récurrent ou de cause inconnue ouvre un problème, relié à l'incident. */
-function OpenProblem({ incident }) {
+/**
+ * Un incident récurrent ou de cause inconnue ouvre un problème, relié à l'incident (INC-14),
+ * dans le périmètre de l'incident : sans lui, l'API refuse pour un utilisateur de plusieurs
+ * périmètres et prend le périmètre par défaut pour un Admin (PER-04).
+ */
+export function OpenProblem({ incident }) {
   const [error, setError] = useState('')
   const nav = useNavigate()
   const open = async () => {
@@ -18,7 +23,7 @@ function OpenProblem({ incident }) {
       const p = await api.problems.create({
         title: incident.title, description: incident.description, impact: incident.impact,
         urgency: incident.urgency, category: incident.category, affectedService: incident.affectedService,
-        serviceId: incident.serviceId
+        serviceId: incident.serviceId, perimeterId: incident.perimeterId
       })
       await api.links.create({ fromType: 'incident', fromId: incident.id, toReference: p.reference })
       nav('/problems/' + p.id)
@@ -73,7 +78,10 @@ export function Family({ incident, reload }) {
  * et ses déclarations (DRG-01). INC-44 : important au sens NIS 2 → proposé comme incident majeur.
  */
 export function Regulatory({ incident, reload }) {
-  const isManager = ['Admin', 'Manager'].includes(getUser()?.role)
+  // PER-06 : gestionnaire du périmètre de l'incident, comme l'API (ADR-0014 D4 : le rôle par
+  // périmètre prime sur le rôle AD) ; tant que la liste n'est pas chargée, le rôle AD.
+  const here = usePerimeters().find(p => p.id === incident.perimeterId)?.role
+  const isManager = ['Admin', 'Manager'].includes(here ?? getUser()?.role)
   const [declarations, setDeclarations] = useState(null)
   const [f, setF] = useState({ nis2Important: '', nis2Reason: '', personalDataBreach: '', personalDataBreachReason: '', awareAt: '' })
   const [msg, setMsg] = useState(null)
