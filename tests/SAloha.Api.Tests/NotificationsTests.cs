@@ -94,6 +94,37 @@ public class NotificationsTests(ApiFixture api)
     }
 
     [Fact]
+    public async Task SOC_23_les_notifications_suivent_l_enregistrement_change_de_perimetre()
+    {
+        var admin = api.Client();
+        var siege = Id(await Json(await admin.PostAsJsonAsync("/api/admin/perimeters", new { name = "Siège N23" })));
+        var usine = Id(await Json(await admin.PostAsJsonAsync("/api/admin/perimeters", new { name = "Usine N23" })));
+        async Task Assign(int p, string id, string role) => await Json(await admin.PostAsJsonAsync($"/api/admin/perimeters/{p}/assignments",
+            new { principalType = "User", principalId = id, principalDisplayName = id, role }));
+        await Assign(siege, "tiana.n23", "User");
+        await Assign(siege, "chef.siege.n23", "Manager");
+        await Assign(usine, "chef.usine.n23", "Manager");
+        object Incident(int p) => new
+        {
+            title = "Titre confidentiel N23", impact = "Faible", urgency = "Faible", perimeterId = p,
+            ownerType = "User", ownerId = "tiana.n23", ownerDisplayName = "Tiana"
+        };
+        object Request(int p) => new { title = "Badge N23", requestedItem = "Badge", perimeterId = p };
+        var inc = await Json(await admin.PostAsJsonAsync("/api/incidents", Incident(siege)));
+        var req = await Json(await admin.PostAsJsonAsync("/api/requests", Request(siege)));
+        Assert.Equal(["Confié à vous"], await Events(api.Client("User", "tiana.n23"), Ref(inc)));
+        Assert.Contains("Demande à approuver", await Events(api.Client("User", "chef.siege.n23"), Ref(req)));
+
+        // PER-07 : l'Admin les déplace à l'Usine ; leurs notifications passent avec eux.
+        await Json(await admin.PutAsJsonAsync($"/api/incidents/{Id(inc)}", Incident(usine)));
+        await Json(await admin.PutAsJsonAsync($"/api/requests/{Id(req)}", Request(usine)));
+        Assert.Equal(HttpStatusCode.NotFound, (await api.Client("User", "tiana.n23").GetAsync($"/api/incidents/{Id(inc)}")).StatusCode);
+        Assert.Empty(await Events(api.Client("User", "tiana.n23"), Ref(inc)));
+        Assert.Empty(await Events(api.Client("User", "chef.siege.n23"), Ref(req)));
+        Assert.Contains("Demande à approuver", await Events(api.Client("User", "chef.usine.n23"), Ref(req)));
+    }
+
+    [Fact]
     public async Task PRB_31_action_affectee_au_R_et_au_A()
     {
         var m = api.Client("Manager", "chef.prb31");
