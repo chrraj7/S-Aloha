@@ -85,14 +85,14 @@ stateDiagram-v2
     Resolu : Résolu
 ```
 
-**Aujourd'hui (✅)** : transitions libres ; Résolu et Clos exigent une résolution.
-**Cible (🔜 INC-09, lot 1)** : seules les transitions ci-dessous (SOC-05).
+Seules les transitions ci-dessous sont permises (✅ INC-09, SOC-05) ; Résolu et Clos exigent
+une résolution.
 
 | De → Vers | Qui | Conditions (400 sinon) | Effets | Statut |
 |---|---|---|---|---|
 | — → Nouveau | Tous | Titre, impact, urgence | Référence, priorité | ✅ |
 | Nouveau → En cours | Tous | Responsable renseigné (utilisateur ou groupe) | `FirstResponseAt` | ✅ |
-| Nouveau → Résolu | Tous | Résolution et code | `ResolvedAt` ; résolu au premier contact (INC-23) | ✅ / 🔜 INC-23 (premier contact) |
+| Nouveau → Résolu | Tous | Résolution et code | `ResolvedAt` ; résolu au premier contact (INC-23) | ✅ INC-23 |
 | En cours → En attente | Tous | `OnHoldReason` | Horloge SLA suspendue (INC-22) ; ni risque ni dépassement relevés pendant l'attente | ✅ INC-07 |
 | En attente → En cours | Tous | | `OnHoldReason` effacé, horloge reprise : l'attente, en heures de service, prolonge les échéances | ✅ INC-07, INC-22 |
 | En cours → Résolu | Tous | Résolution et `ResolutionCode` | `ResolvedAt` | ✅ |
@@ -122,7 +122,7 @@ stateDiagram-v2
 | INC-16 | **Incidents enfants** : un incident peut être rattaché à un incident parent (même panne) ; résoudre le parent résout ses enfants avec la même résolution | ✅ (rattachement par la référence du parent, par tout rôle qui voit l'incident ; un seul niveau : le parent n'a pas de parent, l'enfant n'a pas d'enfants ; même périmètre ; ni soi-même ni un parent clos ; figé une fois l'incident résolu. À la résolution du parent, ses enfants ouverts passent Résolu avec sa résolution et son code, leur attente prend fin ; déclarant et utilisateur affecté notifiés ; encadré « Même panne » sur la fiche) | 3 |
 | INC-17 | **Escalade fonctionnelle** : changer le responsable vers un autre groupe est tracé (SOC-20) avec un motif (`EscalationReason`, nouveau à chaque escalade) | ✅ | 2 |
 | INC-18 | **Escalade hiérarchique** : un P1, ou un incident dont l'échéance de résolution est dépassée, notifie les gestionnaires (SOC-21) | ✅ (notification des gestionnaires, relevé périodique) | |
-| INC-19 | **Suggestion de connaissance** : l'onglet Informations de la fiche présente les « **Cas similaires** » (articles publiés, problèmes établis, incidents résolus) par la recherche hybride ([RAG-06](../recherche.md)) ; relier en un clic l'élément retenu à l'incident : [RAG-09](../recherche.md) | ✅ (relier : 🔜 RAG-09) | 2 |
+| INC-19 | **Suggestion de connaissance** : l'onglet Informations de la fiche présente les « **Cas similaires** » (articles publiés, problèmes établis, incidents résolus) par la recherche hybride ([RAG-06](../recherche.md)) ; relier en un clic l'élément retenu à l'incident : [RAG-09](../recherche.md) | ✅ (relier : ✅ RAG-09) | 2 |
 
 ### Incidents de sécurité (cyber) et déclarations réglementaires
 
@@ -141,8 +141,8 @@ alerte précoce sous 24 h ; RGPD : notification sous 72 h) :
 ## 6. Délais, calculs et alertes
 
 Les cibles viennent du **SLA en vigueur** du service affecté
-([niveaux de service](gestion-des-niveaux-de-service.md)) : délai de résolution par
-priorité (aujourd'hui enregistré, pas mesuré).
+([niveaux de service](gestion-des-niveaux-de-service.md)) : délais de prise en charge et de
+résolution par priorité, mesurés en échéances et en état SLA (INC-21, INC-22, INC-24).
 
 | ID | Règle | Statut | Lot |
 |---|---|---|---|
