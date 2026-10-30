@@ -66,6 +66,37 @@ public class IncidentLot3Tests(ApiFixture api)
     }
 
     [Fact]
+    public async Task INC_15_INC_16_la_cascade_saute_les_enfants_majeurs_sans_probleme()
+    {
+        // Décision du 2026-10-26 (#200) : INC-15 sans exception ; le majeur sans problème reste ouvert.
+        var m = api.Client("Manager", "chef.inc16m");
+        object Major(string title) => new
+        {
+            title, description = "d", impact = "Élevé", urgency = "Élevée", category = "", affectedService = "", isMajor = true,
+            ownerType = "User", ownerId = "chef.inc16m", ownerDisplayName = "chef.inc16m"
+        };
+        var parent = await Json(await m.PostAsJsonAsync("/api/incidents", Incident("Panne du stockage partagé", owner: "chef.inc16m")));
+        var alone = await Json(await m.PostAsJsonAsync("/api/incidents", Major("Paie inaccessible (stockage)")));
+        var linked = await Json(await m.PostAsJsonAsync("/api/incidents", Major("Messagerie inaccessible (stockage)")));
+        var plain = await Json(await m.PostAsJsonAsync("/api/incidents", Incident("Partage personnel absent", owner: "chef.inc16m")));
+        foreach (var c in new[] { alone, linked, plain })
+            await Json(await m.PutAsJsonAsync($"/api/incidents/{Id(c)}/parent", new { parentReference = Str(parent, "reference") }));
+        var p = await Json(await m.PostAsJsonAsync("/api/problems", new
+            { title = "Cause de la panne du stockage", description = "d", impact = "Moyen", urgency = "Moyenne", category = "", affectedService = "", source = "Proactif" }));
+        await Json(await m.PostAsJsonAsync("/api/links", new { fromType = "incident", fromId = Id(linked), toReference = Str(p, "reference") }));
+
+        var resolved = await Json(await m.PutAsJsonAsync($"/api/incidents/{Id(parent)}",
+            Incident("Panne du stockage partagé", "Résolu", owner: "chef.inc16m", resolution: "Contrôleur remplacé", code: "Correctif appliqué")));
+        Assert.Equal("Résolu", Str(resolved, "status"));
+        var left = resolved.GetProperty("unresolvedChildren").EnumerateArray().ToList();
+        Assert.Equal(Str(alone, "reference"), Str(Assert.Single(left), "reference"));
+        Assert.Contains("problème", Str(left[0], "reason"));
+        Assert.Equal("Nouveau", Str(await Json(await m.GetAsync($"/api/incidents/{Id(alone)}")), "status"));
+        foreach (var c in new[] { linked, plain })
+            Assert.Equal("Résolu", Str(await Json(await m.GetAsync($"/api/incidents/{Id(c)}")), "status"));
+    }
+
+    [Fact]
     public async Task INC_26_en_attente_depuis_plus_de_5_jours_ouvres_remonte_au_responsable()
     {
         var owner = api.Client("User", "tech.inc26");

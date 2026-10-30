@@ -11,7 +11,8 @@ namespace SAloha.Api.Modules.IncidentManagement;
 [Route("api/incidents")]
 public class IncidentsController(AppDbContext db) : RecordController<Incident, IncidentDto, IncidentView>(db)
 {
-    protected override IncidentView View(Incident e) => IncidentView.From(e);
+    protected override IncidentView View(Incident e) =>
+        _unresolvedChildren is { Count: > 0 } left ? IncidentView.From(e) with { UnresolvedChildren = left } : IncidentView.From(e);
     protected override string Code => "INC";
     protected override string LinkType => "incident";
     protected override string[] Statuses => Incident.Statuses;
@@ -193,12 +194,19 @@ public class IncidentsController(AppDbContext db) : RecordController<Incident, I
     /// INC-16 : résoudre le parent résout ses enfants ouverts avec la même résolution et le même
     /// code ; l'attente d'un enfant prend fin (son temps compte comme à une reprise, INC-22).
     /// Le journal d'audit trace chaque enfant ; déclarant et utilisateur affecté sont notifiés.
+    /// Un enfant majeur sans problème relié reste ouvert (INC-15 sans exception, décision du
+    /// 2026-10-26) ; la réponse le liste avec la raison.
     /// </summary>
     private async Task ResolveChildrenAsync(Incident parent)
     {
         var now = DateTime.UtcNow;
         foreach (var child in await Db.Incidents.Where(c => c.ParentId == parent.Id && !Incident.Done.Contains(c.Status)).ToListAsync())
         {
+            if (child.IsMajor && !await ItemLinks.IsLinkedToAsync(Db, "incident", child.Id, "problem"))
+            {
+                _unresolvedChildren.Add(new(child.Reference, "Incident majeur sans problème relié (INC-15) : le relier à un problème, puis le résoudre."));
+                continue;
+            }
             if (child.Status == "En attente" && child.OnHoldSince is { } since)
                 child.HeldMinutes += (int)Math.Round((await IncidentSla.CalendarAsync(Db, child.ServiceId)).Between(since, now).TotalMinutes);
             var from = child.Status;
@@ -211,6 +219,9 @@ public class IncidentsController(AppDbContext db) : RecordController<Incident, I
     }
 
     private bool _becameMajor;
+
+    /// <summary>INC-16 : enfants que la résolution du parent a laissés ouverts.</summary>
+    private readonly List<UnresolvedChildView> _unresolvedChildren = [];
 
     // INC-25 : incident majeur déclaré → gestionnaires ; résolution → déclarant.
     protected override void OnNotify(Incident e, string? from, Notifier n)

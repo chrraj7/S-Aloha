@@ -233,6 +233,7 @@
     "slaState": "string",
     "status": "string",
     "title": "string",
+    "unresolvedChildren": "array[UnresolvedChildView]",
     "updatedAt": "string:date-time",
     "urgency": "string"
   },
@@ -523,5 +524,9 @@
     "region": "string",
     "updatedAt": "string:date-time",
     "updatedBy": "string"
+  },
+  "UnresolvedChildView": {
+    "reason": "string",
+    "reference": "string"
   }
 }
