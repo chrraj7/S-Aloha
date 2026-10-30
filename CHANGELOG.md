@@ -208,6 +208,9 @@ publiée, dans les [releases](https://github.com/chrraj7/S-Aloha/releases).
 
 ### Corrigé
 
+- **Résolution d'un incident parent** (INC-15, INC-16) : résoudre un parent résolvait aussi un
+  enfant majeur sans problème relié, que sa résolution directe refusait. Cet enfant reste
+  désormais ouvert ; la réponse de l'API le liste avec la raison (`unresolvedChildren`).
 - **« Ouvrir un problème lié »** (INC-14) : le bouton de la fiche d'un incident échouait pour
   un utilisateur de plusieurs périmètres (« Choisir le périmètre de l'enregistrement. ») et,
   pour un Admin, créait le problème dans le périmètre par défaut ; le problème est désormais

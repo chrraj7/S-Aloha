@@ -52,7 +52,8 @@ public record IncidentView(
     string? CreatedBy,
     string? CreatedByDisplayName,
     DateTime CreatedAt,
-    DateTime UpdatedAt)
+    DateTime UpdatedAt,
+    IReadOnlyList<UnresolvedChildView>? UnresolvedChildren = null)
 {
     public static IncidentView From(Incident e) => new(
         e.Impact,
@@ -105,3 +106,6 @@ public record IncidentView(
         e.CreatedAt,
         e.UpdatedAt);
 }
+
+/// <summary>INC-16 : enfant laissé ouvert par la résolution de son parent, et pourquoi (réponse de cette résolution seulement).</summary>
+public record UnresolvedChildView(string Reference, string Reason);
