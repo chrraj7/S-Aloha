@@ -34,12 +34,9 @@ public class ServiceRequestsController(AppDbContext db) : RecordController<Servi
         // Le formulaire ne montre que le jour et le renvoie à minuit UTC : le même jour n'est pas
         // une modification, et l'heure calculée est gardée (REQ-41 compare à l'heure près).
         var sameDay = due is { TimeOfDay.Ticks: 0 } && due?.Date == e.DueDate?.Date;
-        if (creating || e.CatalogItemId is null) e.DueDate = due;
-        else if (due != e.DueDate && !sameDay)
-        {
-            if (!IsManager) return "Seul un gestionnaire modifie l'échéance d'une demande du catalogue.";
-            e.DueDate = due;
-        }
+        // Le délai cible du modèle n'est connu qu'en lecture de la base : refus dans ValidateAsync.
+        _dueChangedByUser = !creating && !IsManager && due != e.DueDate && !sameDay;
+        if (creating || e.CatalogItemId is null || (due != e.DueDate && !sameDay)) e.DueDate = due;
         e.RejectionReason = string.IsNullOrWhiteSpace(dto.RejectionReason) ? null : dto.RejectionReason.Trim();
         e.ServiceId = dto.ServiceId; e.AffectedService = dto.AffectedService ?? "";
         return null;
@@ -50,6 +47,8 @@ public class ServiceRequestsController(AppDbContext db) : RecordController<Servi
     {
         var item = await ItemAsync(e);
         if (e.CatalogItemId is not null && item is null) return "Choisir un modèle du catalogue de demandes.";
+        if (_dueChangedByUser && item?.TargetHours is not null)
+            return "Seul un gestionnaire modifie l'échéance d'une demande issue d'un modèle à délai cible.";
         if (e.Id == 0 && item is { Active: false }) return $"Le modèle « {item.Name} » n'est plus proposé.";
         _preApproved = e.Id == 0 && item is { RequiresApproval: false };
         FromItem(e, item);
@@ -57,6 +56,7 @@ public class ServiceRequestsController(AppDbContext db) : RecordController<Servi
     }
 
     private bool _preApproved;
+    private bool _dueChangedByUser;
 
     private async Task<RequestCatalogItem?> ItemAsync(ServiceRequest e) =>
         e.CatalogItemId is int id ? await Db.RequestCatalogItems.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id) : null;

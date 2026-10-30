@@ -18,7 +18,8 @@ export const requestConfig = {
     titleField('Titre', 'Ex. : Accès VPN pour un nouvel arrivant'),
     { key: 'requestedItem', label: 'Objet demandé', placeholder: 'Repris du modèle s\'il est vide ; sinon : accès VPN, poste portable…' },
     { key: 'requestedFor', nameKey: 'requestedForDisplayName', label: 'Bénéficiaire', type: 'person' },
-    // REQ-22 : calculée depuis le modèle à l'approbation ; ensuite, un gestionnaire seulement la modifie.
+    // REQ-22 : calculée depuis un modèle à délai cible à l'approbation ; ensuite, un gestionnaire seulement
+    // la modifie. Sans délai cible, l'échéance souhaitée reste libre.
     { key: 'dueDate', label: 'Échéance', type: 'date' },
     ownerField('Traitée par'),
     descriptionField('Précisions'),
