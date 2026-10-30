@@ -34,7 +34,7 @@ une modification non standard du SI (→ [changement](habilitation-des-changemen
 | Approuver / rejeter | ✘ | ✔ | ✔ | ✅ |
 | Annuler sa propre demande avant traitement | Demandeur | ✔ | ✔ | ✅ REQ-09 |
 | Tenir le catalogue de demandes | ✘ | ✔ | ✔ | ✅ REQ-20, PER-13 |
-| Modifier l'échéance d'une demande issue d'un modèle | ✘ | ✔ | ✔ | ✅ REQ-22 |
+| Modifier l'échéance d'une demande issue d'un modèle à délai cible | ✘ | ✔ | ✔ | ✅ REQ-22 |
 | Supprimer | ✘ | ✘ | ✔ | ✅ |
 
 ## 3. Données
@@ -132,7 +132,7 @@ approbation réservée aux gestionnaires ; traitement seulement après approbati
 |---|---|---|---|
 | REQ-20 | **Catalogue de demandes** tenu par les gestionnaires : chaque demande se crée depuis un **modèle actif** ; l'objet demandé et le service en sont repris | ✅ (page « Catalogue de demandes » ; modèle choisi à la création, objet et service repris ; sans modèle, demande libre) | |
 | REQ-21 | Un modèle **sans approbation** crée la demande directement **Approuvée** (« Modèle pré-approuvé »), comme un changement standard | ✅ | |
-| REQ-22 | **Échéance** = soumission (ou approbation si requise) + délai cible du modèle, en heures de service (SLM-14) ; modifiable par un Manager seulement | ✅ (calculée à l'approbation, ou à la création pré-approuvée, dans le calendrier du service du modèle ; la fiche renvoie le seul jour : le même jour garde l'heure calculée et n'est pas une modification) | |
+| REQ-22 | **Échéance** = soumission (ou approbation si requise) + délai cible du modèle, en heures de service (SLM-14) ; celle d'une demande issue d'un modèle à délai cible n'est modifiable que par un Manager ; sans délai cible, l'échéance souhaitée reste libre (§ 3) | ✅ (calculée à l'approbation, ou à la création pré-approuvée, dans le calendrier du service du modèle ; la fiche renvoie le seul jour : le même jour garde l'heure calculée et n'est pas une modification) | |
 | REQ-23 | Le **groupe d'exécution** du modèle devient le responsable de la demande approuvée | ✅ (si la demande n'a pas encore de responsable) | |
 | REQ-24 | **Tâches d'exécution** : les tâches prédéfinies du modèle sont créées à l'approbation, chacune avec son responsable ; on peut en ajouter | ✅ | 3 |
 | REQ-25 | **Satisfaite** exige que toutes les tâches soient Terminée ou Annulée | ✅ | 3 |

@@ -102,6 +102,23 @@ public class RequestCatalogTests(ApiFixture api)
     }
 
     [Fact]
+    public async Task REQ_22_sans_delai_cible_l_echeance_souhaitee_reste_libre()
+    {
+        // Décision du 2026-10-29 (#204) : seule l'échéance calculée d'un modèle à délai cible est réservée.
+        var m = api.Client("Manager", "req22l.manager");
+        var u = api.Client("User", "req22l.user");
+        var item = await Json(await m.PostAsJsonAsync("/api/request-catalog", Item("REQ-22 Badge", false)));
+        var wished = DateTime.SpecifyKind(DateTime.UtcNow.Date.AddDays(5), DateTimeKind.Utc);
+        var req = await Json(await u.PostAsJsonAsync("/api/requests", new { title = "Badge perdu", catalogItemId = Id(item), dueDate = wished }));
+        Assert.Equal(wished, req.GetProperty("dueDate").GetDateTime().ToUniversalTime());
+
+        var later = wished.AddDays(3);
+        var changed = await Json(await u.PutAsJsonAsync($"/api/requests/{Id(req)}", new { title = "Badge perdu", requestedItem = "REQ-22 Badge",
+            status = req.GetProperty("status").GetString(), dueDate = later }));
+        Assert.Equal(later, changed.GetProperty("dueDate").GetDateTime().ToUniversalTime());
+    }
+
+    [Fact]
     public async Task REQ_30_demande_en_retard_signalee()
     {
         var m = api.Client("Manager", "req30.manager");
