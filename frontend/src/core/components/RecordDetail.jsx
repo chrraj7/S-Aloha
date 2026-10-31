@@ -139,7 +139,7 @@ export default function RecordDetail({ config, children, tab }) {
       {practice.map((t, i) => current === 'practice-' + i && <React.Fragment key={i}>{t.render(r, load)}</React.Fragment>)}
       {current === 'links' && <LinkedItems type={config.linkType} id={r.id} hint={config.linkHint} refreshKey={version} />}
       {current === 'comments' && <Comments type={config.linkType} id={r.id} />}
-      {current === 'attachments' && <Attachments type={config.linkType} id={r.id} />}
+      {current === 'attachments' && <Attachments type={config.linkType} id={r.id} perimeterId={r.perimeterId} />}
       {current === 'history' && <History type={config.linkType} id={r.id} labels={labelsOf(config.fields)} refreshKey={version} />}
     </>
   )
