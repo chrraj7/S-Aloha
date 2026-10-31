@@ -5,6 +5,7 @@ import { GROUPS, MODULES, SECTIONS, groupOf, visibleFor } from '../../modules/re
 import ThemeToggle from './ThemeToggle'
 import NotificationBell from './NotificationBell'
 import ErrorBoundary from './ErrorBoundary'
+import useManagesPerimeter from '../useManagesPerimeter'
 import { SOURCE_URL, LICENSE_LABEL } from '../about'
 import {
   BrandMark, IconConsole, IconReport, IconLogout, IconMenu, IconClose, IconPreferences, IconCode, IconRail,
@@ -191,6 +192,10 @@ function ModuleItem({ module, location, role, rail, onClick }) {
 
 function SidebarContent({ user, location, collapsed, onToggle, rail, onRail, onClose, onLogout }) {
   const role = user?.role
+  // PER-13 : Paramétrage suit le rôle de gestionnaire d'un périmètre, pas le rôle AD ; ses
+  // entrées réservées à l'Admin (Référentiel NIS 2) le restent.
+  const manages = useManagesPerimeter()
+  const sectionRole = (s) => (s.id === 'settings' && role !== 'Admin' ? (manages ? 'Manager' : 'User') : role)
   const group = (id, label, tone, current, children) => (
     <NavGroup key={id} id={id} label={label} tone={tone} current={current}
       collapsed={collapsed} onToggle={onToggle} rail={rail}>
@@ -225,8 +230,8 @@ function SidebarContent({ user, location, collapsed, onToggle, rail, onRail, onC
         {/* Paramétrage et Administration au pied de la navigation, à l'écart
             du travail quotidien. */}
         <div className="nav-bottom">
-          {SECTIONS.filter((s) => visibleFor(s, role)).map((s) => {
-            const entries = s.entries.filter((e) => visibleFor(e, role))
+          {SECTIONS.filter((s) => visibleFor(s, sectionRole(s))).map((s) => {
+            const entries = s.entries.filter((e) => visibleFor(e, sectionRole(s)))
             if (entries.length === 0) return null
             const current = entries.some((e) => within(location.pathname, e.href))
             const tone = s.id === 'administration' ? 'admin' : undefined

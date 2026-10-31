@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { api, getUser } from '../../../api'
+import { api } from '../../../api'
+import useManagesPerimeter from '../../../core/useManagesPerimeter'
 
 /** CHG-27 : revue d'un modèle suspendu — conclusion, puis remise en service ou désactivation. */
 export function Review({ model, onDone }) {
@@ -32,7 +33,7 @@ export default function StandardChanges() {
   const [f, setF] = useState(null)
   const [review, setReview] = useState(null)
   const [error, setError] = useState('')
-  const manager = ['Admin', 'Manager'].includes(getUser()?.role)
+  const manager = useManagesPerimeter()
   const load = () => api.standardChanges.list(true).then(setItems).catch(e => setError(e.message))
   useEffect(() => { load() }, [])
   const set = k => e => setF({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value })
