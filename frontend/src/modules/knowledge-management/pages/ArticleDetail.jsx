@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { api, getUser } from '../../../api'
 import RecordDetail from '../../../core/components/RecordDetail'
+import useManagerOn from '../../../core/useManagerOn'
 import Markdown from '../../../core/components/Markdown'
 import { dateFr } from '../../../core/fields'
 import { knowledgeConfig } from '../config'
@@ -64,7 +65,8 @@ export function Versions({ article }) {
  */
 export function Lifecycle({ article, onSaved }) {
   const user = getUser()
-  const isManager = ['Admin', 'Manager'].includes(user?.role)
+  // PER-06 : gestionnaire du périmètre de l'article (`OwnsOrManages` de l'API).
+  const isManager = useManagerOn(article.perimeterId)
   // Un groupe responsable : l'appartenance est vérifiée par l'API (SOC-10).
   const owns = isManager || article.ownerType === 'Group'
     || (article.ownerId ?? '').toLowerCase() === (user?.username ?? '').toLowerCase()

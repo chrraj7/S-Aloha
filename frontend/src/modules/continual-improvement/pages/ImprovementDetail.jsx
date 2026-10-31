@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, getUser } from '../../../api'
 import RecordDetail from '../../../core/components/RecordDetail'
+import useManagerOn from '../../../core/useManagerOn'
 import { dateFr } from '../../../core/fields'
 import { improvementConfig } from '../config'
 
@@ -13,6 +14,8 @@ export function FollowUp({ improvement, onDone }) {
   const [note, setNote] = useState('')
   const [msg, setMsg] = useState(null)
   const i = improvement
+  // PER-06 : gestionnaire du périmètre de l'amélioration ; avant tout retour (règle des hooks).
+  const isManager = useManagerOn(i.perimeterId)
   if (i.status !== 'Réalisée' || !i.followUpDate) return null
   if (i.followUpDoneAt) return (
     <div className="card" style={{ marginTop: 16 }}>
@@ -20,7 +23,7 @@ export function FollowUp({ improvement, onDone }) {
       <p className="small">Contrôlée le {dateFr(i.followUpDoneAt)} par {i.followUpDoneBy} : {i.followUpHolds ? 'le résultat tient.' : `le résultat ne tient pas — ${i.followUpNote}`}</p>
     </div>)
   const user = getUser()
-  const can = ['Admin', 'Manager'].includes(user?.role) || i.ownerType === 'Group' || (i.ownerId ?? '').toLowerCase() === (user?.username ?? '').toLowerCase()
+  const can = isManager || i.ownerType === 'Group' || (i.ownerId ?? '').toLowerCase() === (user?.username ?? '').toLowerCase()
   const due = new Date(i.followUpDate) <= new Date()
   const send = holds => api.improvements.followUp(i.id, { holds, note: note || null })
     .then(r => { setMsg({ ok: true, created: r.created }); onDone() }).catch(e => setMsg({ ok: false, text: e.message }))

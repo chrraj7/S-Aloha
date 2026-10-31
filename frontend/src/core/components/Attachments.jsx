@@ -1,20 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { api, getUser } from '../../api'
 import { dateTimeFr } from '../fields'
+import useManagerOn from '../useManagerOn'
 
 const size = n => n < 1024 ? `${n} o` : n < 1024 * 1024 ? `${(n / 1024).toFixed(0)} Ko` : `${(n / 1024 / 1024).toFixed(1)} Mo`
 
 /**
  * SOC-25 : pièces jointes de l'enregistrement — liste, téléchargement, dépôt (types
  * bureautiques, texte et images, taille réglée par l'Admin), retrait par l'auteur ou un
- * gestionnaire. Le stockage n'est pas activé : l'onglet le dit.
+ * gestionnaire du périmètre de l'enregistrement (`perimeterId`, PER-06 ; sans lui, le rôle AD).
+ * Le stockage n'est pas activé : l'onglet le dit.
  */
-export default function Attachments({ type, id }) {
+export default function Attachments({ type, id, perimeterId }) {
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const input = useRef(null)
   const user = getUser()
+  const isManager = useManagerOn(perimeterId)
   const load = () => api.attachments.list(type, id).then(setData).catch(e => setError(e.message))
   useEffect(() => { load() }, [type, id])
   if (!data) return error ? <div className="error">{error}</div> : <p>Chargement…</p>
@@ -27,7 +30,7 @@ export default function Attachments({ type, id }) {
       .finally(() => { setBusy(false); if (input.current) input.current.value = '' })
   }
   const remove = a => api.attachments.remove(a.id).then(load).catch(e => setError(e.message))
-  const canRemove = a => ['Admin', 'Manager'].includes(user?.role) || a.createdBy.toLowerCase() === (user?.username ?? '').toLowerCase()
+  const canRemove = a => isManager || a.createdBy.toLowerCase() === (user?.username ?? '').toLowerCase()
   return (
     <div className="card">
       {error && <div className="error" role="alert">{error}</div>}

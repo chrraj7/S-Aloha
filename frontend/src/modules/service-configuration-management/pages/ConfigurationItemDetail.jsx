@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { api, getUser } from '../../../api'
 import { dateFr, dateTimeFr } from '../../../core/fields'
 import RecordDetail from '../../../core/components/RecordDetail'
+import useManagerOn from '../../../core/useManagerOn'
 import { ciConfig, RELATION_TYPES } from '../config'
 import { Sources, StagingBadge } from '../components/Discovery'
 
@@ -143,10 +144,12 @@ export function Attributes({ ci, onSaved }) {
 }
 
 /** CFG-15 : le propriétaire (ou un gestionnaire) atteste que la fiche est exacte. */
-function Verification({ ci, onSaved }) {
+export function Verification({ ci, onSaved }) {
   const [msg, setMsg] = useState(null)
   const user = getUser()
-  const can = ['Admin', 'Manager'].includes(user?.role) || ci.ownerType === 'Group'
+  // PER-06 : gestionnaire du périmètre du CI, comme `IsManager` de l'API.
+  const isManager = useManagerOn(ci.perimeterId)
+  const can = isManager || ci.ownerType === 'Group'
     || (ci.ownerId ?? '').toLowerCase() === (user?.username ?? '').toLowerCase()
   const verify = () => api.configurationItems.verify(ci.id)
     .then(() => { setMsg({ ok: true, text: 'Fiche attestée exacte.' }); onSaved() }).catch(e => setMsg({ ok: false, text: e.message }))
