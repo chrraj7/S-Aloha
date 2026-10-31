@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api, getUser } from '../../../api'
+import { api } from '../../../api'
+import useManagesPerimeter from '../../../core/useManagesPerimeter'
 import StatusBadge from '../../../core/components/StatusBadge'
 import { dateTimeFr } from '../../../core/fields'
 import { changeStatuses } from '../config'
@@ -21,7 +22,7 @@ export function Freezes() {
   const [items, setItems] = useState([])
   const [f, setF] = useState({ start: '', end: '', reason: '' })
   const [error, setError] = useState('')
-  const manager = ['Admin', 'Manager'].includes(getUser()?.role)
+  const manager = useManagesPerimeter()
   const load = () => Promise.resolve().then(() => api.changeFreezes.list()).then(setItems).catch(() => setItems([]))
   useEffect(() => { load() }, [])
   const add = () => api.changeFreezes.create({ start: new Date(f.start).toISOString(), end: new Date(f.end).toISOString(), reason: f.reason })

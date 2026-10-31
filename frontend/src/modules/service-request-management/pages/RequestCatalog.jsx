@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { api, getUser } from '../../../api'
+import { api } from '../../../api'
+import useManagesPerimeter from '../../../core/useManagesPerimeter'
 import useServices from '../../../core/useServices'
 import ServiceSelect from '../../../core/components/ServiceSelect'
 
@@ -34,7 +35,7 @@ export default function RequestCatalog() {
   const [f, setF] = useState(null)   // modèle en édition (id absent : nouveau)
   const [error, setError] = useState('')
   const services = useServices() ?? []
-  const manager = ['Admin', 'Manager'].includes(getUser()?.role)
+  const manager = useManagesPerimeter()
   const load = () => api.requestCatalog.list(true).then(setItems).catch(e => setError(e.message))
   useEffect(() => { load() }, [])
 

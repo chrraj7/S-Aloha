@@ -4,6 +4,7 @@ import { api, getUser } from '../../../api'
 import { dateFr, dateTimeFr } from '../../../core/fields'
 import PerimeterSelect from '../../../core/components/PerimeterSelect'
 import usePerimeters, { perimeterName } from '../../../core/usePerimeters'
+import useManagesPerimeter from '../../../core/useManagesPerimeter'
 import { JOB_TONES, SOURCE_LABELS } from '../config'
 
 const SSH_HELP = 'Inventaire en lecture seule, sans sudo : système, constructeur, logiciels installés, services actifs, ports en écoute, connexions établies (flux proposés). '
@@ -465,6 +466,7 @@ export default function DiscoverySettings() {
   const [params, setParams] = useSearchParams()
   const role = getUser()?.role
   const isAdmin = role === 'Admin'
+  const canEditEol = useManagesPerimeter()
   const tabs = [
     { id: 'jobs', label: 'Tâches de scan' },
     isAdmin && { id: 'credentials', label: 'Identifiants (coffre)' },
@@ -486,7 +488,7 @@ export default function DiscoverySettings() {
       </div>
       {tab.id === 'jobs' && <Jobs isAdmin={isAdmin} />}
       {tab.id === 'credentials' && <Credentials />}
-      {tab.id === 'eol' && <EndOfLife canEdit={['Admin', 'Manager'].includes(role)} />}
+      {tab.id === 'eol' && <EndOfLife canEdit={canEditEol} />}
       {tab.id === 'ssh' && <SshHostKeys isAdmin={isAdmin} />}
       {tab.id === 'oui' && <MacVendors isAdmin={isAdmin} />}
     </>
