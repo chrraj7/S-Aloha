@@ -13,7 +13,7 @@ frontend/
 ├── public/favicon.svg            # emblème sur tuile marine (ADR-0021)
 └── src/
     ├── main.jsx
-    ├── api.js                    # client fetch + JWT (sessionStorage) ; 401 ⇒ retour /login
+    ├── api.js                    # client fetch (cookie de session HttpOnly, en-tête X-S-Aloha, ADR-0018) ; 401 ⇒ retour /login
     ├── App.jsx                   # déclaration des routes
     ├── styles.css                # jetons, thèmes, composants — voir § Design
     ├── assets/fonts/             # Geologica, IBM Plex Sans et Mono (woff2, OFL)
