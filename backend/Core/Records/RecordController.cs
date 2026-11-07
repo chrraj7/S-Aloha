@@ -161,6 +161,11 @@ public abstract class RecordController<T, TDto, TView>(AppDbContext db) : Contro
     /// qui interrogent la base (échéance SLA d'un incident, INC-21).
     /// </summary>
     protected virtual Task BeforeSaveAsync(T e, bool creating) => Task.CompletedTask;
+    /// <summary>
+    /// PER-07 : condition propre à la pratique pour changer de périmètre (droits déjà vérifiés),
+    /// avant toute modification ; un message refuse le déplacement (400).
+    /// </summary>
+    protected virtual Task<string?> CheckMoveAsync(T e, int to) => Task.FromResult<string?>(null);
     /// <summary>Notifications de l'enregistrement (SOC-21), envoyées après l'enregistrement.</summary>
     protected Notifier Notify => HttpContext.RequestServices.GetRequiredService<Notifier>();
     /// <summary>
@@ -292,6 +297,8 @@ public abstract class RecordController<T, TDto, TView>(AppDbContext db) : Contro
         {
             var (moveError, moveForbidden) = await Access.CheckMoveAsync(e.PerimeterId, moveTo.Value);
             if (moveForbidden) return Forbid();
+            if (moveError is not null) return BadRequest(new { message = moveError });
+            moveError = await CheckMoveAsync(e, moveTo.Value);
             if (moveError is not null) return BadRequest(new { message = moveError });
         }
         var demoted = IsManager ? await StatusAfterManagerEditAsync(e, dto) : StatusAfterEdit(e, dto);

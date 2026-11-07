@@ -283,6 +283,18 @@ public class IncidentsController(AppDbContext db) : RecordController<Incident, I
     }
 
     /// <summary>
+    /// PER-07, INC-16 (décision du mainteneur du 2026-11-04) : un enfant ne quitte pas le
+    /// périmètre de son parent ; on le détache d'abord, aucun lien ne change en silence.
+    /// </summary>
+    protected override async Task<string?> CheckMoveAsync(Incident e, int to)
+    {
+        if (e.ParentId is not int pid) return null;
+        var parent = await Db.Incidents.AsNoTracking().Where(x => x.Id == pid).Select(x => new { x.Reference, x.PerimeterId }).FirstOrDefaultAsync();
+        return parent is null || parent.PerimeterId == to ? null
+            : $"Rattaché à {parent.Reference}, d'un autre périmètre : détacher d'abord l'incident de son parent pour le déplacer.";
+    }
+
+    /// <summary>
     /// INC-16 : rattacher un incident à un parent (même panne), par sa référence, ou l'en détacher.
     /// Un seul niveau : le parent n'a pas de parent, l'enfant n'a pas d'enfants ; même périmètre ;
     /// ni soi-même ni un incident clos ; un incident résolu ou clos ne change plus de parent.

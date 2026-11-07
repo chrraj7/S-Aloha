@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 
 namespace SAloha.Api.Tests;
 
@@ -179,6 +180,36 @@ public class PerimeterRightsTests(ApiFixture api)
     }
 
     [Fact]
+    public async Task PER_07_INC_16_un_enfant_rattache_ne_change_pas_de_perimetre_avant_d_etre_detache()
+    {
+        var (siege, usine, _, tiana, _) = await Setup("per07e");
+        var t = api.Client("User", tiana);
+        var admin = api.Client();
+        object Inc(string title, int p) => new
+        {
+            title, impact = "Faible", urgency = "Faible", perimeterId = p, ownerType = "User", ownerId = tiana, ownerDisplayName = tiana
+        };
+        var parent = await Json(await t.PostAsJsonAsync("/api/incidents", Inc("Coupure réseau Siège", siege)));
+        var child = await Json(await t.PostAsJsonAsync("/api/incidents", Inc("Poste injoignable", siege)));
+        await Json(await t.PutAsJsonAsync($"/api/incidents/{Id(child)}/parent", new { parentReference = Ref(parent) }));
+
+        // Rattaché à un parent du Siège : le déplacement vers l'Usine est refusé, rien ne change.
+        var refused = await admin.PutAsJsonAsync($"/api/incidents/{Id(child)}", Inc("Poste injoignable", usine));
+        Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+        Assert.Contains(Ref(parent), await refused.Content.ReadAsStringAsync());
+        var kept = await Json(await admin.GetAsync($"/api/incidents/{Id(child)}"));
+        Assert.Equal((siege, Id(parent)), (kept.GetProperty("perimeterId").GetInt32(), kept.GetProperty("parentId").GetInt32()));
+
+        // Une modification sans changement de périmètre reste permise.
+        await Json(await admin.PutAsJsonAsync($"/api/incidents/{Id(child)}", Inc("Poste injoignable (2e étage)", siege)));
+
+        // Détaché, il se déplace.
+        await Json(await t.PutAsJsonAsync($"/api/incidents/{Id(child)}/parent", new { parentReference = "" }));
+        var moved = await Json(await admin.PutAsJsonAsync($"/api/incidents/{Id(child)}", Inc("Poste injoignable", usine)));
+        Assert.Equal(usine, moved.GetProperty("perimeterId").GetInt32());
+    }
+
+    [Fact]
     public async Task PER_07_INC_16_la_resolution_du_parent_ne_touche_pas_un_enfant_d_un_autre_perimetre()
     {
         var (siege, usine, _, tiana, _) = await Setup("per07c");
@@ -193,8 +224,9 @@ public class PerimeterRightsTests(ApiFixture api)
         var child = await Json(await t.PostAsJsonAsync("/api/incidents", Inc("Poste injoignable", siege)));
         await Json(await t.PutAsJsonAsync($"/api/incidents/{Id(child)}/parent", new { parentReference = Ref(parent) }));
 
-        // L'enfant change de périmètre (PER-07, Admin) : son lien au parent est conservé.
-        await Json(await api.Client().PutAsJsonAsync($"/api/incidents/{Id(child)}", Inc("Poste injoignable", usine)));
+        // Lien hérité d'avant PER-07 (un enfant rattaché ne change plus de périmètre) : l'enfant est à l'Usine.
+        await using (var db = api.Database())
+            await db.Incidents.Where(x => x.Id == Id(child)).ExecuteUpdateAsync(u => u.SetProperty(x => x.PerimeterId, usine));
         Assert.Equal(HttpStatusCode.NotFound, (await t.GetAsync($"/api/incidents/{Id(child)}")).StatusCode);
 
         await Json(await t.PutAsJsonAsync($"/api/incidents/{Id(parent)}", Inc("Coupure réseau Siège", siege, "En cours")));
