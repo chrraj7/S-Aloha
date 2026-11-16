@@ -55,7 +55,12 @@ public class IncidentsController(AppDbContext db) : RecordController<Incident, I
                 return "Incident qualifié au titre des déclarations réglementaires : il reste un incident de sécurité.";
             e.IsSecurity = security;
         }
-        e.Category = dto.Category ?? ""; e.AffectedService = dto.AffectedService ?? ""; e.ServiceId = dto.ServiceId;
+        e.Category = dto.Category ?? "";
+        // La fiche n'envoie que le service du catalogue : sans lui ni libellé dans le corps, le
+        // libellé hors catalogue enregistré (SLM-10) est gardé. Le libellé d'un service du
+        // catalogue qu'on retire, lui, part avec lui.
+        if (dto.AffectedService is not null || dto.ServiceId is not null || e.ServiceId is not null) e.AffectedService = dto.AffectedService ?? "";
+        e.ServiceId = dto.ServiceId;
         e.Resolution = dto.Resolution;
         e.ResolutionCode = string.IsNullOrEmpty(dto.ResolutionCode) ? null : dto.ResolutionCode;
         e.ReopenReason = string.IsNullOrWhiteSpace(dto.ReopenReason) ? null : dto.ReopenReason.Trim();
