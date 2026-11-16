@@ -323,8 +323,9 @@ place, NIS 2 built in.**
   then sign in at http://localhost as `demo.admin` / `Demo-Admin-2026` (a demo directory
   is started for you).
 - **Contribute**: every practice is specified rule by rule, with acceptance scenarios;
-  about sixty specified rules are waiting for an implementation, each a well-scoped pull
-  request. Documentation is in French, code in English; issues and pull requests are
+  the rules still waiting for an implementation (counted in the
+  [summary table](docs/reference/processus/readme.md#les-pratiques)) are each a well-scoped
+  pull request. Documentation is in French, code in English; issues and pull requests are
   welcome in **English or French**. Start with a
   [`good first issue`](https://github.com/chrraj7/S-Aloha/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
   and read [CONTRIBUTING.md](CONTRIBUTING.md). Commits are signed off (DCO).
