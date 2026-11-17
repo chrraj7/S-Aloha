@@ -147,7 +147,7 @@ stateDiagram-v2
 | NIS-12 | **Maturité** (échelle inspirée du CMMI) : 1 *Initial* < 25 % ; 2 *Géré* ≥ 25 % ; 3 *Défini* ≥ 50 % ; 4 *Maîtrisé et mesuré* ≥ 75 % ; 5 *Optimisé* ≥ 90 % | ✅ | |
 | NIS-13 | **Écart** d'une exigence = 3 − score ; la liste des écarts est triée par écart décroissant | ✅ | |
 | NIS-14 | La synthèse montre, pour chaque écart, l'**action d'amélioration** liée et son statut (plan de traitement) | ✅ | |
-| NIS-15 | **Créer une action d'amélioration** depuis un écart : enregistrement AMI (étape 2, priorité Élevée si score ≤ 1, sinon Moyenne ; mesure de départ = score, cible 3/3) relié à l'évaluation ; un seul par exigence (409 sinon, avec la référence existante) ; refusé sans écart noté (400) | ✅ | |
+| NIS-15 | **Créer une action d'amélioration** depuis un écart : enregistrement AMI (étape 2, priorité Élevée si score ≤ 1, sinon Moyenne ; mesure de départ = score, cible 3/3) relié à l'évaluation ; un seul par exigence (409 sinon, avec la référence existante, tue si l'action est dans un périmètre que l'appelant ne voit pas : [PER-08](../perimetres.md)) ; refusé sans écart noté (400) | ✅ | |
 | NIS-24 | Notifications (SOC-21) : évaluation créée → responsable ; validation ou réouverture → responsable et contributeurs | ✅ | |
 
 ## 7. Liens avec les autres pratiques
@@ -198,7 +198,7 @@ Admin, NIS-23).
 | `DELETE /api/assessments/{id}` | Admin | Suppression |
 | `GET /api/assessments/{id}/questionnaire` | User | Exigences évaluées (figées si validée) et réponses ; `referentialVersion`, `currentReferentialVersion`, `frozen` (NIS-18) |
 | `PUT /api/assessments/{id}/responses/{requirementId}` | User | Réponse à une exigence |
-| `GET /api/assessments/{id}/score` | User | Scores, maturité, écarts et leur action d'amélioration (`action` : id, référence, statut — NIS-14) |
+| `GET /api/assessments/{id}/score` | User | Scores, maturité, écarts et leur action d'amélioration (`action` : id, référence, statut — NIS-14 ; `hidden` sans référence pour une action d'un autre périmètre, PER-08) |
 | `POST /api/assessments/{id}/responses/{requirementId}/evidence` (`{ reference }`), `DELETE /api/assessments/{id}/evidence/{evidenceId}` | User | Preuves d'une réponse (NIS-08) ; 400 si l'évaluation est validée |
 | `GET /api/assessments/{id}/compare/{otherId}` | User | Comparaison avec une évaluation du même périmètre (NIS-09) : global, piliers, objectifs, thématiques (actuel, autre, évolution) et exigences dont la réponse diffère |
 | `GET /api/assessments/{id}/export` | User | Lignes de l'export pour les auditeurs : une par exigence évaluée (NIS-17) ; l'interface en fait le CSV |
