@@ -81,9 +81,10 @@ public class ImprovementsController(AppDbContext db) : RecordController<Improvem
                 return "Seul le porteur de l'amélioration ou un gestionnaire l'engage et la déclare réalisée.";
         }
         // CSI-11 : une amélioration validée ou en cours ne change de porteur que par son porteur ou
-        // un gestionnaire ; sinon la règle ci-dessus se contournait en deux envois.
+        // un gestionnaire (sans porteur, par un gestionnaire) ; sinon la règle ci-dessus se
+        // contournait en deux envois.
         if (e.Status is "Validée" or "En cours" && ReassignedByThirdParty(e))
-            return "Seul le porteur de l'amélioration ou un gestionnaire en change le porteur une fois l'amélioration validée.";
+            return "Seul le porteur de l'amélioration ou un gestionnaire en change le porteur une fois l'amélioration validée ; sans porteur, un gestionnaire le désigne.";
         // CSI-11, § 4 : une amélioration s'engage avec un porteur.
         if (entering && status == "En cours" && string.IsNullOrWhiteSpace(e.OwnerId))
             return "Désigner le porteur de l'amélioration avant de l'engager.";

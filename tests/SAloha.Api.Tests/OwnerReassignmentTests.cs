@@ -111,14 +111,53 @@ public class OwnerReassignmentTests(ApiFixture api)
 
         await Reassignment(url, Body, "Validée", "En cours", "porteur.csi269", "tiers.csi269", "en change le porteur");
 
-        // Membre du groupe porteur : il réaffecte. Sans porteur, l'amélioration reste à prendre.
+        // Membre du groupe porteur : il réaffecte.
         var g = await Json(await manager.PostAsJsonAsync("/api/improvements", Body("Proposée", "Group", "GRP-CSI269")));
         var gurl = $"/api/improvements/{Id(g)}";
         await Json(await manager.PutAsJsonAsync(gurl, Body("Validée", "Group", "GRP-CSI269")));
         Assert.Contains("en change le porteur", await Refused(await api.Client("User", "tiers.csi269").PutAsJsonAsync(gurl, Body("Validée", "User", "tiers.csi269"))));
         await Json(await api.Client("User", "membre.csi269", "GRP-CSI269").PutAsJsonAsync(gurl, Body("Validée", "User", "tiers.csi269")));
+
+        // Sans porteur : un User ne se désigne pas (ni seul, ni en engageant d'un même envoi), il
+        // modifie encore le reste de la fiche ; un gestionnaire fait la première désignation.
         var free = await Json(await manager.PostAsJsonAsync("/api/improvements", Body("Proposée", "User", null)));
-        await Json(await manager.PutAsJsonAsync($"/api/improvements/{Id(free)}", Body("Validée", "User", null)));
-        await Json(await api.Client("User", "tiers.csi269").PutAsJsonAsync($"/api/improvements/{Id(free)}", Body("Validée", "User", "tiers.csi269")));
+        var furl = $"/api/improvements/{Id(free)}";
+        await Json(await manager.PutAsJsonAsync(furl, Body("Validée", "User", null)));
+        var third = api.Client("User", "tiers.csi269");
+        Assert.Contains("un gestionnaire le désigne", await Refused(await third.PutAsJsonAsync(furl, Body("Validée", "User", "tiers.csi269"))));
+        Assert.Contains("Seul le porteur", await Refused(await third.PutAsJsonAsync(furl, Body("En cours", "User", "tiers.csi269"))));
+        Assert.Contains("un gestionnaire le désigne", await Refused(await third.PutAsJsonAsync(furl, Body("Validée", "Group", "GRP-TIERS"))));
+        await Json(await third.PutAsJsonAsync(furl, Body("Validée", "User", null)));
+        Assert.Equal(JsonValueKind.Null, (await Json(await third.GetAsync(furl))).GetProperty("ownerId").ValueKind);
+        Assert.Equal("tiers.csi269", Str(await Json(await manager.PutAsJsonAsync(furl, Body("Validée", "User", "tiers.csi269"))), "ownerId"));
+        Assert.Equal("En cours", Str(await Json(await third.PutAsJsonAsync(furl, Body("En cours", "User", "tiers.csi269"))), "status"));
+    }
+
+    [Fact]
+    public async Task CHG_07_un_changement_autorise_sans_responsable_est_confie_par_un_gestionnaire()
+    {
+        object Body(string? status, string? ownerId) => new
+        {
+            title = "CHG sans responsable", changeType = "Normal", risk = "Moyen", status,
+            ownerType = ownerId is null ? null : "User", ownerId, ownerDisplayName = ownerId,
+            plannedStart = Slot, plannedEnd = Slot.AddHours(2), implementationPlan = "Appliquer", backoutPlan = "Restaurer",
+            actualStart = status == "Mis en œuvre" ? Slot : (DateTime?)null
+        };
+        var requester = api.Client("Manager", "demandeur.chg269s");
+        var c = await Json(await requester.PostAsJsonAsync("/api/changes", Body(null, null)));
+        var url = $"/api/changes/{Id(c)}";
+        await ChangeTestData.LinkCiAsync(requester, Id(c));
+        await Json(await requester.PutAsJsonAsync(url, Body("Évalué", null)));
+        await Json(await api.Client("Manager", "autorite.chg269s").PutAsJsonAsync(url, Body("Autorisé", null)));
+        await Json(await requester.PutAsJsonAsync(url, Body("Planifié", null)));
+
+        // Le détour sur un changement sans titulaire : se désigner, puis mettre en œuvre.
+        var third = api.Client("User", "tiers.chg269s");
+        Assert.Contains("un gestionnaire le désigne", await Refused(await third.PutAsJsonAsync(url, Body("Planifié", "tiers.chg269s"))));
+        var kept = await Json(await third.GetAsync(url));
+        Assert.Equal(("Planifié", JsonValueKind.Null), (Str(kept, "status"), kept.GetProperty("ownerId").ValueKind));
+        // Un gestionnaire le confie ; le responsable désigné met alors en œuvre.
+        await Json(await requester.PutAsJsonAsync(url, Body("Planifié", "tiers.chg269s")));
+        Assert.Equal("Mis en œuvre", Str(await Json(await third.PutAsJsonAsync(url, Body("Mis en œuvre", "tiers.chg269s"))), "status"));
     }
 }

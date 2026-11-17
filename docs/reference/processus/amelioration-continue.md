@@ -100,7 +100,7 @@ stateDiagram-v2
 | CSI-04 | **En cours** et **Réalisée** exigent une amélioration validée ; **Réalisée** exige le résultat constaté | ✅ | |
 | CSI-05 | **Abandonner**, comme revenir à Proposée, **retire la validation** : relancer demande une nouvelle validation | ✅ | |
 | CSI-10 | **Source** de l'amélioration et lien vers l'enregistrement d'origine (incident, problème, SLA) quand il existe | ✅ |  |
-| CSI-11 | **Transitions contraintes** selon le § 4 (SOC-05) ; Réalisée est finale. Le **porteur** d'une amélioration Validée ou En cours n'est changé que par le porteur en place (ou un membre du groupe porteur) ou par un gestionnaire du périmètre (400 sinon) : un tiers ne se désigne pas pour l'engager à l'envoi suivant ; sans porteur, elle reste à prendre | ✅ | 1 |
+| CSI-11 | **Transitions contraintes** selon le § 4 (SOC-05) ; Réalisée est finale. Le **porteur** d'une amélioration Validée ou En cours n'est changé que par le porteur en place (ou un membre du groupe porteur) ou par un gestionnaire du périmètre (400 sinon) : un tiers ne se désigne pas pour l'engager à l'envoi suivant. Une amélioration validée **sans porteur** est confiée par un gestionnaire (400 pour un User qui se désigne) ; proposée, son porteur se désigne librement | ✅ | 1 |
 | CSI-12 | **Priorisation** : à la validation, le gestionnaire note la valeur et l'effort (1 à 3) ; la priorité est calculée : valeur 3 et effort 1–2 → Élevée ; valeur 1 et effort 2–3 → Faible ; sinon Moyenne | ✅ |  |
 | CSI-13 | **Abandon** motivé : le motif est obligatoire et visible sur la fiche | ✅ | 1 |
 | CSI-14 | **Validation** exige valeur attendue, mesure de départ et mesure cible (une amélioration se mesure) | ✅ | 1 |
