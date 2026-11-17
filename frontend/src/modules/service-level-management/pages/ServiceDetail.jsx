@@ -31,7 +31,9 @@ export function Degradation({ service }) {
   return (
     <div className="notice warn" role="alert" style={{ marginTop: 16 }}>
       <b>Service dégradé</b> : {d.cis.length === 1 ? 'un CI qui le supporte est' : `${d.cis.length} CI qui le supportent sont`} hors service —{' '}
-      {d.cis.map((c, i) => <React.Fragment key={c.id}>{i > 0 && ', '}<Link to={'/configuration/' + c.id}>{c.reference}</Link> {c.title}</React.Fragment>)}.
+      {/* PER-08 : un CI d'un autre périmètre compte, sans référence ni lien. */}
+      {d.cis.map((c, i) => <React.Fragment key={i}>{i > 0 && ', '}
+        {c.hidden ? <i>{c.title}</i> : <><Link to={'/configuration/' + c.id}>{c.reference}</Link> {c.title}</>}</React.Fragment>)}.
     </div>
   )
 }
