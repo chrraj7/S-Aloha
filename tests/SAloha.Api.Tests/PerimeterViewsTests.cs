@@ -66,6 +66,116 @@ public class PerimeterViewsTests(ApiFixture api)
     }
 
     [Fact]
+    public async Task PER_08_la_synthese_d_une_evaluation_masque_l_action_d_un_autre_perimetre()
+    {
+        var (siege, _, tiana, lova) = await Setup("per08n");
+        var admin = api.Client();
+        var atelier = Id(await Json(await admin.PostAsJsonAsync("/api/admin/perimeters", new { name = "Atelier per08n" })));
+        var id = Id(await Json(await admin.PostAsJsonAsync("/api/assessments", new
+        {
+            title = "PER-08 synthèse", description = "Périmètre", entityCategory = "Entité importante", perimeterId = siege,
+            ownerType = "User", ownerId = "lova.per08n", ownerDisplayName = "Lova"
+        })));
+        var requirements = (await Json(await admin.GetAsync($"/api/assessments/{id}/questionnaire"))).GetProperty("objectives").EnumerateArray()
+            .SelectMany(o => o.GetProperty("themes").EnumerateArray())
+            .SelectMany(t => t.GetProperty("requirements").EnumerateArray()).Take(2).ToList();
+        foreach (var r in requirements)
+            await Json(await admin.PutAsJsonAsync($"/api/assessments/{id}/responses/{Id(r)}", new { score = 1, notApplicable = false, justification = "" }));
+        var codes = requirements.Select(r => r.GetProperty("code").GetString()!).ToList();
+        // Lova, gestionnaire du Siège, traite les deux écarts ; la première action part ensuite à l'Atelier (PER-07).
+        var moved = await Json(await lova.PostAsJsonAsync($"/api/assessments/{id}/improvements", new { code = codes[0] }));
+        var kept = await Json(await lova.PostAsJsonAsync($"/api/assessments/{id}/improvements", new { code = codes[1] }));
+
+        async Task<JsonElement> Action(string code) =>
+            (await Json(await tiana.GetAsync($"/api/assessments/{id}/score"))).GetProperty("gaps").EnumerateArray()
+                .Single(g => g.GetProperty("code").GetString() == code).GetProperty("action");
+        async Task<JsonElement> Row(string code) =>
+            (await Json(await tiana.GetAsync($"/api/assessments/{id}/export"))).GetProperty("rows").EnumerateArray()
+                .Single(r => r.GetProperty("code").GetString() == code);
+        // Témoin : dans le périmètre de la lectrice, l'action se lit.
+        Assert.Equal(Ref(moved), Ref(await Action(codes[0])));
+        Assert.Equal(Ref(moved), (await Row(codes[0])).GetProperty("action").GetString());
+
+        var full = await Json(await admin.GetAsync($"/api/improvements/{Id(moved)}"));
+        await Json(await admin.PutAsJsonAsync($"/api/improvements/{Id(moved)}", new
+        {
+            title = full.GetProperty("title").GetString(), description = full.GetProperty("description").GetString(),
+            status = full.GetProperty("status").GetString(), step = full.GetProperty("step").GetInt32(),
+            priority = full.GetProperty("priority").GetString(), baseline = full.GetProperty("baseline").GetString(),
+            target = full.GetProperty("target").GetString(), perimeterId = atelier
+        }));
+        Assert.Equal(HttpStatusCode.NotFound, (await tiana.GetAsync($"/api/improvements/{Id(moved)}")).StatusCode);
+
+        // L'écart reste « traité », sans rien dire de l'action ; celle du Siège se lit toujours.
+        var hidden = await Action(codes[0]);
+        Assert.True(hidden.GetProperty("hidden").GetBoolean());
+        Assert.Equal(0, Id(hidden));
+        Assert.Equal("", Ref(hidden));
+        Assert.Equal("", hidden.GetProperty("status").GetString());
+        Assert.Equal(Ref(kept), Ref(await Action(codes[1])));
+        Assert.False((await Action(codes[1])).GetProperty("hidden").GetBoolean());
+        var row = await Row(codes[0]);
+        Assert.Equal("Action d'un autre périmètre", row.GetProperty("action").GetString());
+        Assert.Equal("", row.GetProperty("actionStatus").GetString());
+        Assert.DoesNotContain(Ref(moved), (await tiana.GetStringAsync($"/api/assessments/{id}/score")) + await tiana.GetStringAsync($"/api/assessments/{id}/export"));
+
+        // Une seule action par exigence (NIS-15) : le refus ne décrit pas celle que Lova ne voit plus.
+        var again = await lova.PostAsJsonAsync($"/api/assessments/{id}/improvements", new { code = codes[0] });
+        Assert.Equal(HttpStatusCode.Conflict, again.StatusCode);
+        var refusal = await again.Content.ReadAsStringAsync();
+        Assert.DoesNotContain(Ref(moved), refusal);
+        Assert.DoesNotContain("\"id\"", refusal);
+        // Témoin : celle qu'elle voit est citée, comme avant.
+        var visible = await lova.PostAsJsonAsync($"/api/assessments/{id}/improvements", new { code = codes[1] });
+        Assert.Equal(HttpStatusCode.Conflict, visible.StatusCode);
+        Assert.Contains(Ref(kept), await visible.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task PER_08_le_service_degrade_masque_le_CI_d_un_autre_perimetre()
+    {
+        var (siege, usine, tiana, _) = await Setup("per08d");
+        var admin = api.Client();
+        object Ci(string title, int perimeter) => new
+        {
+            title, ciType = "Serveur", environment = "Production", status = "Hors service", perimeterId = perimeter,
+            ownerType = "User", ownerId = "owner.per08d", ownerDisplayName = "Owner"
+        };
+        var service = await Json(await admin.PostAsJsonAsync("/api/services", new
+        {
+            title = "Paie PER-08", status = "En service", criticality = "Élevée", serviceHours = "24/7", perimeterId = siege,
+            ownerType = "User", ownerId = "svcowner.per08d", ownerDisplayName = "Responsable"
+        }));
+        var mine = await Json(await admin.PostAsJsonAsync("/api/configuration-items", Ci("srv-siege-per08d", siege)));
+        var other = await Json(await admin.PostAsJsonAsync("/api/configuration-items", Ci("srv-usine-per08d", siege)));
+        foreach (var ci in new[] { mine, other })
+            await Json(await admin.PostAsJsonAsync("/api/links", new { fromType = "ci", fromId = Id(ci), toReference = Ref(service) }));
+
+        async Task<List<JsonElement>> Cis() =>
+            (await Json(await tiana.GetAsync($"/api/services/{Id(service)}/degradation"))).GetProperty("cis").EnumerateArray().ToList();
+        // Témoin : les deux CI sont au Siège, Tiana les lit tous les deux.
+        Assert.Equal(new[] { Ref(mine), Ref(other) }.Order(), (await Cis()).Select(Ref).Order());
+
+        await Json(await admin.PutAsJsonAsync($"/api/configuration-items/{Id(other)}", Ci("srv-usine-per08d", usine)));
+        Assert.Equal(HttpStatusCode.NotFound, (await tiana.GetAsync($"/api/configuration-items/{Id(other)}")).StatusCode);
+
+        // Le service reste dégradé par deux CI ; celui de l'Usine n'est pas décrit.
+        var degradation = await Json(await tiana.GetAsync($"/api/services/{Id(service)}/degradation"));
+        Assert.True(degradation.GetProperty("degraded").GetBoolean());
+        var cis = await Cis();
+        Assert.Equal(2, cis.Count);
+        Assert.Equal(Ref(mine), Ref(cis.Single(c => !c.GetProperty("hidden").GetBoolean())));
+        var hidden = cis.Single(c => c.GetProperty("hidden").GetBoolean());
+        Assert.Equal(0, Id(hidden));
+        Assert.Equal("", Ref(hidden));
+        Assert.Equal("CI d'un autre périmètre", hidden.GetProperty("title").GetString());
+        Assert.DoesNotContain("srv-usine-per08d", await tiana.GetStringAsync($"/api/services/{Id(service)}/degradation"));
+        // L'Admin, lui, lit les deux.
+        Assert.Equal(2, (await Json(await admin.GetAsync($"/api/services/{Id(service)}/degradation"))).GetProperty("cis").EnumerateArray()
+            .Count(c => !c.GetProperty("hidden").GetBoolean()));
+    }
+
+    [Fact]
     public async Task PER_09_console_limitee_aux_perimetres_pilotage_aux_perimetres_geres()
     {
         var (siege, usine, tiana, lova) = await Setup("per09c");
