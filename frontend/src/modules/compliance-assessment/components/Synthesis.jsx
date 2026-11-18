@@ -89,7 +89,10 @@ export default function Synthesis({ assessment, onChanged }) {
                 <tr key={g.code}>
                   <td><b>{g.code}</b></td><td>{g.theme}</td><td>{g.score}/3</td><td>{g.gap}</td>
                   <td style={{ textAlign: 'right' }}>
-                    {c?.reference
+                    {/* PER-08 : l'écart est traité par une action d'un autre périmètre, signalée sans lien. */}
+                    {c?.hidden
+                      ? <span className="muted small" style={{ fontStyle: 'italic' }}>Action d'un autre périmètre</span>
+                      : c?.reference
                       ? <Link to={'/improvements/' + c.id}>{c.reference}{c.status ? ` — ${c.status}` : ''} →</Link>
                       : <button className="btn ghost small" onClick={() => act(g.code)}>Créer une action d'amélioration</button>}
                     {c?.error && <div className="error small" style={{ margin: '6px 0 0' }}>{c.error}</div>}

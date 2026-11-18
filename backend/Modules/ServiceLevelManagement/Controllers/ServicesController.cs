@@ -61,7 +61,8 @@ public class ServicesController(AppDbContext db) : RecordController<ItService, I
 
     /// <summary>
     /// CFG-18 : un service En service dont un CI relié est Hors service est « dégradé » ; la
-    /// fiche du service le signale, avec les CI en cause.
+    /// fiche du service le signale, avec les CI en cause. Un CI d'un autre périmètre compte
+    /// dans la dégradation sans être décrit (PER-08).
     /// </summary>
     [HttpGet("{id:int}/degradation")]
     public async Task<IActionResult> Degradation(int id)
@@ -73,8 +74,15 @@ public class ServicesController(AppDbContext db) : RecordController<ItService, I
             .Select(l => l.FromType == "ci" ? l.FromId : l.ToId).ToListAsync();
         var outOfService = service.Status != "En service" ? []
             : await Db.ConfigurationItems.AsNoTracking().Where(c => ciIds.Contains(c.Id) && c.Status == "Hors service")
-                .OrderBy(c => c.Reference).Select(c => new { c.Id, c.Reference, c.Title }).ToListAsync();
-        return Ok(new { Degraded = outOfService.Count > 0, Cis = outOfService });
+                .OrderBy(c => c.Reference).Select(c => new { c.Id, c.Reference, c.Title, c.PerimeterId }).ToListAsync();
+        var scope = await ScopeAsync();
+        return Ok(new
+        {
+            Degraded = outOfService.Count > 0,
+            Cis = outOfService.Select(c => scope.Sees(c.PerimeterId)
+                ? new { c.Id, c.Reference, c.Title, Hidden = false }
+                : new { Id = 0, Reference = "", Title = "CI d'un autre périmètre", Hidden = true })
+        });
     }
 }
 
