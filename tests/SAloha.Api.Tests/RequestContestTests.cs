@@ -87,6 +87,48 @@ public class RequestContestTests(ApiFixture api)
     }
 
     [Fact]
+    public async Task REQ_13_aucun_envoi_ne_laisse_une_demande_en_cours_sans_responsable()
+    {
+        var manager = api.Client("Manager", "req13.manager");
+        var requester = api.Client("User", "req13.demandeur");
+        object Body(string status, string? ownerId, string? contestReason = null) => new
+        {
+            title = "Écran supplémentaire", requestedItem = "Poste de travail", status, contestReason,
+            ownerType = ownerId is null ? null : "User", ownerId, ownerDisplayName = ownerId
+        };
+        async Task<string> Refused(HttpResponseMessage res)
+        {
+            var body = await res.Content.ReadAsStringAsync();
+            Assert.True(res.StatusCode == HttpStatusCode.BadRequest, $"Attendu 400, reçu {(int)res.StatusCode} : {body}");
+            return body;
+        }
+        var r = await Json(await requester.PostAsJsonAsync("/api/requests", Body("Soumise", null)));
+        var url = $"/api/requests/{Id(r)}";
+        await Json(await manager.PutAsJsonAsync(url, Body("Approuvée", null)));
+        await Json(await requester.PutAsJsonAsync(url, Body("En cours", "req13.demandeur")));
+
+        // Déjà En cours : ni le responsable ni un gestionnaire ne retirent le responsable sans en désigner un autre.
+        Assert.Contains("garde un responsable", await Refused(await requester.PutAsJsonAsync(url, Body("En cours", null))));
+        Assert.Contains("garde un responsable", await Refused(await manager.PutAsJsonAsync(url, Body("En cours", null))));
+        Assert.Equal(("En cours", "req13.demandeur"), (Str(await Json(await requester.GetAsync(url)), "status"), Str(await Json(await requester.GetAsync(url)), "ownerId")));
+        // Changer de responsable reste permis.
+        Assert.Equal("tech.req13", Str(await Json(await manager.PutAsJsonAsync(url, Body("En cours", "tech.req13"))), "ownerId"));
+
+        // Contestation (Satisfaite → En cours, REQ-10) envoyée sans responsable : refusée, la demande reste Satisfaite.
+        await Json(await manager.PutAsJsonAsync(url, Body("Satisfaite", "tech.req13")));
+        Assert.Contains("Désigner le responsable", await Refused(await requester.PutAsJsonAsync(url, Body("En cours", null, "Pas conforme"))));
+        Assert.Equal("Satisfaite", Str(await Json(await requester.GetAsync(url)), "status"));
+        Assert.Equal("En cours", Str(await Json(await requester.PutAsJsonAsync(url, Body("En cours", "tech.req13", "Pas conforme"))), "status"));
+
+        // Une demande En cours restée sans responsable avant la règle se modifie encore, et reçoit un responsable.
+        await using (var db = api.Database())
+            await db.ServiceRequests.Where(x => x.Id == Id(r)).ExecuteUpdateAsync(u => u
+                .SetProperty(x => x.OwnerId, (string?)null).SetProperty(x => x.OwnerType, (string?)null).SetProperty(x => x.OwnerDisplayName, (string?)null));
+        await Json(await manager.PutAsJsonAsync(url, Body("En cours", null, "Pas conforme")));
+        Assert.Equal("tech.req13", Str(await Json(await manager.PutAsJsonAsync(url, Body("En cours", "tech.req13", "Pas conforme"))), "ownerId"));
+    }
+
+    [Fact]
     public async Task REQ_10_contestation_motivee_par_le_demandeur_ou_le_beneficiaire_dans_les_5_jours_ouvres()
     {
         var requester = api.Client("User", "req10.demandeur");

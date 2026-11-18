@@ -137,6 +137,36 @@ public class ServiceLevelExitMvpTests(ApiFixture api)
     }
 
     [Fact]
+    public async Task SLM_10_INC_20_la_fiche_d_un_incident_enregistree_telle_quelle_garde_un_service_hors_catalogue()
+    {
+        const string label = "Outil maison slm-10";
+        var m = api.Client("Manager", "slm10f.manager");
+        var u = api.Client("User", "slm10f.user");
+        // Corps de la fiche : les champs du formulaire et `serviceId`, jamais `affectedService`.
+        object Form(int? serviceId = null) => new { title = "Fiche", description = "d", impact = "Faible", urgency = "Faible", category = "", serviceId };
+
+        var inc = await Json(await u.PostAsJsonAsync("/api/incidents", new { title = "Fiche", impact = "Faible", urgency = "Faible", affectedService = label }));
+        var url = $"/api/incidents/{Id(inc)}";
+        // La fiche ouverte puis enregistrée sans rien toucher : le libellé hors catalogue reste.
+        var saved = await Json(await u.PutAsJsonAsync(url, Form()));
+        Assert.Equal(label, saved.GetProperty("affectedService").GetString());
+        Assert.Equal(JsonValueKind.Null, saved.GetProperty("serviceId").ValueKind);
+        // Un service du catalogue choisi dans la fiche remplace le libellé…
+        var svc = await Service(m, "Service SLM-10 fiche");
+        var chosen = await Json(await u.PutAsJsonAsync(url, Form(svc)));
+        Assert.Equal("Service SLM-10 fiche", chosen.GetProperty("affectedService").GetString());
+        // … et « Aucun service » le retire avec son nom recopié : l'ancien libellé ne revient pas.
+        var removed = await Json(await u.PutAsJsonAsync(url, Form()));
+        Assert.Equal(JsonValueKind.Null, removed.GetProperty("serviceId").ValueKind);
+        Assert.Equal("", removed.GetProperty("affectedService").GetString());
+
+        // Cas voisin : un libellé vide envoyé exprès (client de l'API) retire le libellé hors catalogue.
+        var other = await Json(await u.PostAsJsonAsync("/api/incidents", new { title = "Fiche", impact = "Faible", urgency = "Faible", affectedService = label }));
+        var cleared = await Json(await u.PutAsJsonAsync($"/api/incidents/{Id(other)}", new { title = "Fiche", impact = "Faible", urgency = "Faible", affectedService = "" }));
+        Assert.Equal("", cleared.GetProperty("affectedService").GetString());
+    }
+
+    [Fact]
     public async Task SLM_15_un_service_retire_ne_se_choisit_plus()
     {
         var m = api.Client("Manager", "slm15.manager");

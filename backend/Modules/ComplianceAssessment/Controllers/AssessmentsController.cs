@@ -198,11 +198,14 @@ public class AssessmentsController(AppDbContext db) : RecordController<Assessmen
         });
     }
 
-    public record GapAction(int Id, string Reference, string Status);
+    public record GapAction(int Id, string Reference, string Status, bool Hidden = false);
+
+    private const string HiddenAction = "Action d'un autre périmètre";
 
     /// <summary>
     /// NIS-14 : actions d'amélioration reliées à l'évaluation, par code d'exigence (titre
-    /// « NIS 2 {code} — … » posé par NIS-15).
+    /// « NIS 2 {code} — … » posé par NIS-15). Une action d'un autre périmètre tient l'écart
+    /// pour traité sans être décrite, comme tout enregistrement lié (PER-08).
     /// </summary>
     private async Task<Dictionary<string, GapAction>> GapActionsAsync(int id)
     {
@@ -212,12 +215,13 @@ public class AssessmentsController(AppDbContext db) : RecordController<Assessmen
             .Select(l => l.FromType == LinkType ? l.ToId : l.FromId).ToListAsync();
         var improvements = await Db.Improvements.AsNoTracking()
             .Where(i => linked.Contains(i.Id) && i.Title.StartsWith("NIS 2 "))
-            .OrderBy(i => i.Id).Select(i => new { i.Id, i.Reference, i.Status, i.Title }).ToListAsync();
+            .OrderBy(i => i.Id).Select(i => new { i.Id, i.Reference, i.Status, i.Title, i.PerimeterId }).ToListAsync();
+        var scope = await ScopeAsync();
         var map = new Dictionary<string, GapAction>();
         foreach (var i in improvements)
         {
             var code = i.Title["NIS 2 ".Length..].Split(" — ")[0];
-            map.TryAdd(code, new GapAction(i.Id, i.Reference, i.Status));
+            map.TryAdd(code, scope.Sees(i.PerimeterId) ? new GapAction(i.Id, i.Reference, i.Status) : new GapAction(0, "", "", true));
         }
         return map;
     }
@@ -249,7 +253,7 @@ public class AssessmentsController(AppDbContext db) : RecordController<Assessmen
                     r.Code, r.ObjectiveId, r.ObjectiveTitle, r.Pillar, r.Theme, Score = score,
                     NotApplicable = resp?.NotApplicable ?? false, Justification = resp?.Justification ?? "",
                     Gap = score is { } s ? Scoring.Gap(s) : (int?)null,
-                    Action = action?.Reference, ActionStatus = action?.Status,
+                    Action = action is { Hidden: true } ? HiddenAction : action?.Reference, ActionStatus = action?.Status,
                     Evidence = string.Join(" ", (evidence.GetValueOrDefault(r.Id) ?? []).Select(x => x.Reference))
                 };
             })
@@ -281,7 +285,9 @@ public class AssessmentsController(AppDbContext db) : RecordController<Assessmen
         var existing = await Db.Improvements.AsNoTracking()
             .FirstOrDefaultAsync(i => linked.Contains(i.Id) && i.Title.StartsWith(prefix));
         if (existing is not null)
-            return Conflict(new { message = $"Cet écart est déjà traité par {existing.Reference}.", existing.Id, existing.Reference });
+            return (await ScopeAsync()).Sees(existing.PerimeterId)
+                ? Conflict(new { message = $"Cet écart est déjà traité par {existing.Reference}.", existing.Id, existing.Reference })
+                : Conflict(new { message = "Cet écart est déjà traité par une action d'un autre périmètre." });
 
         var improvement = await References.CreateAsync(Db, "AMI", () => new Improvement
         {

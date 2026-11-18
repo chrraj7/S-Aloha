@@ -39,6 +39,10 @@ frontend/
     │   └── pages/
     │       ├── Login.jsx         # panneau de marque (fonctionnalités : FEATURES), formulaire AD
     │       ├── Console.jsx       # « Ma console », orientée action
+    │       ├── Preferences.jsx   # préférences de notification par courriel (SOC-22)
+    │       ├── SearchIndexAdmin.jsx # état et reconstruction de l'index de recherche (Admin)
+    │       ├── admin/            # Perimeters, PerimeterDetail, Users, PlatformSettings, Health, AuditLog, Duplicates
+    │       ├── settings/         # Categories
     │       ├── Reporting.jsx     # tableau de bord à onglets, filtres période et service, exports
     │       └── reporting/        # un composant par onglet, charts.jsx (graphiques SVG), exportCsv.js
     └── modules/
@@ -48,11 +52,13 @@ frontend/
         │   └── pages/            # Problems, ProblemDetail (onglets), Actions
         ├── incident-management/          # config.jsx + pages Incidents, IncidentDetail
         ├── service-request-management/   # config.jsx + pages Requests, RequestDetail
-        ├── change-enablement/            # config.jsx + pages Changes, ChangeDetail, ChangeSchedule
-        ├── service-configuration-management/ # config.jsx + pages ConfigurationItems, ConfigurationItemDetail
+        ├── change-enablement/            # config.jsx + pages Changes, ChangeDetail, ChangeSchedule, StandardChanges
+        ├── service-configuration-management/ # config.jsx + pages ConfigurationItems, ConfigurationItemDetail, Inventory, Staging, StagingAsset, DiscoverySettings
         ├── service-level-management/     # config.jsx + pages Services, ServiceDetail, Agreements, AgreementDetail
         ├── knowledge-management/         # config.jsx + pages Articles, ArticleDetail (onglet Lecture, cycle de l'article)
         ├── continual-improvement/        # config.jsx + pages Improvements, ImprovementDetail
+        ├── compliance-assessment/        # config.jsx + pages Assessments, AssessmentDetail, ReferentialSettings
+        ├── regulatory-notifications/     # config.jsx + pages Declarations, DeclarationDetail
         └── project-management/           # config.jsx, rights.js, pages Projects, ProjectDetail ;
                                           # components : Overview, Agile, BurndownChart, Registers, PartTable
 ```
@@ -103,7 +109,7 @@ sauf le registre `modules/registry.js` (lu par `Layout`).
 | `/actions` | `modules/problem-management/pages/Actions` | Pratiques › Problèmes |
 | `/incidents`, `/incidents/:id` | `modules/incident-management/pages/*` | Pratiques › Incidents |
 | `/requests`, `/requests/:id`, `/requests/catalog` | `modules/service-request-management/pages/*` (registre, fiche, catalogue de demandes) | Pratiques › Demandes |
-| `/changes`, `/changes/schedule`, `/changes/:id` | `modules/change-enablement/pages/*` | Pratiques › Changements |
+| `/changes`, `/changes/schedule`, `/changes/models`, `/changes/:id` | `modules/change-enablement/pages/*` (registre, calendrier, modèles standard `StandardChanges`, fiche) | Pratiques › Changements |
 | `/configuration`, `/configuration/:id` | `modules/service-configuration-management/pages/ConfigurationItems`, `ConfigurationItemDetail` | Pratiques › Configuration |
 | `/configuration/inventory` | `modules/service-configuration-management/pages/Inventory` | Pratiques › Configuration › Inventaire |
 | `/configuration/staging`, `/configuration/staging/:id` | `modules/service-configuration-management/pages/Staging`, `StagingAsset` | Pratiques › Configuration › Sas de staging (Manager, Admin) |
@@ -111,9 +117,11 @@ sauf le registre `modules/registry.js` (lu par `Layout`).
 | `/knowledge`, `/knowledge/:id` | `modules/knowledge-management/pages/*` | Pratiques › Connaissances |
 | `/improvements`, `/improvements/:id` | `modules/continual-improvement/pages/*` | Pratiques › Amélioration (CSI) |
 | `/assessments`, `/assessments/:id` | `modules/compliance-assessment/pages/Assessments`, `AssessmentDetail` | Conformité & réglementation › NIS 2 |
+| `/regulatory-notifications`, `/regulatory-notifications/:id` | `modules/regulatory-notifications/pages/Declarations`, `DeclarationDetail` | Conformité & réglementation › Déclarations |
 | `/projects`, `/projects/:id` | `modules/project-management/pages/Projects`, `ProjectDetail` | Projets › Projets |
 | `/admin/perimeters`, `/admin/perimeters/:id` | `core/pages/admin/Perimeters`, `PerimeterDetail` | Administration › Périmètres (Admin) |
 | `/preferences` | `core/pages/Preferences` | Mes préférences : notifications par courriel (SOC-22), icône sous l'utilisateur dans la barre latérale |
+| `/admin/search` | `core/pages/SearchIndexAdmin` | Administration › Index de recherche (Admin) |
 | `/admin/users`, `/admin/platform`, `/admin/health`, `/admin/audit`, `/admin/duplicates` | `core/pages/admin/Users`, `PlatformSettings`, `Health`, `AuditLog`, `Duplicates` | Administration › Utilisateurs et rôles, Messagerie et stockage, Santé, Journal d'audit, Nettoyage des doublons (Admin) |
 | `/settings/categories` | `core/pages/settings/Categories` | Paramétrage › Catégories d'incident et de problème (Manager, Admin) |
 | `/settings/discovery` | `modules/service-configuration-management/pages/DiscoverySettings` | Paramétrage › Découverte du réseau (Manager, Admin) ; onglets `?tab=` : tâches, identifiants, fins de support, clés et certificats, constructeurs (OUI) |

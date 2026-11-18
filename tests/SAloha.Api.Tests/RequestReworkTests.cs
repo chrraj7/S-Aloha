@@ -90,4 +90,53 @@ public class RequestReworkTests(ApiFixture api)
         var contested = await Json(await requester.PutAsJsonAsync(url, Request("Souris", "En cours", contestReason: "Souris sans fil attendue")));
         Assert.Equal("En cours", Str(contested, "status"));
     }
+
+    /// <summary>
+    /// Corps de la fiche : les champs du formulaire et <c>serviceId</c>, jamais <c>affectedService</c>.
+    /// </summary>
+    private static object Form(string? status = null, string? contestReason = null, int? serviceId = null) => new
+    {
+        title = "Matériel", requestedItem = "Souris", status, serviceId,
+        ownerType = "User", ownerId = "tech.req04r", ownerDisplayName = "Tech", contestReason
+    };
+
+    [Fact]
+    public async Task REQ_04_la_fiche_enregistree_sans_rien_toucher_garde_un_service_hors_catalogue()
+    {
+        const string label = "Outil maison hors catalogue";
+        var requester = api.Client("User", "demandeur.req04s");
+        var r = await Json(await requester.PostAsJsonAsync("/api/requests", new { title = "Matériel", requestedItem = "Souris", affectedService = label }));
+        var url = $"/api/requests/{Id(r)}";
+        await Json(await Manager.PutAsJsonAsync(url, Form("Approuvée")));
+        // La fiche ouverte puis enregistrée telle quelle : ni service effacé, ni approbation perdue.
+        var saved = await Json(await requester.PutAsJsonAsync(url, Form()));
+        Assert.Equal((label, "Approuvée"), (Str(saved, "affectedService"), Str(saved, "status")));
+        await Json(await Manager.PutAsJsonAsync(url, Form("En cours")));
+        await Json(await Manager.PutAsJsonAsync(url, Form("Satisfaite")));
+        // REQ-10 : la contestation par la fiche reste possible.
+        var contested = await Json(await requester.PutAsJsonAsync(url, Form("En cours", "Souris sans fil attendue")));
+        Assert.Equal((label, "En cours"), (Str(contested, "affectedService"), Str(contested, "status")));
+        // Cas voisin : un libellé vide envoyé exprès retire le service, et c'est une modification (REQ-04).
+        var cleared = await Json(await requester.PutAsJsonAsync(url, new
+        {
+            title = "Matériel", requestedItem = "Souris", affectedService = "", ownerType = "User", ownerId = "tech.req04r", ownerDisplayName = "Tech"
+        }));
+        Assert.Equal(("", "Soumise"), (Str(cleared, "affectedService"), Str(cleared, "status")));
+    }
+
+    [Fact]
+    public async Task REQ_04_la_fiche_retire_encore_un_service_du_catalogue()
+    {
+        var svc = await Json(await api.Client().PostAsJsonAsync("/api/services", new
+        {
+            title = "Poste de travail req04s", status = "En service", criticality = "Moyenne", ownerType = "User", ownerId = "o", ownerDisplayName = "O"
+        }));
+        var requester = api.Client("User", "demandeur.req04t");
+        var r = await Json(await requester.PostAsJsonAsync("/api/requests", Form(serviceId: Id(svc))));
+        Assert.Equal("Poste de travail req04s", Str(r, "affectedService"));
+        // « Aucun service » choisi dans la fiche : le libellé recopié du catalogue ne le rattache pas de nouveau.
+        var removed = await Json(await requester.PutAsJsonAsync($"/api/requests/{Id(r)}", Form()));
+        Assert.Equal(JsonValueKind.Null, removed.GetProperty("serviceId").ValueKind);
+        Assert.Equal("", Str(removed, "affectedService"));
+    }
 }

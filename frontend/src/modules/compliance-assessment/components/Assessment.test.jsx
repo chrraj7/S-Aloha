@@ -31,7 +31,9 @@ vi.mock('../../../api', () => ({
       percent: 33.3, maturity: { level: 2, name: 'Géré' }, applicable: 76, answered: 1, notApplicable: 0,
       pillars: [{ pillar: 'Gouvernance', percent: 33.3 }],
       objectives: [{ id: 1, title: 'Recensement', pillar: 'Gouvernance', percent: 33.3, applicable: 3, answered: 1 }],
-      gaps: [{ requirementId: 11, code: '1.1-EI/EE', theme: 'Recensement des SI', objectiveId: 1, score: 1, gap: 2 }] }),
+      gaps: [{ requirementId: 11, code: '1.1-EI/EE', theme: 'Recensement des SI', objectiveId: 1, score: 1, gap: 2 },
+        { requirementId: 12, code: '1.2-EI/EE', theme: 'Cartographie', objectiveId: 1, score: 2, gap: 1,
+          action: { id: 0, reference: '', status: '', hidden: true } }] }),
     createImprovement: (...a) => createImprovement(...a),
     addEvidence: (...a) => addEvidence(...a),
     removeEvidence: () => Promise.resolve(null),
@@ -80,6 +82,17 @@ describe('Synthèse NIS 2', () => {
     fireEvent.click(screen.getByText('Créer une action d\'amélioration'))
     await waitFor(() => expect(createImprovement).toHaveBeenCalledWith(5, '1.1-EI/EE'))
     expect((await screen.findByText('AMI-2026-0009 →')).getAttribute('href')).toBe('/improvements/9')
+  })
+})
+
+describe('Synthèse NIS 2 — action d\'un autre périmètre', () => {
+  it('PER-08 : l\'écart traité ailleurs est signalé, sans lien ni bouton de création', async () => {
+    render(<MemoryRouter><Synthesis assessment={assessment()} onChanged={() => {}} /></MemoryRouter>)
+    const row = (await screen.findByText('1.2-EI/EE')).closest('tr')
+    expect(row.textContent).toContain('Action d\'un autre périmètre')
+    expect(row.querySelector('a')).toBeNull()
+    expect(row.querySelector('button')).toBeNull()
+    expect(screen.getAllByText('Créer une action d\'amélioration')).toHaveLength(1)
   })
 })
 

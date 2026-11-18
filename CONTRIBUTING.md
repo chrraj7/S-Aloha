@@ -26,7 +26,7 @@ contribution est publiée sous la même licence. Chacun s'engage à respecter le
   (autres comptes : [README](README.md#essayer-en-5-minutes)).
 - Pour savoir **quoi** implémenter : chaque pratique ITIL a sa spécification dans
   [`docs/reference/processus/`](docs/reference/processus/readme.md), dont le tableau
-  d'accueil compte les règles 🔜 « à implémenter » par pratique et par lot (le lot 2 d'abord).
+  d'accueil compte les règles 🔜 « à implémenter » par pratique et par lot.
   Chaque règle porte un identifiant (`INC-15`) à citer dans votre pull request et des
   scénarios d'acceptation qui servent de tests ; le
   [mode d'emploi](docs/reference/processus/readme.md#mode-demploi-pour-implémenter-une-règle)

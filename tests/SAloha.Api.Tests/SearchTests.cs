@@ -257,4 +257,18 @@ public class SearchTests(ApiFixture api)
         Assert.True(hit.GetProperty("semantic").GetBoolean());
         Assert.False(hit.GetProperty("lexical").GetBoolean());
     }
+
+    /// <summary>
+    /// Le simulacre d'embeddings place un mot à la même dimension d'une exécution à l'autre.
+    /// Haché par <c>string.GetHashCode()</c>, aléatoire par processus, un mot d'un autre test
+    /// tombait parfois sur la dimension du mot cherché et ajoutait un résultat (RAG-13 instable).
+    /// </summary>
+    [Fact]
+    public async Task Le_simulacre_d_embeddings_est_le_meme_d_une_execution_a_l_autre()
+    {
+        var vecteur = (await new FakeEmbeddingClient().EmbedAsync(["kq77"], TimeSpan.FromSeconds(1)))![0];
+        // FNV-1a 32 bits de « kq77 », modulo les 1020 dimensions hors synonymes, après les 4 des synonymes.
+        Assert.Equal(447, Array.FindIndex(vecteur, x => x != 0));
+        Assert.Equal(1, vecteur.Count(x => x != 0));
+    }
 }

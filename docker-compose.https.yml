@@ -5,7 +5,7 @@
 # port 80 du service web ne le sont plus. Mode d'emploi : docs/reference/exploitation.md § HTTPS.
 services:
   caddy:
-    image: caddy:2.10.2
+    image: caddy:2.11.8
     restart: unless-stopped
     depends_on:
       - web

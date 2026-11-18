@@ -39,7 +39,11 @@ public class ServiceRequestsController(AppDbContext db) : RecordController<Servi
         _dueChangedByUser = !creating && !IsManager && due != e.DueDate && !sameDay;
         if (creating || e.CatalogItemId is null || (due != e.DueDate && !sameDay)) e.DueDate = due;
         e.RejectionReason = string.IsNullOrWhiteSpace(dto.RejectionReason) ? null : dto.RejectionReason.Trim();
-        e.ServiceId = dto.ServiceId; e.AffectedService = dto.AffectedService ?? "";
+        // La fiche n'envoie que le service du catalogue : sans lui ni libellé dans le corps, le
+        // libellé hors catalogue enregistré (SLM-10) est gardé, sinon REQ-04 y verrait une
+        // modification. Le libellé d'un service du catalogue qu'on retire, lui, part avec lui.
+        if (dto.AffectedService is not null || dto.ServiceId is not null || e.ServiceId is not null) e.AffectedService = dto.AffectedService ?? "";
+        e.ServiceId = dto.ServiceId;
         return null;
     }
 
@@ -180,9 +184,15 @@ public class ServiceRequestsController(AppDbContext db) : RecordController<Servi
         if (e.ApprovedAt is null && status is "En cours" or "Satisfaite" or "Close")
             return "La demande doit d'abord être approuvée par un gestionnaire.";
         // REQ-13 : une demande en cours a quelqu'un pour la satisfaire. Le groupe d'exécution du
-        // modèle est déjà responsable à l'approbation (REQ-23) : reste la demande libre.
-        if (e.Status == "Approuvée" && status == "En cours" && string.IsNullOrWhiteSpace(e.OwnerId))
-            return "Désigner le responsable de la demande avant de la passer En cours.";
+        // modèle est déjà responsable à l'approbation (REQ-23) : reste la demande libre. La règle
+        // tient sur le statut visé, pas sur une transition : mise en traitement, contestation
+        // (REQ-10), et responsable retiré d'une demande déjà En cours. Seule une demande En cours
+        // qui n'avait pas de responsable avant la règle reste modifiable telle quelle.
+        if (status == "En cours" && string.IsNullOrWhiteSpace(e.OwnerId)
+            && (e.Status != "En cours" || !string.IsNullOrWhiteSpace(Db.Entry(e).Property(x => x.OwnerId).OriginalValue)))
+            return e.Status == "En cours"
+                ? "Une demande En cours garde un responsable : en désigner un autre plutôt que le retirer."
+                : "Désigner le responsable de la demande avant de la passer En cours.";
         // REQ-06 : un rejet se motive, le motif est communiqué au demandeur.
         if (status == "Rejetée" && e.RejectionReason is null)
             return "Motiver le rejet : le motif est communiqué au demandeur.";
