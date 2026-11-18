@@ -127,6 +127,17 @@ Mise à niveau du 2026-10-16 : .NET 10 (LTS) — EF Core et JwtBearer 10.0.13, N
 Swashbuckle 10.3, Novell LDAP 4.0 — et React 19, Vite 8, Vitest 5. `dotnet list package
 --vulnerable --include-transitive` et `npm audit` : 0 vulnérabilité.
 
+Depuis le 2026-11-18, l'audit du frontend passe par
+[`scripts/check-audit-npm.py`](../../scripts/check-audit-npm.py) : deux `npm audit`, toutes
+dépendances et paquet livré seul (`--omit=dev`). Un avis haut ou critique sur le paquet livré
+bloque toujours ; sur l'outillage de build et de test, il bloque sauf **exception datée**,
+un avis (GHSA) par exception, inscrite dans le script et donc soumise à l'étiquette
+`outillage`. Une exception attend une version corrigée ; échue, elle bloque de nouveau.
+
+| Avis | Paquet | Jusqu'au | Raison |
+|---|---|---|---|
+| [GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf) (haute, ReDoS) | picomatch ≤ 4.0.7, tiré par vite et vitest | 2026-12-18 | Aucune version corrigée publiée (4.0.7 est la dernière) ; absent du paquet livré ; motifs glob écrits par le projet, jamais saisis par un utilisateur |
+
 ## Contrôles du dépôt
 
 Réglages du dépôt GitHub public, en place depuis le 2026-10-06 :
