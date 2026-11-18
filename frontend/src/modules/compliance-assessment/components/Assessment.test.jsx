@@ -24,7 +24,8 @@ vi.mock('../../../api', () => ({
     questionnaire: () => Promise.resolve({ referentialVersion: 'ReCyF v2.5', objectives: [{
       id: 1, title: 'Recensement des systèmes d\'information', pillar: 'Gouvernance',
       themes: [{ theme: 'Recensement des SI', requirements: [
-        { id: 11, code: '1.1-EI/EE', isoControls: '27002:2022-5.9', text: null, score: null, notApplicable: false, justification: '', evidence: [] },
+        { id: 11, code: '1.1-EI/EE', isoControls: '27002:2022-5.9', text: null, score: null, notApplicable: false, justification: '',
+          evidence: [{ id: 2, targetType: '', targetId: 0, reference: '', title: 'Enregistrement d\'un autre périmètre', hidden: true }] },
       ] }] }] }),
     answer: (...a) => answer(...a),
     score: () => Promise.resolve({
@@ -117,6 +118,15 @@ describe('NIS-08 et NIS-09', () => {
     fireEvent.click(screen.getByText('Ajouter'))
     expect(await screen.findByText('CHG-2026-0007')).toBeTruthy()
     expect(addEvidence).toHaveBeenCalledWith(5, 11, 'chg-2026-0007')
+  })
+
+  it('PER-08 : une preuve d\'un autre périmètre est signalée, sans lien ni bouton pour la retirer', async () => {
+    render(<MemoryRouter><Questionnaire assessment={assessment()} onChanged={() => {}} /></MemoryRouter>)
+    fireEvent.click(await screen.findByText(/Recensement des systèmes/))
+    const chip = screen.getByText('Enregistrement d\'un autre périmètre')
+    expect(chip.querySelector('a')).toBeNull()
+    expect(chip.querySelector('button')).toBeNull()
+    expect(screen.queryByLabelText(/Retirer la preuve/)).toBeNull()
   })
 
   it('NIS-09 : compare par défaut avec la dernière validée du même périmètre', async () => {
