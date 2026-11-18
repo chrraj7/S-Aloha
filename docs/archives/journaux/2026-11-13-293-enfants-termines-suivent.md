@@ -13,12 +13,13 @@
 - **Vérifié** : `PerimeterRightsTests.PER_07_INC_16_un_enfant_termine_suit_le_parent_deplace_un_enfant_ouvert_le_retient`
   (enfant résolu qui suit avec sa déclaration, ses notifications et sa ligne d'historique ;
   enfant ouvert qui retient, puis reste dans son périmètre une fois détaché) et
-  `PER_07_INC_16_un_enfant_termine_d_un_troisieme_perimetre_ne_suit_pas`, rouges sans la
-  correction ; `PER_07_INC_16_un_parent_ne_change_pas_de_perimetre_tant_qu_il_a_des_enfants_rattaches`
+  `PER_07_INC_16_un_enfant_termine_d_un_troisieme_perimetre_retient_le_parent`, rouges sans la
+  correction pour le premier ; `PER_07_INC_16_un_parent_ne_change_pas_de_perimetre_tant_qu_il_a_des_enfants_rattaches`
   reste le témoin de l'enfant ouvert.
-- **Reste** : un enfant terminé d'un troisième périmètre (lien hérité d'avant PER-07) ne suit
-  pas : celui qui déplace n'est gestionnaire que du périmètre de départ et de celui d'arrivée.
-  La décision ne dit rien de ce cas ; il est gardé tel qu'INC-16 décrit déjà le lien hérité.
+- **Troisième périmètre** : un enfant terminé d'un troisième périmètre (lien hérité d'avant
+  PER-07) retient le parent (400), comme avant. Décision du mainteneur du 2026-11-18 sur la PR
+  (option 2 : garder le blocage) ; le test attend ce refus, et le parent se déplace vers le
+  périmètre de cet enfant.
 - **Fichiers** : `backend/Modules/IncidentManagement/Controllers/IncidentsController.cs`,
   `tests/SAloha.Api.Tests/PerimeterRightsTests.cs`
 - **Documentation** : spécification de la gestion des incidents (INC-16, scénario), périmètres

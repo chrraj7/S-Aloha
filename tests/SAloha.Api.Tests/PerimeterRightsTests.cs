@@ -298,7 +298,7 @@ public class PerimeterRightsTests(ApiFixture api)
     }
 
     [Fact]
-    public async Task PER_07_INC_16_un_enfant_termine_d_un_troisieme_perimetre_ne_suit_pas()
+    public async Task PER_07_INC_16_un_enfant_termine_d_un_troisieme_perimetre_retient_le_parent()
     {
         var (siege, usine, _, tiana, _) = await Setup("per07g");
         var t = api.Client("User", tiana);
@@ -319,10 +319,17 @@ public class PerimeterRightsTests(ApiFixture api)
         await using (var db = api.Database())
             await db.Incidents.Where(x => x.Id == Id(child)).ExecuteUpdateAsync(u => u.SetProperty(x => x.PerimeterId, depot));
 
-        // Il ne retient pas le parent, et ne change pas de périmètre.
-        await Json(await admin.PutAsJsonAsync($"/api/incidents/{Id(parent)}", Inc("Coupure réseau Siège", usine)));
+        // Décision du mainteneur du 2026-11-18 : il retient le parent (400), comme avant la décision A ;
+        // rien ne bouge, ni le parent ni l'enfant.
+        var refused = await admin.PutAsJsonAsync($"/api/incidents/{Id(parent)}", Inc("Coupure réseau Siège", usine));
+        Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+        Assert.Contains("rattaché(s) avant la règle PER-07", await refused.Content.ReadAsStringAsync());
         var kept = await Json(await admin.GetAsync($"/api/incidents/{Id(child)}"));
         Assert.Equal((depot, Id(parent)), (kept.GetProperty("perimeterId").GetInt32(), kept.GetProperty("parentId").GetInt32()));
+        Assert.Equal(siege, (await Json(await admin.GetAsync($"/api/incidents/{Id(parent)}"))).GetProperty("perimeterId").GetInt32());
+        // Témoin : vers le Dépôt, l'enfant ne resterait pas dans un autre périmètre ; le parent s'y déplace.
+        await Json(await admin.PutAsJsonAsync($"/api/incidents/{Id(parent)}", Inc("Coupure réseau Siège", depot)));
+        Assert.Equal(depot, (await Json(await admin.GetAsync($"/api/incidents/{Id(parent)}"))).GetProperty("perimeterId").GetInt32());
     }
 
     [Fact]
