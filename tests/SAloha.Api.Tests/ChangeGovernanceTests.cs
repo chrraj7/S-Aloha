@@ -126,6 +126,34 @@ public class ChangeGovernanceTests(ApiFixture api)
     }
 
     [Fact]
+    public async Task CHG_25_un_changement_urgent_planifie_dans_le_gel_n_y_reste_pas_en_devenant_Normal()
+    {
+        var m = api.Client("Manager", "chg25t.manager");
+        var start = DateTime.UtcNow.Date.AddDays(130);
+        var freeze = await Json(await m.PostAsJsonAsync("/api/change-freezes", new { start, end = start.AddDays(2), reason = "Gel de fin d'exercice" }));
+        try
+        {
+            var slot = start.AddDays(1);
+            var requester = api.Client("Manager", "chg25t.demandeur");
+            var c = await Json(await requester.PostAsJsonAsync("/api/changes", Change("Urgent", "Moyen", null, slot)));
+            var url = $"/api/changes/{Id(c)}";
+            await ChangeTestData.LinkCiAsync(requester, Id(c));
+            await Json(await requester.PutAsJsonAsync(url, Change("Urgent", "Moyen", "Évalué", slot)));
+            await Json(await m.PutAsJsonAsync(url, Change("Urgent", "Moyen", "Autorisé", slot)));
+            await Json(await requester.PutAsJsonAsync(url, Change("Urgent", "Moyen", "Planifié", slot)));   // l'exception du gel
+
+            // Un gestionnaire qui n'est pas le demandeur le renvoie Normal, sans toucher au créneau : le gel est revérifié.
+            var other = api.Client("Manager", "chg25t.autre");
+            Assert.Equal(HttpStatusCode.BadRequest, (await other.PutAsJsonAsync(url, Change("Normal", "Moyen", "Planifié", slot))).StatusCode);
+            var kept = await Json(await other.GetAsync(url));
+            Assert.Equal(("Urgent", "Planifié"), (kept.GetProperty("changeType").GetString(), kept.GetProperty("status").GetString()));
+            // Témoin : resté Urgent, le même envoi passe.
+            await Json(await other.PutAsJsonAsync(url, Change("Urgent", "Moyen", "Planifié", slot)));
+        }
+        finally { await m.DeleteAsync($"/api/change-freezes/{Id(freeze)}"); }
+    }
+
+    [Fact]
     public async Task CHG_26_un_changement_standard_se_cree_depuis_un_modele_actif()
     {
         var m = api.Client("Manager", "chg26.manager");
