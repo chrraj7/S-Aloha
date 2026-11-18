@@ -262,7 +262,8 @@ Détails (registre des modules, thème, design) : [frontend.md](frontend.md).
 [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) rejoue ces contrôles à chaque
 push sur `main` et sur chaque pull request, en onze jobs : **API** (tests ci-dessus et
 `dotnet list package --vulnerable`, couverture publiée sans seuil), **Interface** (`npm ci`, tests, build,
-`npm audit --audit-level=high`), **Documentation** (`scripts/check-docs.py`) et
+`npm audit` haut et critique par `scripts/check-audit-npm.py` : exception datée possible
+pour l'outillage de build et de test, jamais pour le paquet livré), **Documentation** (`scripts/check-docs.py`) et
 **Images Docker** (build des deux images, sans publication), **DCO** (chaque commit porte le
 `Signed-off-by` de son auteur, bots exceptés ;
 [ADR-0010](../decisions/adr-0010-certificat-d-origine-dco.md) ; sur `main`, les commits
