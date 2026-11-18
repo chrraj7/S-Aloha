@@ -18,8 +18,8 @@
 
 ## Prochaine séance
 
-*Mise à jour le 2026-11-04.* État : 339 règles ✅, plus [RAG-10](reference/recherche.md)
-(calibrage fait le 2026-11-09), une en lot 3
+*Mise à jour le 2026-11-04.* État : 352 règles ✅ (compte du 2026-11-16, [RAG-10](reference/recherche.md)
+comprise : calibrage fait le 2026-11-09), une en lot 3
 (RAG-12, indexation des pièces jointes), aucune en lot 2 ([synthèse](reference/processus/readme.md)) ;
 tous les indicateurs des pratiques sont au tableau de bord. Le lot 3 des pratiques, F7
 (courriels, pièces jointes) et les indicateurs ont été faits le 2026-10-23

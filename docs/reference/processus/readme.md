@@ -25,13 +25,15 @@
 | [Déclarations réglementaires](declarations-reglementaires.md) | DRG | 12 | 0 | 0 | 0 |
 | [Gestion de projet](gestion-de-projet.md) | PRJ | 23 | 0 | 0 | 0 |
 | [Périmètres](../perimetres.md) | PER | 13 | 0 | 0 | 0 |
-| [Recherche](../recherche.md) | RAG | 11 | 1 | 0 | 1 |
-| [Reporting](../reporting.md) | REP | 34 | 0 | 0 | 0 |
-| **Total** | | **342** | **1** | **0** | **1** |
+| [Recherche](../recherche.md) | RAG | 12 | 0 | 0 | 1 |
+| [Reporting](../reporting.md) | REP | 43 | 0 | 0 | 0 |
+| **Total** | | **352** | **0** | **0** | **1** |
 
-*Comptes au 2026-11-03 (main `dcaecc0`, avec SLM-16), sur les tableaux de règles (hors indicateurs). Une
-règle faite en partie compte ✅ (7 règles, la part restante est décrite dans son statut).
-Dernière règle de lot 1, RAG-10 (calibrage de la recherche), faite le 2026-11-09.*
+*Comptes au 2026-11-16 (main `84c4070`), sur les tableaux de règles (hors indicateurs du § 8
+des pratiques ; les règles REP du [reporting](../reporting.md) qui les affichent sont comptées).
+Une règle faite en partie compte ✅ (7 règles, la part restante est décrite dans son statut).
+Dernière règle de lot 1, RAG-10 (calibrage de la recherche), faite le 2026-11-09 ; reste
+RAG-12 (pièces jointes, lot 3).*
 
 ## Interface et navigation
 
