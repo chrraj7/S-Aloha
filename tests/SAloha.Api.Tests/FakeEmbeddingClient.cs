@@ -35,9 +35,21 @@ public partial class FakeEmbeddingClient : IEmbeddingClient
         {
             var group = Array.FindIndex(Synonyms, g => g.Contains(m.Value));
             if (group >= 0) v[group] += 3;
-            else if (m.Value.Length > 3) v[Synonyms.Length + (int)((uint)m.Value.GetHashCode() % (Dims - Synonyms.Length))] += 1;
+            else if (m.Value.Length > 3) v[Synonyms.Length + (int)(Hash(m.Value) % (Dims - Synonyms.Length))] += 1;
         }
         return Vectors.Normalize(v);
+    }
+
+    /// <summary>
+    /// FNV-1a 32 bits. Pas <c>string.GetHashCode()</c> : il change à chaque processus, et deux
+    /// mots sans rapport tombaient sur la même dimension à certaines exécutions seulement — un
+    /// enregistrement d'un autre test devenait alors un voisin du mot cherché.
+    /// </summary>
+    private static uint Hash(string word)
+    {
+        var h = 2166136261;
+        foreach (var c in word) h = (h ^ c) * 16777619;
+        return h;
     }
 
     [GeneratedRegex(@"[\p{L}\p{N}]+")]
