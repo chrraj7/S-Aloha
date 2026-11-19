@@ -194,11 +194,22 @@ public class IncidentsController(AppDbContext db) : RecordController<Incident, I
         }
         if (e.Status != "En attente") e.OnHoldReason = null;
         if (!creating && e.Status == "Résolu" && from is not null && !Incident.Done.Contains(from)) await ResolveChildrenAsync(e);
-        // PER-07, DRG-01 : la lecture des déclarations filtre sur le périmètre copié dans chacune ;
-        // il suit l'incident déplacé, dans le même enregistrement.
         if (!creating && entry.Property(x => x.PerimeterId).IsModified)
         {
-            var declarations = await Db.RegulatoryNotifications.Where(d => d.IncidentId == e.Id).ToListAsync();
+            // INC-16 (décision du 2026-11-10) : un enfant résolu ou clos ne se détache plus ; il suit
+            // le parent déplacé, dans le même enregistrement. Chargé suivi : le journal d'audit trace
+            // son changement de périmètre. Un lien hérité vers un troisième périmètre retient le parent
+        // (CheckMoveAsync) : ce cas n'arrive pas ici.
+            var from0 = entry.Property(x => x.PerimeterId).OriginalValue;
+            var followers = await Db.Incidents.Where(c => c.ParentId == e.Id && c.PerimeterId == from0 && Incident.Done.Contains(c.Status)).ToListAsync();
+            foreach (var child in followers) child.PerimeterId = e.PerimeterId;
+            var children = followers.Select(c => c.Id).ToList();
+            // SOC-23 : celles de l'incident lui-même suivent dans le socle ; ici, celles des enfants.
+            foreach (var n in await Db.Notifications.Where(n => n.TargetType == LinkType && children.Contains(n.TargetId)).ToListAsync())
+                n.PerimeterId = e.PerimeterId;
+            // PER-07, DRG-01 : la lecture des déclarations filtre sur le périmètre copié dans chacune ;
+            // il suit l'incident déplacé (et ses enfants terminés), dans le même enregistrement.
+            var declarations = await Db.RegulatoryNotifications.Where(d => d.IncidentId == e.Id || children.Contains(d.IncidentId)).ToListAsync();
             foreach (var declaration in declarations) declaration.PerimeterId = e.PerimeterId;
             // SOC-23 : leurs notifications (création, relances DRG-13) portent aussi une copie du
             // périmètre, lue par la cloche et les courriels ; elles suivent comme celles de l'incident.
@@ -307,10 +318,11 @@ public class IncidentsController(AppDbContext db) : RecordController<Incident, I
     }
 
     /// <summary>
-    /// PER-07, INC-16 (décisions du mainteneur du 2026-11-04 et du 2026-11-09) : un enfant ne
-    /// quitte pas le périmètre de son parent, ni un parent celui de ses enfants ; on détache
-    /// d'abord (un enfant rattaché ne se déplace pas seul), aucun lien entre deux périmètres ne
-    /// se crée en silence.
+    /// PER-07, INC-16 (décisions du mainteneur du 2026-11-04, du 2026-11-09 et du 2026-11-10) : un
+    /// enfant ne quitte pas le périmètre de son parent, ni un parent celui de ses enfants ouverts ;
+    /// on détache d'abord (un enfant rattaché ne se déplace pas seul). Un enfant résolu ou clos ne
+    /// se détache plus : il ne retient pas le parent, il le suit (<see cref="BeforeSaveAsync"/>) ;
+    /// celui d'un troisième périmètre (lien hérité) le retient (décision du 2026-11-18).
     /// </summary>
     protected override async Task<string?> CheckMoveAsync(Incident e, int to)
     {
@@ -321,9 +333,14 @@ public class IncidentsController(AppDbContext db) : RecordController<Incident, I
                 return $"Rattaché à {parent.Reference}, d'un autre périmètre : détacher d'abord l'incident de son parent pour le déplacer.";
         }
         // Le nombre seul : les références des enfants d'un autre périmètre ne sont pas forcément visibles (PER-05).
-        var children = await Db.Incidents.CountAsync(x => x.ParentId == e.Id && x.PerimeterId != to);
-        return children == 0 ? null
-            : $"{e.Reference} a {children} incident(s) enfant(s) qui resteraient dans un autre périmètre : les détacher d'abord pour déplacer le parent.";
+        var children = await Db.Incidents.CountAsync(x => x.ParentId == e.Id && x.PerimeterId != to && !Incident.Done.Contains(x.Status));
+        if (children > 0)
+            return $"{e.Reference} a {children} incident(s) enfant(s) ouvert(s) qui resteraient dans un autre périmètre : les détacher d'abord pour déplacer le parent (les enfants résolus ou clos le suivent).";
+        // Décision du mainteneur du 2026-11-18 (PR #308) : un enfant terminé d'un troisième périmètre
+        // (lien hérité d'avant PER-07) ne se détache plus et ne suit pas ; il retient le parent, comme avant.
+        var legacy = await Db.Incidents.CountAsync(x => x.ParentId == e.Id && x.PerimeterId != to && x.PerimeterId != e.PerimeterId);
+        return legacy == 0 ? null
+            : $"{e.Reference} a {legacy} incident(s) enfant(s) résolu(s) ou clos d'un autre périmètre, rattaché(s) avant la règle PER-07 : le parent ne peut pas changer de périmètre.";
     }
 
     /// <summary>
