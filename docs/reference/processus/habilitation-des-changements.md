@@ -116,7 +116,7 @@ les conditions de statut.
 | CHG-12 | Passer à **Évalué** exige un plan de mise en œuvre et un plan de retour arrière renseignés (Normal et Urgent) | ✅ | 1 |
 | CHG-13 | **Planifié** exige aussi une fin planifiée | ✅ | 1 |
 | CHG-14 | **Dates réelles** : `ActualStart` exigé à Mis en œuvre, `ActualEnd` à Clos ; un dépassement de la fin planifiée est signalé | ✅ (vérifiés à l'entrée du statut ; dépassement affiché sur la fiche) | |
-| CHG-15 | **Revue post-implémentation** exigée avant Clos pour tout changement **Urgent** ou de résultat **Échoué** (`PirNotes` : ce qui s'est passé, causes, enseignements) | ✅ (un changement Mis en œuvre ou Clos en Urgent ne change plus de type, 400 : le renvoyer Normal, en un envoi ou en deux, éviterait la revue) | |
+| CHG-15 | **Revue post-implémentation** exigée avant Clos pour tout changement **Urgent** ou de résultat **Échoué** (`PirNotes` : ce qui s'est passé, causes, enseignements) | ✅ (un changement Urgent ne quitte plus ce type une fois Mis en œuvre ou Clos, ni dans l'envoi qui le met en œuvre ou le clôt, 400 : le renvoyer Normal, en un envoi ou en deux, éviterait la revue, et le gel depuis Planifié) | |
 | CHG-16 | Un changement **Normal** ou **Urgent** doit être relié à au moins un **CI** avant d'être Évalué (analyse d'impact, CFG-20) | ✅ (à l'évaluation, Demandé → Évalué ; le retour automatique à Évalué d'un changement autorisé puis modifié n'est pas bloqué) | |
 | CHG-17 | Un **rejet** exige un motif, communiqué au demandeur | ✅ | 1 |
 

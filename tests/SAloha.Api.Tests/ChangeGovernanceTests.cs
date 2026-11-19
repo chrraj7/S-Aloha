@@ -147,8 +147,18 @@ public class ChangeGovernanceTests(ApiFixture api)
             Assert.Equal(HttpStatusCode.BadRequest, (await other.PutAsJsonAsync(url, Change("Normal", "Moyen", "Planifié", slot))).StatusCode);
             var kept = await Json(await other.GetAsync(url));
             Assert.Equal(("Urgent", "Planifié"), (kept.GetProperty("changeType").GetString(), kept.GetProperty("status").GetString()));
-            // Témoin : resté Urgent, le même envoi passe.
+            // Renvoyé Normal dans l'envoi qui le met en œuvre : refusé aussi, il ne sort pas du gel par là (JERY, #332).
+            object Implement(string type) => new
+            {
+                title = "Gouvernance Urgent Moyen", changeType = type, risk = "Moyen", status = "Mis en œuvre",
+                plannedStart = slot, plannedEnd = slot.AddHours(2), implementationPlan = "Appliquer", backoutPlan = "Restaurer", actualStart = slot
+            };
+            Assert.Equal(HttpStatusCode.BadRequest, (await other.PutAsJsonAsync(url, Implement("Normal"))).StatusCode);
+            kept = await Json(await other.GetAsync(url));
+            Assert.Equal(("Urgent", "Planifié"), (kept.GetProperty("changeType").GetString(), kept.GetProperty("status").GetString()));
+            // Témoins : resté Urgent, le même envoi passe, puis la mise en œuvre aussi.
             await Json(await other.PutAsJsonAsync(url, Change("Urgent", "Moyen", "Planifié", slot)));
+            Assert.Equal("Mis en œuvre", (await Json(await other.PutAsJsonAsync(url, Implement("Urgent")))).GetProperty("status").GetString());
         }
         finally { await m.DeleteAsync($"/api/change-freezes/{Id(freeze)}"); }
     }

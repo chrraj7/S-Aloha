@@ -4,7 +4,8 @@
 
 - **Quoi** : `ChangesController.CheckStatusAsync` lit le type **d'avant l'envoi**. Un
   changement Mis en œuvre ou Clos de type Urgent ne change plus de type (400), en un envoi
-  comme en deux. Un changement planifié qui quitte Urgent repasse le contrôle du gel, comme
+  comme en deux, et un changement Urgent ne le quitte pas dans l'envoi qui le met en œuvre ou le
+  clôt (cas relevé par la contre-vérification de JERY : depuis Planifié, il sortait aussi du gel). Un changement planifié qui quitte Urgent repasse le contrôle du gel, comme
   un déplacement (CHG-25).
 - **Pourquoi** : les deux règles lisaient le type envoyé. Le responsable clôturait sans revue un
   changement Urgent en le disant Normal. Un gestionnaire laissait un changement Normal autorisé

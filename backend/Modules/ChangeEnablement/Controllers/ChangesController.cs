@@ -142,9 +142,10 @@ public class ChangesController(AppDbContext db) : RecordController<Change, Chang
         // Type d'avant l'envoi : les gardes qui dépendent du type ne se contournent pas en le changeant (#323).
         var leavesUrgent = e.Id != 0 && Db.Entry(e).Property(x => x.ChangeType).OriginalValue == "Urgent" && e.ChangeType != "Urgent";
         // CHG-15 : mis en œuvre en urgence, il le reste ; sinon, le renvoyer Normal, en un envoi ou
-        // en deux, le clôt sans revue post-implémentation.
-        if (leavesUrgent && e.Status is "Mis en œuvre" or "Clos")
-            return "Un changement mis en œuvre en urgence reste Urgent : sa revue post-implémentation est exigée à la clôture.";
+        // en deux, le clôt sans revue post-implémentation. De même dans l'envoi qui le met en œuvre :
+        // parti de Planifié, il échapperait aussi au gel (CHG-25), contrôlé sur Planifié seulement.
+        if (leavesUrgent && (e.Status is "Mis en œuvre" or "Clos" || status is "Mis en œuvre" or "Clos"))
+            return "Un changement Urgent reste Urgent pour sa mise en œuvre et sa clôture : sa revue post-implémentation est exigée à la clôture.";
         // § 4 : Planifié → Mis en œuvre et Mis en œuvre → Clos, par le responsable (membre du groupe
         // responsable) ou un gestionnaire. Responsable d'avant la modification : se désigner et
         // transiter d'un même envoi ne suffit pas (comme REQ-25, #249).
