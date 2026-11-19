@@ -166,6 +166,10 @@ public class ServiceRequestsController(AppDbContext db) : RecordController<Servi
     /// </summary>
     protected override async Task<string?> CheckStatusAsync(ServiceRequest e, string status)
     {
+        // REQ-25 : une demande en cours n'est réaffectée que par son responsable ou un gestionnaire ;
+        // sinon la règle ci-dessous se contournait en deux envois.
+        if (e.Status == "En cours" && ReassignedByThirdParty(e))
+            return "Seul le responsable de la demande ou un gestionnaire la réaffecte une fois la demande en cours.";
         if (status == "Satisfaite" && e.Status != "Satisfaite" && e.Id != 0)
         {
             // Responsable d'avant la modification : se désigner et satisfaire d'un même envoi ne suffit pas.

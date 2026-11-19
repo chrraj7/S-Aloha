@@ -56,9 +56,10 @@ public class ItilModulesTests(ApiFixture api)
     private const string Me = "hery.rakoto";
 
     /// <summary>CHG-26 : un changement Standard se crée depuis un modèle.</summary>
-    private static object StandardChange(string title, int model) => new
+    private static object StandardChange(string title, int model, string? owner = null) => new
     {
         title, changeType = "Standard", risk = "Faible", standardModelId = model, plannedStart = Slot, plannedEnd = Slot.AddHours(2),
+        ownerType = owner is null ? null : "User", ownerId = owner, ownerDisplayName = owner,
         implementationPlan = "Appliquer", backoutPlan = "Restaurer", actualStart = Slot, actualEnd = Slot.AddHours(1)
     };
 
@@ -157,10 +158,11 @@ public class ItilModulesTests(ApiFixture api)
         Assert.Equal("Demandé", Str(normal, "status"));
         Assert.Equal(HttpStatusCode.BadRequest, (await Put(user, "/api/changes", Id(normal), Change("Normal", "Normal", "Planifié"))).StatusCode);
         await ChangeTestData.LinkCiAsync(user, Id(normal));   // CHG-16
-        await Json(await Put(user, "/api/changes", Id(normal), Change("Normal", "Normal", "Évalué")));
-        Assert.Equal(HttpStatusCode.Forbidden, (await Put(user, "/api/changes", Id(normal), Change("Normal", "Normal", "Autorisé"))).StatusCode);
+        // CHG-07 : le demandeur se désigne responsable avant l'autorisation ; après, un gestionnaire le ferait.
+        await Json(await Put(user, "/api/changes", Id(normal), Change("Normal", "Normal", "Évalué", owner: Me)));
+        Assert.Equal(HttpStatusCode.Forbidden, (await Put(user, "/api/changes", Id(normal), Change("Normal", "Normal", "Autorisé", owner: Me))).StatusCode);
 
-        await Json(await Put(api.Client("Manager", "chef.itil"), "/api/changes", Id(normal), Change("Normal", "Normal", "Autorisé")));   // CHG-21 : un autre que le demandeur
+        await Json(await Put(api.Client("Manager", "chef.itil"), "/api/changes", Id(normal), Change("Normal", "Normal", "Autorisé", owner: Me)));   // CHG-21 : un autre que le demandeur
         // § 4 : la mise en œuvre et la clôture reviennent au responsable du changement, ici le demandeur.
         await Json(await Put(user, "/api/changes", Id(normal), Change("Normal", "Normal", "Planifié", owner: Me)));
         await Json(await Put(user, "/api/changes", Id(normal), Change("Normal", "Normal", "Mis en œuvre", owner: Me)));
@@ -337,7 +339,8 @@ public class ItilModulesTests(ApiFixture api)
         Assert.Equal(HttpStatusCode.BadRequest,
             (await Put(user, "/api/incidents", Id(i), Incident("Invariant", "Résolu", ""))).StatusCode);
 
-        var c = await Create(user, "/api/changes", StandardChange("Invariant", await ChangeTestData.StandardModelIdAsync(api)));
+        // CHG-07 : un changement standard naît autorisé ; son responsable se désigne à la création.
+        var c = await Create(user, "/api/changes", StandardChange("Invariant", await ChangeTestData.StandardModelIdAsync(api), Me));
         await Json(await Put(user, "/api/changes", Id(c), Change("Invariant", "Standard", "Planifié", null, risk: "Faible", owner: Me)));
         await Json(await Put(user, "/api/changes", Id(c), Change("Invariant", "Standard", "Mis en œuvre", null, risk: "Faible", owner: Me)));
         await Json(await Put(user, "/api/changes", Id(c), Change("Invariant", "Standard", "Clos", "Réussi", risk: "Faible", owner: Me)));
