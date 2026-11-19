@@ -19,6 +19,24 @@ ci-dessous, chaque lundi.
 
 ### Ajouté
 
+- **Sondes de santé de l'API** (O1) : `GET /health/live` (le processus répond) et
+  `GET /health/ready` (la base aussi, 503 sinon), sans jeton et sans détail, pour Docker et
+  Kubernetes ; healthcheck du service `api` dans `docker-compose.yml`.
+
+- **Console : CI à vérifier** (CFG-15) : les CI En service dont la fiche n'a pas été vérifiée
+  depuis 12 mois apparaissent dans Mon travail pour leur propriétaire (groupes compris) et
+  dans Relances pour les gestionnaires de leur périmètre, avec la date de la dernière
+  vérification ; compteurs des tuiles inclus.
+
+- **HTTPS** (S2) : `docker-compose.https.yml` place un reverse proxy TLS (Caddy) devant
+  S-Aloha : autorité interne, Let's Encrypt ou certificat fourni ; seuls les ports 80
+  (redirection) et 443 sont publiés ; le cookie de session devient `Secure`
+  ([exploitation § HTTPS](docs/reference/exploitation.md#https)).
+- **LDAPS avec l'autorité de l'annuaire** (S2) : `Ldap:CaCertificatePath` désigne le fichier PEM
+  de l'autorité qui a émis le certificat du contrôleur de domaine, pour la connexion et la
+  découverte Active Directory. La validation du certificat et du nom n'est jamais désactivée
+  ([exploitation § LDAPS](docs/reference/exploitation.md#ldaps)).
+
 - **Indicateurs de conformité et de configuration** : écarts NIS 2 traités et évolution du score
   (NIS-30, NIS-31), disponibilité des services sous SLA (SLM-31), délais et abandons des
   améliorations (CSI-30 à CSI-32), usage et fraîcheur des articles (KB-30 à KB-32), délai de
@@ -188,6 +206,31 @@ ci-dessous, chaque lundi.
 
 ### Modifié
 
+- **Demandes** : une demande approuvée ne passe En cours qu'avec un responsable désigné
+  (REQ-13) ; une demande du catalogue le reçoit déjà de son modèle à l'approbation.
+
+- **Recherche et périmètres** (RAG-13) : les résultats invisibles de l'utilisateur sont écartés
+  avant le classement ; un utilisateur aux périmètres étroits reçoit toute la liste demandée,
+  et non une liste écourtée.
+
+- **Incidents majeurs** : un incident majeur déclaré sans responsable ne sort de
+  « Nouveau » qu'avec un gestionnaire pour responsable ; la console le signale
+  « Responsable à désigner » (INC-13).
+
+- **Contribuer** : l'entrée de journal et la note du journal des versions d'une PR vont
+  chacune dans leur propre fichier (`docs/archives/journaux/`, `changelog.d/`), si bien que
+  deux PR ouvertes en même temps n'entrent plus en conflit sur ces fichiers.
+
+- **Recherche** : le plancher de similarité passe de 0,5 à 0,47, calibré sur un jeu de
+  requêtes (RAG-07, RAG-10) : davantage de bonnes réponses trouvées par le sens, sans
+  réponse proposée aux requêtes qui n'en ont pas.
+
+- **Recherche** : la similarité des vecteurs est calculée dans PostgreSQL par pgvector
+  (index HNSW) au lieu de la mémoire de l'API ; la mémoire de l'API ne croît plus avec
+  l'index, et tout processus qui lit la base voit le même index (ADR-0022, RAG-05).
+- **Exigence** : pgvector 0.8.0 ou plus (parcours itératif de l'index) ; avec une version
+  plus ancienne, la requête vectorielle est journalisée et la recherche reste lexicale.
+
 - **Images de développement `edge`** : l'état de `main` est publié sur ghcr.io à chaque
   fusion (CI verte), et c'est désormais l'image par défaut des fichiers compose — `latest`
   datait du 2026-10-19. Les images des préversions 0.1.0 et 0.2.0, retirées, ne sont plus
@@ -209,6 +252,95 @@ ci-dessous, chaque lundi.
   un test.
 
 ### Corrigé
+
+- **Résolution d'un incident parent** (INC-15, INC-16) : résoudre un parent résolvait aussi un
+  enfant majeur sans problème relié, que sa résolution directe refusait. Cet enfant reste
+  désormais ouvert ; la réponse de l'API le liste avec la raison (`unresolvedChildren`).
+
+- **Échéance d'une demande d'un modèle sans délai cible** (REQ-22) : un User ne pouvait plus
+  modifier l'échéance souhaitée d'une demande issue d'un modèle du catalogue sans délai cible ;
+  seule l'échéance calculée d'un modèle à délai cible reste réservée aux gestionnaires.
+
+- **Champs réservés aux gestionnaires sur une fiche** (INC-13, PER-06) : la case « Incident
+  majeur », le commentaire sur un conflit de calendrier d'un changement et les champs de
+  gestionnaire d'une déclaration réglementaire suivaient le rôle AD. Ils suivent désormais le
+  rôle sur le périmètre de l'enregistrement, comme l'API : le gestionnaire d'un périmètre,
+  User dans l'AD, déclare un incident majeur depuis la fiche ; un Manager AD simple User du
+  périmètre ne voit plus la case active.
+
+- **Connaissances, quatre yeux** (KB-03, KB-16) : un gestionnaire qui réécrit un article publié
+  dont il est le seul rédacteur ne le republie plus seul ; l'article repasse en brouillon et un
+  autre gestionnaire le republie ([#215](https://github.com/chrraj7/S-Aloha/issues/215)).
+
+- **Référentiels sans périmètre à l'écran** (PER-13) : les boutons des modèles de changement
+  standard, du catalogue de demandes, des périodes de gel et des fins de support, et la section
+  **Paramétrage** du menu, suivaient le rôle de l'annuaire ; ils suivent désormais, comme l'API,
+  le rôle de gestionnaire d'au moins un périmètre — un User de l'annuaire gestionnaire d'un
+  périmètre les voit, un Manager de l'annuaire simple utilisateur partout ne les voit plus. Le
+  référentiel NIS 2 reste à l'Admin.
+
+- **Décisions de gestionnaire sur les fiches** (PER-06) : la revue et la demande d'archivage
+  d'un article publié, la soumission à publication, le contrôle de durabilité d'une amélioration,
+  la vérification d'un CI et le retrait de la pièce jointe d'un autre suivaient le rôle de
+  l'annuaire ; ils suivent désormais, comme l'API, le rôle sur le périmètre de l'enregistrement.
+
+- **Retrait d'un service** (SLM-16) : un service ne se retire plus tant qu'il porte un SLA En
+  vigueur, un incident ou une demande ouverts ; le refus cite les références en cause. Un SLA
+  ne continue plus d'alerter pour un service retiré.
+
+- **CORS** : une origine de `Cors:AllowedOrigins` écrite avec une barre oblique finale est
+  admise au lieu d'être refusée sans message (#239).
+
+- **Incidents enfants** : un parent résolu en *Doublon* laisse ses enfants ouverts et les liste
+  avec la raison, au lieu de les résoudre en *Doublon* sans lien vers l'incident conservé
+  (INC-08, INC-16).
+
+- **Configuration** : un User ne crée plus un CI directement au statut « Retiré », réservé au
+  gestionnaire comme le retrait d'un CI existant (CFG-12).
+
+- **Demandes requalifiées** : l'incident créé par la requalification d'une demande reçoit
+  ses échéances SLA dès sa création (REQ-12, INC-21).
+
+- **Demandes** : seuls le responsable de la demande (ou un membre du groupe responsable) et
+  un gestionnaire la déclarent satisfaite (§ 4, REQ-25).
+
+- **Incidents** (INC-27) : enregistrer la fiche d'un incident depuis l'interface n'efface plus
+  son début constaté ; l'incident reste compté dans le temps moyen de détection (MTTD).
+
+- **Demandes** : le bloc « Requalifier » paraît pour le gestionnaire du périmètre de la
+  demande, et non plus selon le rôle de l'annuaire (REQ-12, PER-06).
+
+- **Demandes** : changer l'objet, le service ou le bénéficiaire d'une demande approuvée ou en
+  cours la renvoie à l'approbation ; une demande satisfaite ou close ne les change plus ; seuls
+  le demandeur et un gestionnaire changent le bénéficiaire (REQ-04, REQ-07).
+
+- **Changements** : seuls le responsable du changement et un gestionnaire le mettent en
+  œuvre et le closent (§ 4 de la spécification).
+
+- **Amélioration continue** : seuls le porteur et un gestionnaire engagent une amélioration
+  et la déclarent réalisée ; l'engager exige un porteur (CSI-11).
+
+- **Projets et registres réservés** : les boutons du chef de projet (business case, étapes,
+  livrables, suppressions) et la création d'un service, d'un SLA ou d'une évaluation NIS 2
+  suivent le rôle sur le périmètre, comme l'API, et non plus le rôle Active Directory
+  (PER-06, PRJ-04).
+
+- **Demandes** : une demande En cours ne perd plus son responsable par un simple
+  enregistrement, et une contestation envoyée sans responsable est refusée ; le responsable
+  se remplace, il ne se retire pas (REQ-13).
+
+- **Projets** : la validation de fin d'étape est refusée sur un projet clôturé ou abandonné,
+  et son bouton n'y est plus proposé (PRJ-07, PRJ-21).
+
+- **Demandes** : enregistrer la fiche d'une demande dont le service est hors catalogue
+  n'efface plus ce service ; la demande approuvée ne repart plus à l'approbation, et la
+  contestation d'une demande satisfaite est de nouveau possible (REQ-04, REQ-10).
+
+- **Incidents enfants** : la résolution d'un incident parent ne résout que ses enfants du
+  même périmètre (INC-16, PER-07).
+
+- **Notifications des déclarations réglementaires** (SOC-23, DRG-01) : quand un incident change
+  de périmètre, les notifications de ses déclarations le suivent avec elles.
 
 - **« Ouvrir un problème lié »** (INC-14) : le bouton de la fiche d'un incident échouait pour
   un utilisateur de plusieurs périmètres (« Choisir le périmètre de l'enregistrement. ») et,
@@ -253,6 +385,52 @@ ci-dessous, chaque lundi.
 
 ### Sécurité
 
+- **CORS limité aux origines configurées** (S3) : l'API n'accepte plus les requêtes de
+  n'importe quelle origine. `Cors:AllowedOrigins` liste les origines externes admises ; vide
+  par défaut, ce qui suffit au frontend fourni (même origine, par nginx).
+
+- **Clôture des incidents** (INC-10) : seul un gestionnaire du périmètre clôt un incident
+  résolu ; un User le résout ou le rouvre, mais sa demande de clôture est refusée (403).
+
+- **Déclarations réglementaires et périmètres** (DRG-01, PER-07) : quand un incident change de
+  périmètre, ses déclarations le suivent ; une déclaration ne change plus seule de périmètre.
+
+- **Découverte et périmètres** (PER-05, PER-06, PER-07, CFG-41) : un actif rapproché d'un CI
+  déplacé depuis vers un autre périmètre ne met plus ce CI à jour ; il repasse au
+  rapprochement dans son seul périmètre, et le sas ne renvoie le CI rapproché (liste, fiche
+  de l'actif) que s'il est visible du gestionnaire.
+
+- **Incidents enfants et périmètres** (PER-07, INC-16) : un incident rattaché à un parent ne
+  change plus de périmètre ; on le détache d'abord de son parent, puis on le déplace.
+
+- **Exports CSV de l'interface** (REP-08, inventaire, synthèse de conformité) : une cellule
+  qui contient un retour chariot est mise entre guillemets, comme dans l'export du journal
+  d'audit ; elle reste une seule cellule à l'ouverture dans le tableur.
+
+- **Incidents parents et périmètres** (PER-07, INC-16) : un incident qui a des enfants
+  rattachés ne change plus de périmètre ; on détache d'abord ses enfants, puis on le déplace.
+
+- **Relations proposées par la découverte** (CFG-55, PER-05, PER-07) : une proposition ne
+  décrit que les CI visibles de l'appelant, et ne s'accepte que si ses deux CI sont encore au
+  périmètre de la proposition ; un CI déplacé entre deux scans ne se relie plus depuis
+  l'ancien périmètre.
+
+- **Aucun secret d'exemple dans `docker-compose.yml`** (S1) : le mot de passe PostgreSQL, la
+  clé JWT et la clé du coffre se fournissent par l'environnement (`POSTGRES_PASSWORD`,
+  `JWT_KEY`, `DISCOVERY_VAULT_KEY`, par exemple `docker compose --env-file …`) ; les valeurs
+  d'exemple ne restent que dans `docker-compose.demo.yml`. Une installation lancée avec le
+  seul `docker-compose.yml` doit désormais fournir ces trois variables.
+
+- **LDAPS avec l'autorité de l'annuaire** (S2) : le certificat du contrôleur de domaine doit
+  porter l'usage « authentification serveur », comme avec la validation du système
+  ([exploitation § LDAPS](docs/reference/exploitation.md#ldaps)).
+
+- **Contrôles des pull requests** : une PR prouve son changement par un test qui échoue sans
+  lui (job Preuve), ne peut ni retirer ni désactiver de test (Garde-fous), et ses dépendances
+  ajoutées comme ses workflows sont analysés ; une CI rouge sur `main` ouvre une issue
+  `main-rouge`. Deux injections par expression corrigées dans les workflows de publication
+  d'images.
+
 - **Changement autorisé modifié par un gestionnaire** (CHG-07, CHG-20, CHG-21, CHG-22) : la
   modification revient à l'évaluation quand elle est faite par le demandeur, quand le
   changement relève du CAB (Normal à risque Élevé) ou quand le nouveau créneau crée un conflit
@@ -281,6 +459,12 @@ ci-dessous, chaque lundi.
   `font-src 'self'`).
 
 ### Mise à jour
+
+- **Image PostgreSQL** : `pgvector/pgvector:0.8.7-pg16` remplace `postgres:16-alpine`. Une
+  base créée par l'ancienne image se sauvegarde puis se restaure (ou ses index se
+  reconstruisent par `REINDEX DATABASE`) : le tri du texte diffère entre Alpine et Debian
+  ([exploitation § Recherche](docs/reference/exploitation.md#recherche)). Un PostgreSQL
+  géré doit proposer l'extension `vector`.
 
 - **Dernière connexion (ADM-12)** : la migration `LastLogins` crée une table (compte, date) ;
   à mentionner au registre des traitements de l'organisation.
