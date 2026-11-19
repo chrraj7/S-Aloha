@@ -77,6 +77,35 @@ export function KnownErrorArticle({ p }) {
   )
 }
 
+/**
+ * CHG-23 : le correctif d'un problème se met en œuvre par un changement. Créé depuis la fiche,
+ * il reprend le titre et la description, et se relie au problème ; il naît dans le périmètre
+ * du problème, sans quoi l'API refuse pour un utilisateur de plusieurs périmètres (PER-04).
+ */
+export function ProblemChange({ p }) {
+  const [error, setError] = useState('')
+  const nav = useNavigate()
+  const create = async () => {
+    try {
+      const c = await api.changes.create({
+        title: p.title, changeType: 'Normal', risk: 'Moyen', perimeterId: p.perimeterId,
+        description: `${p.description ? p.description + '\n\n' : ''}Correctif du problème ${p.reference}.`
+      })
+      await api.links.create({ fromType: 'problem', fromId: p.id, toReference: c.reference })
+      nav('/changes/' + c.id)
+    } catch (e) { setError(e.message) }
+  }
+  return (
+    <div className="card" style={{ marginTop: 16 }}>
+      <h3 style={{ color: 'var(--navy)', marginBottom: 4 }}>Correctif</h3>
+      <p style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 10 }}>
+        Mettre en œuvre le correctif par un changement, relié à ce problème.</p>
+      {error && <div className="error">{error}</div>}
+      <button className="btn ghost" onClick={create}>Créer un changement</button>
+    </div>
+  )
+}
+
 export default function ProblemDetail() {
   const { id } = useParams()
   const [p, setP] = useState(null)
@@ -116,7 +145,7 @@ export default function ProblemDetail() {
             className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}
       </div>
 
-      {tab === 'infos' && <><Infos p={p} isManager={isManager} onSaved={load} /><KnownErrorArticle p={p} /><SimilarCases type="problem" id={p.id} /></>}
+      {tab === 'infos' && <><Infos p={p} isManager={isManager} onSaved={load} /><KnownErrorArticle p={p} /><ProblemChange p={p} /><SimilarCases type="problem" id={p.id} /></>}
       {tab === 'rca' && <Rca p={p} isManager={isManager} onSaved={load} />}
       {tab === 'actions' && <ActionsTab p={p} isManager={isManager} onSaved={load} />}
       {tab === 'comments' && <Comments type="problem" id={p.id} />}
