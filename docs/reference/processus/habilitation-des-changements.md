@@ -127,7 +127,7 @@ les conditions de statut.
 | CHG-20 | **Autorité selon le risque** : Normal à risque Faible ou Moyen → un Manager ; Normal à risque **Élevé** → **CAB** : deux Managers distincts approuvent (`Approvals`), un seul rejet suffit à rejeter ; Urgent → un Manager (autorisation accélérée), revue obligatoire (CHG-15) | ✅ (`POST /api/changes/{id}/approvals` ; autorisation directe refusée à risque Élevé ; Urgent : un Manager, revue CHG-15 ; encadré « CAB » de la fiche) | |
 | CHG-21 | Le demandeur d'un changement ne peut pas l'autoriser lui-même (séparation des tâches), sauf Admin | ✅ (le demandeur est le créateur du changement) | |
 | CHG-22 | **Conflit non résolu** : autoriser un changement en conflit de calendrier (CHG-09) exige un commentaire de l'autorité (`ConflictComment` ; au CAB, le commentaire de l'approbation) ; le refus cite les changements en conflit | ✅ | 2 |
-| CHG-23 | Un changement peut être **créé depuis un problème ou une action corrective** (PRB-27) : titre, description et lien repris | ✅ (depuis une action) / 🔜 (depuis le problème : lien manuel) | 2 |
+| CHG-23 | Un changement peut être **créé depuis un problème ou une action corrective** (PRB-27) : titre, description et lien repris | ✅ (depuis une action ; depuis la fiche du problème, « Créer un changement » : dans le périmètre du problème) | 2 |
 | CHG-24 | Notifications (SOC-21) : changement Évalué → autorité (ou CAB) ; autorisation ou rejet → demandeur et responsable ; J-1 de la mise en œuvre → responsable | ✅ | |
 
 ### Calendrier, gel et modèles
@@ -150,7 +150,7 @@ les conditions de statut.
 | Lien | Sens | Règle | Statut |
 |---|---|---|---|
 | Changement → CI | CI modifiés | CHG-09, CHG-16 ; onglet « Impact » de la fiche : CI reliés, CI touchés en aval, services touchés (CFG-20) | ✅ |
-| Problème → Changement | Correctif | CHG-23 | ✅ (lien) / 🔜 |
+| Problème → Changement | Correctif | CHG-23 | ✅ (lien manuel, ou créé depuis le problème ou son action) |
 | Demande → Changement | Besoin non standard | REQ-12 | ✅ (lien) / 🔜 |
 | Changement → Incident | Incident causé par le changement | CHG-33 | ✅ (lien, indicateur) |
 | Changement → Article | Procédure | Lien manuel | ✅ |
