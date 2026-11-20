@@ -79,6 +79,8 @@ public class ConsoleController(AppDbContext db, PerimeterAccess access) : Contro
         myAssignments.AddRange(await Mine(db.Improvements, "improvement", meKey, groups, Improvement.Done, all, seen));
         // PRJ-34 : mes projets (chef de projet) dans Mon travail.
         myAssignments.AddRange(await Mine(db.Projects, "project", meKey, groups, Project.Done, all, seen));
+        // Conformité NIS 2 : mes évaluations ouvertes (pilote), jusqu'à leur validation.
+        myAssignments.AddRange(await Mine(db.Assessments, "assessment", meKey, groups, ["Validée"], all, seen));
 
         // PRJ-34 : projets hors tolérance (délai, coût, prévision de fin) ou à jalons en retard.
         var todayDate = DateTime.UtcNow.Date;
