@@ -5,7 +5,7 @@ using SAloha.Api.Modules.ComplianceAssessment;
 
 namespace SAloha.Api.Tests;
 
-/// <summary>Conformité NIS 2 : preuves (NIS-08), comparaison (NIS-09), plan de traitement des écarts (NIS-14), revue périodique (NIS-16), export (NIS-17).</summary>
+/// <summary>Conformité NIS 2 : preuves (NIS-08), comparaison (NIS-09), plan de traitement des écarts (NIS-14), revue périodique (NIS-16), export (NIS-17), Mon travail du pilote.</summary>
 [Collection("api")]
 public class ComplianceExitMvpTests(ApiFixture api)
 {
@@ -154,5 +154,24 @@ public class ComplianceExitMvpTests(ApiFixture api)
         var (elsewhere, _, _) = await Answered(admin, "NIS-09 usine", perimeterId: usine);
         Assert.Equal(HttpStatusCode.BadRequest, (await admin.GetAsync($"/api/assessments/{after}/compare/{elsewhere}")).StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, (await admin.GetAsync($"/api/assessments/{after}/compare/{after}")).StatusCode);
+    }
+
+    [Fact]
+    public async Task NIS_mes_evaluations_ouvertes_dans_mon_travail()
+    {
+        var m = api.Client("Manager", "nismt.manager");
+        var open = await Json(await m.PostAsJsonAsync("/api/assessments", Dto("Mon travail ouverte", null, owner: "nismt.pilote")));
+        var (validatedId, _, _) = await Answered(m, "Mon travail validée");
+        await Json(await m.PutAsJsonAsync($"/api/assessments/{validatedId}", Dto("Mon travail validée", "Validée", owner: "nismt.pilote")));
+
+        // Le pilote voit son évaluation ouverte dans Mon travail ; une évaluation validée n'y est plus.
+        var mine = (await Json(await api.Client("User", "nismt.pilote").GetAsync("/api/console"))).GetProperty("myAssignments").EnumerateArray().ToList();
+        Assert.Contains(mine, a => a.GetProperty("type").GetString() == "assessment" && a.GetProperty("id").GetInt32() == open.GetProperty("id").GetInt32()
+                                   && a.GetProperty("status").GetString() == "Brouillon");
+        Assert.DoesNotContain(mine, a => a.GetProperty("type").GetString() == "assessment" && a.GetProperty("id").GetInt32() == validatedId);
+
+        // Un autre compte ne la voit pas dans son Mon travail.
+        var other = (await Json(await api.Client("User", "nismt.autre").GetAsync("/api/console"))).GetProperty("myAssignments").EnumerateArray();
+        Assert.DoesNotContain(other, a => a.GetProperty("type").GetString() == "assessment");
     }
 }

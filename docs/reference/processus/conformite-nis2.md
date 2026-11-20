@@ -162,8 +162,8 @@ stateDiagram-v2
 ## 8. Console et indicateurs
 
 Console : évaluations à renouveler (Revues échues, gestionnaires, NIS-16) ✅. Mes évaluations
-ouvertes (Mon travail) — 🔜 (lot 2). À venir : texte du référentiel incomplet (Relances,
-Admin, NIS-23).
+ouvertes (Mon travail : celles dont je suis le responsable, directement ou par un groupe, en
+Brouillon ou En cours) ✅. Texte du référentiel incomplet (Relances, Admin, NIS-23) ✅.
 
 | Indicateur | Calcul | Statut |
 |---|---|---|
