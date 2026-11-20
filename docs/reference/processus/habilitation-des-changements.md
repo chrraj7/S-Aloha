@@ -153,7 +153,7 @@ les conditions de statut.
 |---|---|---|---|
 | Changement → CI | CI modifiés | CHG-09, CHG-16 ; onglet « Impact » de la fiche : CI reliés, CI touchés en aval, services touchés (CFG-20) | ✅ |
 | Problème → Changement | Correctif | CHG-23 | ✅ (lien manuel, ou créé depuis le problème ou son action) |
-| Demande → Changement | Besoin non standard | REQ-12 | ✅ (lien) / 🔜 |
+| Demande → Changement | Besoin non standard | REQ-12 | ✅ (requalification de la demande : changement créé et relié, ou lien manuel) |
 | Changement → Incident | Incident causé par le changement | CHG-33 | ✅ (lien, indicateur) |
 | Changement → Article | Procédure | Lien manuel | ✅ |
 
