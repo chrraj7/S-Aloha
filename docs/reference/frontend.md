@@ -258,6 +258,7 @@ Un module `soon` apparaît grisé, non cliquable, avec le badge « Bientôt ».
 | [Niveaux de service](processus/gestion-des-niveaux-de-service.md) | Catalogue des services | Tous | SLM-01 | ✅ |
 | | Accords (SLA) | Tous | SLM-02 | ✅ |
 | | Respect des SLA (tableau mensuel) : tableau de bord, onglet Conformité, « Respect des SLA, par service » ; disponibilité sur la fiche du SLA | Tous | SLM-20, SLM-21 | ✅ |
+| | SLA expirant : liste de la console (Relances, SLA en vigueur dont la fin de validité tombe dans les 30 jours) | Manager | SLM-24 | ✅ |
 | [Connaissances](processus/gestion-des-connaissances.md) | Base de connaissances, avec le bloc « Chercher d'abord » (recherche hybride) en tête du registre | Tous | KB-04, RAG-05 | ✅ |
 | | Brouillons à publier : bloc « Décisions » de la console (KB-21) ; fiche : onglet **Lecture** (Markdown, KB-10) et bloc « Cycle de l'article » (soumission, revue, archivage demandé, utilisation) | Manager, Admin (soumission : tous) | KB-21, KB-10, KB-17 | ✅ (console, fiche) / 🔜 (sous-entrée de menu) |
 | [Amélioration](processus/amelioration-continue.md) | Registre d'amélioration | Tous | CSI-01 | ✅ |

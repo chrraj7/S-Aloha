@@ -137,16 +137,17 @@ ci-dessous sont permises (SOC-05).
 
 ## 8. Console et indicateurs
 
-Console ✅ : SLA à revoir (Relances, gestionnaires). Un mois sous la cible est notifié aux
-gestionnaires (SLM-23). À venir : SLA sous la cible ce mois (Urgent, gestionnaires), SLA
-expirant dans 30 jours (Relances, SLM-24 : notifié aujourd'hui).
+Console ✅ : SLA à revoir (Relances, gestionnaires) ; SLA en vigueur expirant dans les
+30 jours (Relances, gestionnaires des périmètres, « Expire le … », SLM-24, qui le notifie
+aussi). Un mois sous la cible est notifié aux gestionnaires (SLM-23). À venir : SLA sous la
+cible ce mois (Urgent, gestionnaires).
 
 | Indicateur | Calcul | Statut |
 |---|---|---|
 | Volumétrie (services, SLA par statut) | | ✅ |
 | Respect des SLA | SLM-20, par SLA et par mois | ✅ (fiche du SLA) / 🔜 SLM-30 (reporting, lot 2) |
 | Disponibilité mesurée | SLM-21 | ✅ (fiche du SLA ; tableau de bord, SLM-31, [REP-45](../reporting.md#7-conformité-et-métriques)) |
-| SLA à revoir, expirant | SLM-05, SLM-24 | ✅ / 🔜 |
+| SLA à revoir, expirant | SLM-05, SLM-24 | ✅ (console, Relances) |
 
 ## 9. API
 
