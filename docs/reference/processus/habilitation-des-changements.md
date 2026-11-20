@@ -30,7 +30,9 @@ réaliser techniquement le changement (outils de déploiement).
 
 | Action | User | Manager | Admin | Statut |
 |---|---|---|---|---|
-| Créer, évaluer, planifier, mettre en œuvre, clore | ✔ | ✔ | ✔ | ✅ |
+| Créer, évaluer, planifier | ✔ | ✔ | ✔ | ✅ |
+| Mettre en œuvre, clore | Responsable | ✔ | ✔ | ✅ CHG-14 (§ 4) |
+| Changer le responsable d'un changement Autorisé, Planifié ou Mis en œuvre | Responsable | ✔ | ✔ | ✅ CHG-07 |
 | Autoriser / rejeter | ✘ | ✔ | ✔ | ✅ |
 | Définir les périodes de gel | ✘ | ✔ | ✔ | ✅ CHG-25, PER-13 |
 | Tenir les modèles de changement standard | ✘ | ✔ | ✔ | ✅ CHG-26, PER-13 |
@@ -108,7 +110,7 @@ les conditions de statut.
 | CHG-04 | **Planifié**, **Mis en œuvre** et **Clos** exigent un changement autorisé ; **Planifié** exige un début planifié ; **Clos** exige le résultat (*Réussi* ou *Échoué*) | ✅ | |
 | CHG-05 | Un changement **rejeté est terminé** : ni planifié, ni mis en œuvre, ni clos | ✅ | |
 | CHG-06 | Revenir à Demandé ou Évalué **efface l'autorisation** ; la fin planifiée ne peut précéder le début | ✅ | |
-| CHG-07 | **Modifier un changement autorisé** (Autorisé ou Planifié) — type, risque, plans ou créneau — le **ramène à Évalué** et efface l'autorisation. Exceptions : la modification par un gestionnaire vaut autorisation, à son nom (`AuthorizedBy`, `AuthorizedAt`), **sauf** s'il est le demandeur (CHG-21, hors Admin), si le changement relève du CAB après modification (Normal à risque Élevé, CHG-20) ou si le nouveau créneau crée un conflit sans nouveau commentaire de l'autorité (CHG-22) : retour à Évalué ; replanifier un changement **standard** ne retire pas son autorisation ; titre, description et responsable se modifient librement | ✅ | |
+| CHG-07 | **Modifier un changement autorisé** (Autorisé ou Planifié) — type, risque, plans ou créneau — le **ramène à Évalué** et efface l'autorisation. Exceptions : la modification par un gestionnaire vaut autorisation, à son nom (`AuthorizedBy`, `AuthorizedAt`), **sauf** s'il est le demandeur (CHG-21, hors Admin), si le changement relève du CAB après modification (Normal à risque Élevé, CHG-20) ou si le nouveau créneau crée un conflit sans nouveau commentaire de l'autorité (CHG-22) : retour à Évalué ; replanifier un changement **standard** ne retire pas son autorisation ; titre et description se modifient librement. Le **responsable** d'un changement Autorisé, Planifié ou Mis en œuvre n'est changé que par le responsable en place (ou un membre du groupe responsable) ou par un gestionnaire du périmètre (400 sinon) : un tiers ne se désigne pas pour mettre en œuvre à l'envoi suivant. Un changement autorisé **sans responsable** est confié par un gestionnaire (400 pour un User qui se désigne) ; avant l'autorisation, et à la création d'un changement standard, le responsable se désigne librement | ✅ | |
 | CHG-08 | **Calendrier des changements** : changements non rejetés ayant un début planifié, depuis une semaine, regroupés par semaine | ✅ | |
 | CHG-09 | **Conflit de calendrier** : deux changements non rejetés liés à un **même CI** (lien dans un sens ou dans l'autre) dont les créneaux **se chevauchent** (bout à bout : pas de chevauchement ; sans fin, un changement occupe une heure). Signalé sur le calendrier et la fiche, avec le changement et le CI en cause ; non bloquant | ✅ | |
 | CHG-10 | Recherche (titre, référence) insensible à la casse ; le registre ne renvoie pas les plans (SOC-13) | ✅ | |
@@ -127,7 +129,7 @@ les conditions de statut.
 | CHG-20 | **Autorité selon le risque** : Normal à risque Faible ou Moyen → un Manager ; Normal à risque **Élevé** → **CAB** : deux Managers distincts approuvent (`Approvals`), un seul rejet suffit à rejeter ; Urgent → un Manager (autorisation accélérée), revue obligatoire (CHG-15) | ✅ (`POST /api/changes/{id}/approvals` ; autorisation directe refusée à risque Élevé ; Urgent : un Manager, revue CHG-15 ; encadré « CAB » de la fiche) | |
 | CHG-21 | Le demandeur d'un changement ne peut pas l'autoriser lui-même (séparation des tâches), sauf Admin | ✅ (le demandeur est le créateur du changement) | |
 | CHG-22 | **Conflit non résolu** : autoriser un changement en conflit de calendrier (CHG-09) exige un commentaire de l'autorité (`ConflictComment` ; au CAB, le commentaire de l'approbation) ; le refus cite les changements en conflit | ✅ | 2 |
-| CHG-23 | Un changement peut être **créé depuis un problème ou une action corrective** (PRB-27) : titre, description et lien repris | ✅ (depuis une action) / 🔜 (depuis le problème : lien manuel) | 2 |
+| CHG-23 | Un changement peut être **créé depuis un problème ou une action corrective** (PRB-27) : titre, description et lien repris | ✅ (depuis une action ; depuis la fiche du problème, « Créer un changement » : dans le périmètre du problème) | 2 |
 | CHG-24 | Notifications (SOC-21) : changement Évalué → autorité (ou CAB) ; autorisation ou rejet → demandeur et responsable ; J-1 de la mise en œuvre → responsable | ✅ | |
 
 ### Calendrier, gel et modèles
@@ -150,7 +152,7 @@ les conditions de statut.
 | Lien | Sens | Règle | Statut |
 |---|---|---|---|
 | Changement → CI | CI modifiés | CHG-09, CHG-16 ; onglet « Impact » de la fiche : CI reliés, CI touchés en aval, services touchés (CFG-20) | ✅ |
-| Problème → Changement | Correctif | CHG-23 | ✅ (lien) / 🔜 |
+| Problème → Changement | Correctif | CHG-23 | ✅ (lien manuel, ou créé depuis le problème ou son action) |
 | Demande → Changement | Besoin non standard | REQ-12 | ✅ (lien) / 🔜 |
 | Changement → Incident | Incident causé par le changement | CHG-33 | ✅ (lien, indicateur) |
 | Changement → Article | Procédure | Lien manuel | ✅ |

@@ -88,7 +88,7 @@ dépendance à un éditeur.
 - **[Problèmes](docs/reference/processus/gestion-des-problemes.md)** — trois analyses de
   cause racine intégrées (**5 Pourquoi**, **Ishikawa 6M**, **arbre des défaillances**),
   erreurs connues et contournements, actions correctives avec échéance et matrice **RACI**
-  sur des personnes ou des groupes AD, gestionnaire du problème, problèmes récurrents détectés.
+  sur des personnes ou des groupes AD, gestionnaire du problème, problèmes récurrents détectés, changement du correctif créé en un clic.
 - **[Changements](docs/reference/processus/habilitation-des-changements.md)** — Standard,
   Normal, Urgent ; modèles standard pré-autorisés, autorité selon le risque et **CAB**,
   séparation des tâches, périodes de **gel**, plans de mise en œuvre et de retour arrière,

@@ -34,6 +34,7 @@ proactive, depuis une tendance), **contrôle** (analyse, contournement, erreur c
 | Déclarer une action **Terminée** | A de l'action | ✔ | ✔ | ✅ PRB-25 |
 | Demander l'approbation d'une action En cours | R de l'action | ✔ | ✔ | ✅ PRB-25 |
 | Créer un changement depuis une action | R ou A de l'action | ✔ | ✔ | ✅ PRB-27 |
+| Créer un changement depuis le problème (relié, dans son périmètre) | ✔ | ✔ | ✔ | ✅ CHG-23 |
 | Modifier une action (titre, échéance, RACI) | R ou A de l'action | ✔ | ✔ | ✅ PRB-24 |
 | Qualifier : statut, impact, urgence, catégorie, cause racine, contournement | ✘ | ✔ | ✔ | ✅ |
 | Supprimer une analyse ou une action | ✘ | ✔ | ✔ | ✅ |
@@ -159,7 +160,7 @@ stateDiagram-v2
 |---|---|---|---|
 | Incident → Problème | Un ou plusieurs incidents causés par le problème | Ouverture depuis l'incident (INC-14) ; PRB-20 | ✅ |
 | Problème → Article | Erreur connue publiée comme article | PRB-30, KB-12 | ✅ |
-| Problème → Changement | Correctif mis en œuvre | PRB-27, CHG-23 | ✅ (lien manuel, ou créé depuis une action) |
+| Problème → Changement | Correctif mis en œuvre | PRB-27, CHG-23 | ✅ (lien manuel, ou créé depuis le problème ou une action) |
 | Problème → CI | CI en cause | Lien manuel | ✅ |
 | Problème → cas similaires | Articles, problèmes et incidents proches, dans l'onglet Informations | [RAG-06](../recherche.md) | ✅ |
 | Problème → Amélioration | Tendance, cause systémique | Lien manuel | ✅ |

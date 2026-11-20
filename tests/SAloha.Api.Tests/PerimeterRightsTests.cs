@@ -241,6 +241,98 @@ public class PerimeterRightsTests(ApiFixture api)
     }
 
     [Fact]
+    public async Task PER_07_INC_16_un_enfant_termine_suit_le_parent_deplace_un_enfant_ouvert_le_retient()
+    {
+        var (siege, usine, _, tiana, group) = await Setup("per07f");
+        var t = api.Client("User", tiana);
+        var admin = api.Client();
+        var usineReader = api.Client("User", "membre.per07f", group);
+        object Inc(string title, int p, string? status = null, bool security = false) => new
+        {
+            title, impact = "Faible", urgency = "Faible", perimeterId = p, status, isSecurity = security,
+            ownerType = "User", ownerId = tiana, ownerDisplayName = tiana,
+            resolution = status == "Résolu" ? "Poste rebranché" : null, resolutionCode = status == "Résolu" ? "Correctif appliqué" : null
+        };
+        var parent = await Json(await t.PostAsJsonAsync("/api/incidents", Inc("Coupure réseau Siège", siege)));
+        var done = await Json(await t.PostAsJsonAsync("/api/incidents", Inc("Poste injoignable", siege, security: true)));
+        var open = await Json(await t.PostAsJsonAsync("/api/incidents", Inc("Imprimante injoignable", siege)));
+        foreach (var child in new[] { done, open })
+            await Json(await t.PutAsJsonAsync($"/api/incidents/{Id(child)}/parent", new { parentReference = Ref(parent) }));
+        // L'enfant terminé porte une déclaration et des notifications : elles ont une copie du périmètre.
+        await Json(await admin.PostAsJsonAsync($"/api/incidents/{Id(done)}/qualification",
+            new { nis2Important = true, personalDataBreach = false, personalDataBreachReason = "Aucune donnée" }));
+        await Json(await t.PutAsJsonAsync($"/api/incidents/{Id(done)}", Inc("Poste injoignable", siege, "En cours", true)));
+        await Json(await t.PutAsJsonAsync($"/api/incidents/{Id(done)}", Inc("Poste injoignable", siege, "Résolu", true)));
+        // Résolu, il ne se détache plus : c'est l'impasse que la règle lève.
+        Assert.Equal(HttpStatusCode.BadRequest,
+            (await t.PutAsJsonAsync($"/api/incidents/{Id(done)}/parent", new { parentReference = "" })).StatusCode);
+
+        // L'enfant ouvert retient le parent, lui seul est compté ; rien ne change.
+        var refused = await admin.PutAsJsonAsync($"/api/incidents/{Id(parent)}", Inc("Coupure réseau Siège", usine));
+        Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+        Assert.Contains("1 incident(s) enfant(s) ouvert(s)", await refused.Content.ReadAsStringAsync());
+        Assert.Equal(siege, (await Json(await admin.GetAsync($"/api/incidents/{Id(done)}"))).GetProperty("perimeterId").GetInt32());
+
+        // L'enfant ouvert détaché, le parent se déplace et emmène l'enfant terminé, toujours rattaché.
+        await Json(await t.PutAsJsonAsync($"/api/incidents/{Id(open)}/parent", new { parentReference = "" }));
+        var moved = await Json(await admin.PutAsJsonAsync($"/api/incidents/{Id(parent)}", Inc("Coupure réseau Siège", usine)));
+        Assert.Equal(usine, moved.GetProperty("perimeterId").GetInt32());
+        var followed = await Json(await usineReader.GetAsync($"/api/incidents/{Id(done)}"));
+        Assert.Equal((usine, Id(parent), "Résolu"),
+            (followed.GetProperty("perimeterId").GetInt32(), followed.GetProperty("parentId").GetInt32(), followed.GetProperty("status").GetString()));
+        Assert.Equal(HttpStatusCode.NotFound, (await t.GetAsync($"/api/incidents/{Id(done)}")).StatusCode);
+        Assert.Equal([Ref(done)], Refs((await Json(await usineReader.GetAsync($"/api/incidents/{Id(parent)}/family"))).GetProperty("children")));
+        // L'enfant détaché reste au Siège.
+        Assert.Equal(siege, (await Json(await t.GetAsync($"/api/incidents/{Id(open)}"))).GetProperty("perimeterId").GetInt32());
+
+        // L'historique de l'enfant montre le déplacement ; sa déclaration et ses notifications l'ont suivi.
+        var journal = await Json(await usineReader.GetAsync($"/api/audit?type=incident&id={Id(done)}"));
+        Assert.Contains(journal.EnumerateArray(), e => e.GetProperty("field").GetString() == "perimeterId");
+        var declaration = Assert.Single((await Json(await usineReader.GetAsync($"/api/regulatory-notifications?incident={Id(done)}"))).EnumerateArray());
+        Assert.Equal(usine, declaration.GetProperty("perimeterId").GetInt32());
+        await using var db = api.Database();
+        var copies = await db.Notifications.Where(n => (n.TargetType == "incident" && n.TargetId == Id(done))
+            || (n.TargetType == "notification" && n.TargetId == Id(declaration))).Select(n => n.PerimeterId).ToListAsync();
+        Assert.NotEmpty(copies);
+        Assert.All(copies, p => Assert.Equal(usine, p));
+    }
+
+    [Fact]
+    public async Task PER_07_INC_16_un_enfant_termine_d_un_troisieme_perimetre_retient_le_parent()
+    {
+        var (siege, usine, _, tiana, _) = await Setup("per07g");
+        var t = api.Client("User", tiana);
+        var admin = api.Client();
+        var depot = Id(await Json(await admin.PostAsJsonAsync("/api/admin/perimeters", new { name = "Dépôt per07g" })));
+        object Inc(string title, int p, string? status = null) => new
+        {
+            title, impact = "Faible", urgency = "Faible", perimeterId = p, status,
+            ownerType = "User", ownerId = tiana, ownerDisplayName = tiana,
+            resolution = status == "Résolu" ? "Poste rebranché" : null, resolutionCode = status == "Résolu" ? "Correctif appliqué" : null
+        };
+        var parent = await Json(await t.PostAsJsonAsync("/api/incidents", Inc("Coupure réseau Siège", siege)));
+        var child = await Json(await t.PostAsJsonAsync("/api/incidents", Inc("Poste injoignable", siege)));
+        await Json(await t.PutAsJsonAsync($"/api/incidents/{Id(child)}/parent", new { parentReference = Ref(parent) }));
+        await Json(await t.PutAsJsonAsync($"/api/incidents/{Id(child)}", Inc("Poste injoignable", siege, "En cours")));
+        await Json(await t.PutAsJsonAsync($"/api/incidents/{Id(child)}", Inc("Poste injoignable", siege, "Résolu")));
+        // Lien hérité d'avant PER-07 : l'enfant terminé est au Dépôt, où celui qui déplace n'a pas forcément de droit.
+        await using (var db = api.Database())
+            await db.Incidents.Where(x => x.Id == Id(child)).ExecuteUpdateAsync(u => u.SetProperty(x => x.PerimeterId, depot));
+
+        // Décision du mainteneur du 2026-11-18 : il retient le parent (400), comme avant la décision A ;
+        // rien ne bouge, ni le parent ni l'enfant.
+        var refused = await admin.PutAsJsonAsync($"/api/incidents/{Id(parent)}", Inc("Coupure réseau Siège", usine));
+        Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+        Assert.Contains("rattaché(s) avant la règle PER-07", await refused.Content.ReadAsStringAsync());
+        var kept = await Json(await admin.GetAsync($"/api/incidents/{Id(child)}"));
+        Assert.Equal((depot, Id(parent)), (kept.GetProperty("perimeterId").GetInt32(), kept.GetProperty("parentId").GetInt32()));
+        Assert.Equal(siege, (await Json(await admin.GetAsync($"/api/incidents/{Id(parent)}"))).GetProperty("perimeterId").GetInt32());
+        // Témoin : vers le Dépôt, l'enfant ne resterait pas dans un autre périmètre ; le parent s'y déplace.
+        await Json(await admin.PutAsJsonAsync($"/api/incidents/{Id(parent)}", Inc("Coupure réseau Siège", depot)));
+        Assert.Equal(depot, (await Json(await admin.GetAsync($"/api/incidents/{Id(parent)}"))).GetProperty("perimeterId").GetInt32());
+    }
+
+    [Fact]
     public async Task PER_07_DRG_01_les_declarations_suivent_l_incident_deplace_et_ne_partent_pas_seules()
     {
         var (siege, usine, _, tiana, group) = await Setup("per07d");

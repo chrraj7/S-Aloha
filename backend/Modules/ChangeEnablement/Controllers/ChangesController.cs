@@ -148,6 +148,11 @@ public class ChangesController(AppDbContext db) : RecordController<Change, Chang
             if (!User.Designates(owner.Property(x => x.OwnerType).OriginalValue, owner.Property(x => x.OwnerId).OriginalValue))
                 return "Seul le responsable du changement ou un gestionnaire le met en œuvre et le clôt.";
         }
+        // CHG-07 : un changement autorisé, planifié ou mis en œuvre n'est réaffecté que par son
+        // responsable ou un gestionnaire (sans responsable, par un gestionnaire) ; sinon la règle
+        // ci-dessus se contournait en deux envois.
+        if (e.Status is "Autorisé" or "Planifié" or "Mis en œuvre" && ReassignedByThirdParty(e))
+            return "Seul le responsable du changement ou un gestionnaire le réaffecte une fois le changement autorisé ; sans responsable, un gestionnaire le désigne.";
         // CHG-14 : dates réelles.
         if (entering && status == "Mis en œuvre" && e.ActualStart is null)
             return "Renseigner le début réel de la mise en œuvre.";

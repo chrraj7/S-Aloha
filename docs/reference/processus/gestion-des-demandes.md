@@ -30,7 +30,9 @@ une modification non standard du SI (→ [changement](habilitation-des-changemen
 
 | Action | User | Manager | Admin | Statut |
 |---|---|---|---|---|
-| Soumettre, modifier, traiter une demande approuvée | ✔ | ✔ | ✔ | ✅ |
+| Soumettre, modifier, prendre en charge une demande approuvée | ✔ | ✔ | ✔ | ✅ |
+| Déclarer satisfaite une demande En cours | Responsable | ✔ | ✔ | ✅ REQ-25 |
+| Changer le responsable d'une demande En cours | Responsable | ✔ | ✔ | ✅ REQ-25 |
 | Approuver / rejeter | ✘ | ✔ | ✔ | ✅ |
 | Annuler sa propre demande avant traitement | Demandeur | ✔ | ✔ | ✅ REQ-09 |
 | Tenir le catalogue de demandes | ✘ | ✔ | ✔ | ✅ REQ-20, PER-13 |
@@ -140,7 +142,7 @@ approbation ; seules les transitions ci-dessous sont permises (SOC-05).
 | REQ-22 | **Échéance** = soumission (ou approbation si requise) + délai cible du modèle, en heures de service (SLM-14) ; celle d'une demande issue d'un modèle à délai cible n'est modifiable que par un Manager ; sans délai cible, l'échéance souhaitée reste libre (§ 3) | ✅ (calculée à l'approbation, ou à la création pré-approuvée, dans le calendrier du service du modèle ; la fiche renvoie le seul jour : le même jour garde l'heure calculée et n'est pas une modification) | |
 | REQ-23 | Le **groupe d'exécution** du modèle devient le responsable de la demande approuvée | ✅ (si la demande n'a pas encore de responsable) | |
 | REQ-24 | **Tâches d'exécution** : les tâches prédéfinies du modèle sont créées à l'approbation, chacune avec son responsable ; on peut en ajouter | ✅ | 3 |
-| REQ-25 | **Satisfaite** exige que toutes les tâches soient Terminée ou Annulée | ✅ | 3 |
+| REQ-25 | **Satisfaite** exige que toutes les tâches soient Terminée ou Annulée ; elle est déclarée par le responsable (ou un membre du groupe responsable) ou par un gestionnaire (§ 4). Le **responsable** d'une demande En cours n'est changé que par le responsable en place (ou un membre du groupe responsable) ou par un gestionnaire du périmètre (400 sinon) : un tiers ne se désigne pas pour satisfaire à l'envoi suivant | ✅ | 3 |
 
 ## 6. Délais, calculs et alertes
 

@@ -397,6 +397,24 @@ public abstract class RecordController<T, TDto, TView>(AppDbContext db) : Contro
         return NoContent();
     }
 
+    /// <summary>
+    /// Réaffectation d'un enregistrement engagé (décision du 2026-11-09) : seul son responsable
+    /// d'avant l'envoi (ou un membre du groupe responsable) ou un gestionnaire en change le
+    /// responsable. Sans cela, un tiers se désignait d'un premier envoi, puis faisait au second
+    /// la transition réservée au responsable. Sans responsable, la première désignation revient
+    /// au gestionnaire (décision du 2026-11-17) : sinon le même détour restait ouvert.
+    /// À appeler après <c>Fill</c>, depuis le contrôle de statut de la pratique.
+    /// </summary>
+    protected bool ReassignedByThirdParty(T e)
+    {
+        if (e.Id == 0 || IsManager) return false;
+        var entry = db.Entry(e);
+        var (type, id) = (entry.Property(x => x.OwnerType).OriginalValue, entry.Property(x => x.OwnerId).OriginalValue);
+        if (string.IsNullOrWhiteSpace(id)) return !string.IsNullOrWhiteSpace(e.OwnerId);
+        if (User.Designates(type, id)) return false;
+        return !string.Equals(id, e.OwnerId, StringComparison.OrdinalIgnoreCase) || (type ?? "User") != (e.OwnerType ?? "User");
+    }
+
     protected string? Fill(T e, TDto dto, bool creating)
     {
         if (string.IsNullOrWhiteSpace(dto.Title)) return "Le titre est obligatoire.";

@@ -77,8 +77,10 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+      # npm audit, haute et critique ; exception datée possible pour l'outillage de build
+      # et de test seulement, jamais pour le paquet livré (scripts/check-audit-npm.py).
       - name: Dépendances vulnérables
-        run: npm audit --audit-level=high
+        run: python3 ../scripts/check-audit-npm.py
 
   docs:
     name: Documentation
