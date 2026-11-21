@@ -147,7 +147,7 @@ Réglages du dépôt GitHub public, en place depuis le 2026-10-06 :
 | Signalement privé de vulnérabilités | Les failles arrivent hors des issues publiques ([SECURITY.md](../../SECURITY.md)) |
 | Secret scanning + push protection | Un push contenant un secret reconnu est refusé |
 | Dependabot (alertes, correctifs, versions) | Alerte et PR de correctif dès qu'un avis touche une dépendance ; mises à jour hebdomadaires groupées (npm, NuGet, Docker, Docker Compose, Actions) ; une mise à jour mineure ou corrective se fusionne d'elle-même, CI au vert, une majeure reste à la main |
-| CodeQL (configuration par défaut) | Analyse statique C# et JavaScript à chaque push et chaque semaine |
+| CodeQL ([`codeql.yml`](../../.github/workflows/codeql.yml)) | Analyse statique des workflows, du C# et du JavaScript sur chaque pull request (fork compris), chaque poussée de `main` et chaque semaine ; une PR sans résultat CodeQL ne peut pas être fusionnée |
 | CI ([architecture § Intégration continue](architecture.md#intégration-continue)) | Tests, build, audit des dépendances, santé de la doc |
 | Preuve et garde-fous | Une PR prouve son changement par un test qui échoue sans lui ; elle ne peut ni retirer ni désactiver de test, ni modifier l'outillage de vérification sans l'accord du mainteneur ; sa classe de risque est calculée d'après ses chemins |
 | Revue des dépendances et des workflows | Dépendance ajoutée vulnérable (haute, critique) ou sous licence incompatible refusée ; workflows analysés par actionlint et zizmor |

@@ -288,7 +288,8 @@ sur un push sur `main` seulement, une fois les quatre premiers et la Recette ver
 la fois et seulement si le commit est encore la tête de `main`. Sur une pull request, une
 nouvelle poussée annule l'exécution en cours ; sur `main`, chaque commit garde la sienne
 jusqu'au bout, si bien que des fusions rapprochées sont toutes contrôlées. Actions épinglées
-par SHA, jeton en lecture seule (écriture des paquets pour le seul job Images edge). CodeQL (C#, JavaScript) et Dependabot
+par SHA, jeton en lecture seule (écriture des paquets pour le seul job Images edge). CodeQL ([`codeql.yml`](../../.github/workflows/codeql.yml) : workflows, C# et JavaScript, sur
+chaque pull request, fork compris, chaque poussée de `main` et chaque semaine) et Dependabot
 ([`.github/dependabot.yml`](../../.github/dependabot.yml)) complètent ; les mises à jour
 Dependabot mineures ou correctives se fusionnent d'elles-mêmes une fois la CI au vert
 ([`.github/workflows/dependabot.yml`](../../.github/workflows/dependabot.yml)). [`garde-fous.yml`](../../.github/workflows/garde-fous.yml)
