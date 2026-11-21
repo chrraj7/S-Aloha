@@ -1,0 +1,105 @@
+# Circuit des pull requests venues d'un fork (contributions externes). Leur jeton est en
+# lecture seule : ni la classe de risque (garde-fous.yml) ni les étiquettes du circuit ne
+# peuvent être posées depuis leurs propres workflows. Ce workflow les pose depuis la branche
+# par défaut : `contribution-externe`, la classe de risque, `a-verifier` (reposée à chaque
+# poussée : le verdict précédent ne vaut plus pour la nouvelle tête). À la fusion, il
+# remercie l'auteur. Aucun code de la PR n'est exécuté : ses commits sont récupérés comme
+# objets git et seulement comparés (`git diff`, scripts/garde-fous.py --risque).
+name: Contributions
+
+on:
+  # Déclencheur sûr ici : seul le script de la branche par défaut s'exécute, jamais le code
+  # de la PR ; aucun champ texte de l'événement n'est interpolé dans une commande.
+  pull_request_target:  # zizmor: ignore[dangerous-triggers]
+    types: [opened, reopened, ready_for_review, synchronize, closed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: contributions-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  circuit:
+    name: Circuit
+    if: >-
+      github.event.action != 'closed'
+      && github.event.pull_request.head.repo.full_name != github.repository
+      && !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          ref: ${{ github.event.repository.default_branch }}
+          sparse-checkout: scripts/garde-fous.py
+          sparse-checkout-cone-mode: false
+      - name: Commits de la PR, comme objets seulement
+        env:
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: git fetch --no-tags --quiet origin "$HEAD"
+      - name: Étiquettes du circuit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          PR: ${{ github.event.pull_request.number }}
+          ACTION: ${{ github.event.action }}
+        run: |
+          classe=$(python3 scripts/garde-fous.py "$BASE" "$HEAD" --risque)
+          echo "Classe : $classe"
+          # API REST : `gh pr edit` échoue sur la dépréciation des Projects classiques.
+          actuelles=",$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/labels" --jq '[.[].name] | join(",")'),"
+          porte() { case "$actuelles" in *",$1,"*) return 0 ;; *) return 1 ;; esac; }
+          retirer() {
+            if porte "$1"; then
+              gh api -X DELETE "repos/$GITHUB_REPOSITORY/issues/$PR/labels/$1" >/dev/null
+              echo "Retirée : $1"
+            fi
+          }
+          for e in risque-doc risque-code risque-sensible; do
+            if [ "$e" != "$classe" ]; then retirer "$e"; fi
+          done
+          poser=(contribution-externe "$classe")
+          if [ "$ACTION" = synchronize ]; then
+            # Nouvelle tête : le verdict et la seconde clé portaient sur l'ancienne.
+            for e in verifiee contre-verifiee a-corriger; do retirer "$e"; done
+            poser+=(a-verifier)
+          elif ! porte verifiee && ! porte a-corriger; then
+            poser+=(a-verifier)
+          fi
+          args=()
+          for e in "${poser[@]}"; do args+=(-f "labels[]=$e"); done
+          gh api -X POST "repos/$GITHUB_REPOSITORY/issues/$PR/labels" "${args[@]}" --jq '"Étiquettes : " + ([.[].name] | join(","))'
+
+  merci:
+    name: Merci
+    if: >-
+      github.event.action == 'closed'
+      && github.event.pull_request.merged
+      && github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Remerciement
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          corps=$(cat <<'FIN'
+          Merci pour votre contribution : elle est maintenant dans `main`.
+
+          Si S-Aloha vous est utile, une ⭐ sur le dépôt aide d'autres équipes à le découvrir. Et si vous voulez continuer, les issues [`good first issue`](https://github.com/chrraj7/S-Aloha/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) et [`help wanted`](https://github.com/chrraj7/S-Aloha/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) attendent preneur.
+
+          *Thank you for your contribution, it is now in `main`. If S-Aloha is useful to you, a ⭐ on the repository helps other teams find it.*
+          FIN
+          )
+          gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" -f body="$corps" --jq .html_url

@@ -16,6 +16,7 @@ et montre à chacun **ce qui requiert son intervention, maintenant**.
 ![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 ![Active Directory](https://img.shields.io/badge/Auth-Active%20Directory-0078D4)
 [![Licence AGPLv3](https://img.shields.io/badge/Licence-AGPLv3-A42E2B)](LICENSE)
+[![Étoiles](https://img.shields.io/github/stars/chrraj7/S-Aloha?style=flat&logo=github&label=%C3%A9toiles)](https://github.com/chrraj7/S-Aloha/stargazers)
 
 [Fonctionnalités](#fonctionnalités) · [Aperçu](#aperçu) · [Essayer](#essayer-en-5-minutes) · [Feuille de route](#feuille-de-route) · [Contribuer](#contribuer-et-soutenir) · [English](#english)
 
@@ -261,6 +262,8 @@ S-Aloha est un projet ouvert : code, documentation, retours d'usage, tout compte
   sur une vraie base PostgreSQL (Testcontainers), tests d'interface, CI à chaque pull request.
 - 📝 Le [guide de contribution](CONTRIBUTING.md) explique comment proposer une
   modification. Chaque commit est signé (`git commit -s`, *Developer Certificate of Origin*).
+- ⭐ **Le projet vous parle ?** Une [étoile sur GitHub](https://github.com/chrraj7/S-Aloha/stargazers)
+  aide d'autres équipes à le découvrir : c'est le soutien le plus simple, et il compte.
 - 💛 **Votre organisation utilise S-Aloha ?** Le soutien financier fait avancer la feuille
   de route plus vite : voir [Soutenir S-Aloha](docs/soutenir.md).
 
@@ -328,7 +331,9 @@ place, NIS 2 built in.**
   pull request. Documentation is in French, code in English; issues and pull requests are
   welcome in **English or French**. Start with a
   [`good first issue`](https://github.com/chrraj7/S-Aloha/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
-  and read [CONTRIBUTING.md](CONTRIBUTING.md). Commits are signed off (DCO).
+  and read [CONTRIBUTING.md](CONTRIBUTING.md). Commits are signed off (DCO); pull requests
+  from forks are merged by rebase, commits as they are.
+- **Support**: a ⭐ on the repository helps other teams find S-Aloha.
 
 ## Licence
 
