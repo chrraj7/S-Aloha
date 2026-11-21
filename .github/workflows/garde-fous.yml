@@ -42,7 +42,8 @@ jobs:
 
   risque:
     name: Classe de risque
-    # Ni fork ni Dependabot : leur jeton est en lecture seule. Tous les événements, y compris
+    # Ni fork ni Dependabot : leur jeton est en lecture seule (la classe d'une PR de fork est
+    # posée par contributions.yml). Tous les événements, y compris
     # `labeled` et `unlabeled` : la classe doit survivre à une étiquette posée par-dessus.
     if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.login != 'dependabot[bot]'
     concurrency:

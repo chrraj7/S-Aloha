@@ -153,7 +153,7 @@ Réglages du dépôt GitHub public, en place depuis le 2026-10-06 :
 | Revue des dépendances et des workflows | Dépendance ajoutée vulnérable (haute, critique) ou sous licence incompatible refusée ; workflows analysés par actionlint et zizmor |
 | Filet après fusion | CI de `main` rouge → issue `main-rouge` avec la commande d'annulation |
 | Règles de `main` | Ni suppression ni push forcé ; toute modification passe par une pull request, CI au vert (DCO et Recette compris) et historique linéaire. Aucune dérogation, administrateur compris |
-| Actions | Seules les actions publiées par GitHub ; jeton en lecture seule ; workflows d'un contributeur externe soumis à approbation |
+| Actions | Seules les actions publiées par GitHub ; jeton en lecture seule ; workflows de la première contribution d'un contributeur externe soumis à approbation |
 
 Première analyse CodeQL : une alerte, `cs/log-forging` (gravité moyenne). L'identifiant
 saisi à la connexion était journalisé tel quel en cas d'échec LDAP : des sauts de ligne

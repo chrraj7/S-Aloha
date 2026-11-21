@@ -307,5 +307,10 @@ retire des textes du compte du mainteneur (commentaires, descriptions et revues 
 pied de page ajouté automatiquement par un outil, dont le motif est lu dans le secret
 `PIED_A_RETIRER` ; [`fusion-office.yml`](../../.github/workflows/fusion-office.yml) repose
 l'étiquette `fusion-office` sur une PR fusionnée qui ne la porte pas, quand le compte du
-mainteneur y commente « Fusion d'office ». Voir
+mainteneur y commente « Fusion d'office ». Une PR venue d'un fork a un jeton en lecture
+seule : [`contributions.yml`](../../.github/workflows/contributions.yml) lui pose depuis la
+branche par défaut `contribution-externe`, sa classe de risque et `a-verifier` (reposée à
+chaque poussée), sans exécuter son code, et remercie l'auteur à la fusion. Une telle PR se
+fusionne par rebase : ses commits arrivent tels quels, avec leur auteur et leur
+`Signed-off-by`, que le job DCO de `main` contrôle. Voir
 [sécurité § Contrôles du dépôt](securite.md#contrôles-du-dépôt).
