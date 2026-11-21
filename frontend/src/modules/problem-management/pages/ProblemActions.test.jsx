@@ -22,7 +22,8 @@ vi.mock('../../../api', () => ({
       get: () => Promise.resolve({
         id: 1, reference: 'PRB-2026-0001', title: 'Fuite mémoire', description: '', status: 'En analyse',
         impact: 'Moyen', urgency: 'Moyenne', priority: 'P3', category: '', affectedService: '',
-        createdByDisplayName: 'Hery Rakoto', createdAt: '2026-10-06T08:00:00Z', analyses: [], actions: [action]
+        createdByDisplayName: 'Hery Rakoto', createdAt: '2026-10-06T08:00:00Z', analyses: [], actions: [action],
+        perimeterId: 3
       })
     },
     actions: { requestApproval: (...a) => requestApproval(...a), setChange: (...a) => setChange(...a), update: vi.fn(),
@@ -54,11 +55,11 @@ describe('Actions correctives', () => {
     await waitFor(() => expect(requestApproval).toHaveBeenCalledWith(7))
   })
 
-  it('PRB-27 : créer un changement depuis l\'action, rattaché puis ouvert', async () => {
+  it('PRB-27, PER-04 : créer un changement depuis l\'action, dans le périmètre du problème, rattaché puis ouvert', async () => {
     await renderActions()
     fireEvent.click(screen.getByText('Créer un changement'))
     expect(await screen.findByText('Fiche du changement')).toBeTruthy()
-    expect(changesCreate.mock.calls[0][0]).toMatchObject({ title: 'Corriger la fuite', changeType: 'Normal' })
+    expect(changesCreate.mock.calls[0][0]).toMatchObject({ title: 'Corriger la fuite', changeType: 'Normal', perimeterId: 3 })
     expect(changesCreate.mock.calls[0][0].description).toContain('PRB-2026-0001')
     expect(setChange).toHaveBeenCalledWith(7, 'CHG-2026-0042')
   })
