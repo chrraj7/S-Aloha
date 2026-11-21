@@ -1,4 +1,4 @@
-# RTT — Real-Time Ticket Triage
+# R3T — Real-Time Ticket Triage
 
 **RTT** (_Real-Time Ticket Triage_) est un futur plugin S-Aloha dédié à la priorisation assistée et au routage en temps réel des tickets d'assistance.
 
@@ -36,7 +36,7 @@ flowchart LR
     R --> H[Validation humaine]
     H -->|Approuvé| G[Gestionnaire ITSM]
     H -->|Corrigé| A
------
+```
 Fonctionnalités prévues
 Fonctionnalité	Description	Valeur métier
 Classification rapide	Détection de la catégorie, du service et du type de demande	Réduit les retours manuels
