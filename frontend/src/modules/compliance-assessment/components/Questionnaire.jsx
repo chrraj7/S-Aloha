@@ -23,7 +23,10 @@ function Evidence({ assessmentId, req, readOnly }) {
   if (readOnly && items.length === 0) return null
   return (
     <div style={{ marginTop: 6 }}>
-      {items.map(x => (
+      {items.map(x => x.hidden
+        // PER-08 : preuve d'un autre périmètre, comptée mais ni décrite, ni liée, ni retirable.
+        ? <span className="chip muted" key={x.id} style={{ fontStyle: 'italic' }}>{x.title}</span>
+        : (
         <span className="chip" key={x.id} title={x.title}>
           <Link to={hrefOf(x.targetType, x.targetId)}>{x.reference}</Link>
           {!readOnly && <button onClick={() => remove(x)} title="Retirer" aria-label={`Retirer la preuve ${x.reference}`}>×</button>}
