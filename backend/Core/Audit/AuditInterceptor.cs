@@ -119,7 +119,47 @@ public class AuditInterceptor(IHttpContextAccessor http, ILogger<AuditIntercepto
                     break;
             }
         }
+        drafts.AddRange(Raci(context));
         if (drafts.Count > 0) _pending.AddOrUpdate(context, drafts);
+    }
+
+    /// <summary>
+    /// Affectations RACI d'une action (SOC-20, R5) : une seule ligne sur le problème, RACI avant
+    /// et après. La modification d'une action remplace toutes ses affectations : tracer chaque
+    /// ligne retirée puis recréée noierait l'historique, et une RACI renvoyée à l'identique n'est
+    /// pas une modification. La création et la suppression de l'action sont déjà tracées.
+    /// </summary>
+    private static IEnumerable<Draft> Raci(DbContext context)
+    {
+        var entries = context.ChangeTracker.Entries<RaciAssignment>().ToList();
+        var touched = entries.Where(e => e.State is EntityState.Added or EntityState.Deleted or EntityState.Modified)
+            .Select(ActionId).Distinct().ToList();
+        foreach (var actionId in touched)
+        {
+            var action = context.ChangeTracker.Entries<CorrectiveAction>().FirstOrDefault(x => x.Entity.Id == actionId);
+            if (action is null || action.State is EntityState.Added or EntityState.Deleted) continue;
+            var mine = entries.Where(e => ActionId(e) == actionId).ToList();
+            var before = Describe(mine.Where(e => e.State != EntityState.Added).Select(e => e.OriginalValues.ToObject() as RaciAssignment));
+            var after = Describe(mine.Where(e => e.State != EntityState.Deleted).Select(e => e.Entity));
+            if (before == after) continue;
+            yield return new Draft("problem", null, action.Entity.ProblemId, null, AuditEntry.Modification,
+                Cut($"action « {Cut(action.Entity.Title, 60)} » · RACI", 100), before, after, null);
+        }
+    }
+
+    private static int ActionId(EntityEntry<RaciAssignment> e) =>
+        e.State == EntityState.Deleted ? (int)e.Property(x => x.CorrectiveActionId).OriginalValue
+            : e.Entity.Action?.Id is int id and > 0 ? id : e.Entity.CorrectiveActionId;
+
+    /// <summary>« R Fara Rasoa, A Lova Rabe, I Support N2 (groupe) », dans l'ordre R, A, C, I.</summary>
+    private static string? Describe(IEnumerable<RaciAssignment?> raci)
+    {
+        var text = string.Join(", ", raci.OfType<RaciAssignment>()
+            .OrderBy(r => "RACI".IndexOf(r.Role, StringComparison.Ordinal)).ThenBy(r => r.AssigneeDisplayName, StringComparer.Ordinal)
+            .ThenBy(r => r.AssigneeId, StringComparer.Ordinal)
+            .Select(r => $"{r.Role} {(string.IsNullOrEmpty(r.AssigneeDisplayName) ? r.AssigneeId : r.AssigneeDisplayName)}"
+                         + (r.AssigneeType == "Group" ? " (groupe)" : "")));
+        return text.Length == 0 ? null : Cut(text, MaxValue);
     }
 
     /// <summary>Enregistrement d'une pratique : création, suppression, transition, champs modifiés.</summary>
