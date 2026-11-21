@@ -97,7 +97,7 @@ Détail : [sécurité § Points de durcissement](reference/securite.md#points-de
 
 | # | Chantier | Qui |
 |---|---|---|
-| Q1 | **Tests** : socle en place (API : xUnit + Testcontainers ; frontend : Vitest), B1–B3 et M1, M2, M4–M6 couverts ; étendre aux scénarios R1–R6 (R6 couvert le 2026-10-16) | code |
+| ~~Q1~~ | ~~**Tests** : socle en place (API : xUnit + Testcontainers ; frontend : Vitest), B1–B3 et M1, M2, M4–M6 couverts ; étendre aux scénarios R1–R6~~ — soldé le 2026-11-21 : les scénarios R1 à R6 de la [revue du 2026-10-06](archives/revue-fonctionnelle-2026-10-06.md) ont leur test — R1 `ValidationRulesTests.PRB_02_valeurs_fermees_du_module_problemes`, R2 et R3 `ValidationRulesTests.PRB_17_18_RACI_a_la_modification_et_date_d_achevement`, R4 `ValidationRulesTests.PRB_11_12_13_14_conditions_du_cycle_de_vie` et `TransitionsTests`, R5 `AuditTests` (réaffectation RACI d'une action comprise, [SOC-20](reference/regles-metier.md#9-traçabilité-commentaires-administration)), R6 `DirectoryUnavailableTests` | code |
 | Q2 | **CI** : build backend et frontend, `python3 scripts/check-docs.py` | code |
 | Q4 | Créer les issues GitHub des sections 1 à 7 et les lier ici ; premières **good first issue** ouvertes le 2026-10-19 pour la communauté : [#120](https://github.com/chrraj7/S-Aloha/issues/120) à [#126](https://github.com/chrraj7/S-Aloha/issues/126), toutes faites sauf [#126](https://github.com/chrraj7/S-Aloha/issues/126) | action |
 | Q5 | ~~Mesure de la couverture de tests (coverlet) publiée en CI, sans seuil bloquant~~ — fait le 2026-11-03 ([#123](https://github.com/chrraj7/S-Aloha/issues/123), [architecture § 9](reference/architecture.md#9-tests)) ; reste `dotnet format` ([audit du 2026-10-16](archives/audit-code-2026-10-16.md) § 8) | code |

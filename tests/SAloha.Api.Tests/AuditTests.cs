@@ -105,6 +105,40 @@ public class AuditTests(ApiFixture api)
     }
 
     [Fact]
+    public async Task SOC_20_reaffectation_RACI_d_une_action_tracee_sur_le_probleme()
+    {
+        var m = api.Client("Manager");
+        var p = await Json(await m.PostAsJsonAsync("/api/problems", new
+        {
+            title = "Audit RACI", description = "d", impact = "Moyen", urgency = "Moyenne", category = "c", affectedService = "s", source = "Proactif"
+        }));
+        object Action(string approverId, string approverName) => new
+        {
+            title = "Purger les journaux", description = "", status = (string?)null, dueDate = (DateTime?)null,
+            raci = new[]
+            {
+                new { role = "R", assigneeType = "User", assigneeId = "fara.rasoa", assigneeDisplayName = "Fara Rasoa" },
+                new { role = "A", assigneeType = "User", assigneeId = approverId, assigneeDisplayName = approverName }
+            }
+        };
+        var a = await Json(await m.PostAsJsonAsync($"/api/problems/{Id(p)}/actions", Action("lova.rabe", "Lova Rabe")));
+        Assert.DoesNotContain(await History(m, "problem", Id(p)), e => S(e, "field")?.EndsWith("RACI") == true);
+
+        // R5 : la réaffectation garde qui, quand et l'ancienne valeur.
+        await Json(await m.PutAsJsonAsync($"/api/actions/{Id(a)}", Action("hery.rakoto", "Hery Rakoto")));
+        var raci = (await History(m, "problem", Id(p))).Where(e => S(e, "field") == "action « Purger les journaux » · RACI").ToArray();
+        var entry = Assert.Single(raci);
+        Assert.Equal("Modification", S(entry, "action"));
+        Assert.Equal("R Fara Rasoa, A Lova Rabe", S(entry, "oldValue"));
+        Assert.Equal("R Fara Rasoa, A Hery Rakoto", S(entry, "newValue"));
+        Assert.False(string.IsNullOrEmpty(S(entry, "author")));
+
+        // Le formulaire renvoie la RACI entière à chaque enregistrement : inchangée, elle n'est pas tracée.
+        await Json(await m.PutAsJsonAsync($"/api/actions/{Id(a)}", Action("hery.rakoto", "Hery Rakoto")));
+        Assert.Single(await History(m, "problem", Id(p)), e => S(e, "field") == "action « Purger les journaux » · RACI");
+    }
+
+    [Fact]
     public async Task Transition_forcee_par_un_Admin_avec_motif_trace()
     {
         var admin = api.Client("Admin");
