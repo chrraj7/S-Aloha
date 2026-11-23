@@ -57,3 +57,14 @@ it('affiche le motif d’un refus et ne change rien sans confirmation (OPT-03)',
   expect(await screen.findByRole('alert')).toBeTruthy()
   expect(screen.getByText('Conteneur « features » injoignable.')).toBeTruthy()
 })
+
+it('TRI-06 : l’état de l’index des incidents ouverts du tri s’affiche, construit ou non', async () => {
+  const built = { ...triage(), containerState: container({ status: { 'assisted-ticket-triage': { indexBuilt: true, openIncidents: 12, rebuiltAt: '2026-11-23T08:00:00Z' } } }) }
+  api.admin.features.mockResolvedValue([built, cmdb])
+  render(<OptionalFeatures />)
+  expect(await screen.findByText(/12 incident\(s\), reconstruit le/)).toBeTruthy()
+  cleanup()
+  api.admin.features.mockResolvedValue([{ ...built, containerState: container({ status: { 'assisted-ticket-triage': { indexBuilt: false, openIncidents: 0 } } }) }, cmdb])
+  render(<OptionalFeatures />)
+  expect(await screen.findByText(/pas encore construit/)).toBeTruthy()
+})

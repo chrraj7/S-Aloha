@@ -19,7 +19,8 @@ public record DraftSuggestions(IReadOnlyList<Suggestion> Suggestions, IReadOnlyL
 /// l'incident, ses CI reliés et ses voisins résolus dans le seul périmètre de l'incident (TRI-11) et dépose ses
 /// suggestions en propositions (OPT-14), que l'agent décide. Rien n'est jamais appliqué seul.
 /// </summary>
-public class TicketTriage(ApiClient api, EmbeddingClient embeddings, ILogger<TicketTriage> log) : IContainerFeature, IEventHandler, IEndpointFeature
+public class TicketTriage(ApiClient api, EmbeddingClient embeddings, ILogger<TicketTriage> log) : IContainerFeature, IEventHandler, IEndpointFeature,
+    IStatusFeature
 {
     /// <summary>Incidents ouverts proches montrés à la saisie : 5 au plus, les plus récents.</summary>
     public const int MaxRelated = 5;
@@ -73,6 +74,9 @@ public class TicketTriage(ApiClient api, EmbeddingClient embeddings, ILogger<Tic
         foreach (var s in TriageRules.Suggest(incident, similar, services, categories, cis, Settings, outage))
             await ProposeAsync(incident.Id, s, ct);
     }
+
+    /// <summary>État de l'index des incidents ouverts (TRI-06), pour la page d'administration : construit ou non, taille, rattrapage.</summary>
+    public object Status() => new { indexBuilt = Index.Built, openIncidents = Index.Count, rebuiltAt = Index.RebuiltAt };
 
     /// <summary>OPT-16 : l'API relaie ici les suggestions à la saisie (TRI-02), dans les 2 secondes.</summary>
     public void MapEndpoints(IEndpointRouteBuilder app) =>

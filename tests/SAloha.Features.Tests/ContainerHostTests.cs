@@ -53,6 +53,9 @@ public class ContainerHostTests
             Assert.False(string.IsNullOrEmpty(body.GetProperty("version").GetString()));
             Assert.DoesNotContain("+", body.GetProperty("version").GetString());
             Assert.Equal(["assisted-ticket-triage"], body.GetProperty("features").EnumerateArray().Select(e => e.GetString()));
+            // L'état du tri : son index des incidents ouverts, pas encore construit au démarrage (TRI-06).
+            var triage = body.GetProperty("status").GetProperty("assisted-ticket-triage");
+            Assert.Equal((false, 0), (triage.GetProperty("indexBuilt").GetBoolean(), triage.GetProperty("openIncidents").GetInt32()));
         }
         // Une fonctionnalité de plus s'ajoute à la liste ; une clé inscrite deux fois n'y figure qu'une fois.
         using var withMore = Factory(Token, features: ["assisted-cmdb", "assisted-ticket-triage"]);

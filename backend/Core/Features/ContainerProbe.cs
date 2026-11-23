@@ -55,8 +55,10 @@ public class ContainerProbe(HttpClient http, IConfiguration config)
             var version = root.TryGetProperty("version", out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
             var features = root.TryGetProperty("features", out var f) && f.ValueKind == JsonValueKind.Array
                 ? f.EnumerateArray().Where(e => e.ValueKind == JsonValueKind.String).Select(e => e.GetString()!).ToArray() : [];
+            var status = root.TryGetProperty("status", out var st) && st.ValueKind == JsonValueKind.Object
+                ? st.EnumerateObject().Where(p => features.Contains(p.Name)).ToDictionary(p => p.Name, p => p.Value.Clone()) : [];
             return new ContainerState(container, true, true, true, version, features,
-                $"Joignable{(version is null ? "" : $", version {version}")}.", DateTime.UtcNow);
+                $"Joignable{(version is null ? "" : $", version {version}")}.", DateTime.UtcNow) { Status = status };
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
