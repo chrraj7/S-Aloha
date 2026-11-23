@@ -32,9 +32,11 @@ export default function TriageSuggestions({ form, merge, delay = 400 }) {
   const current = s => (s.field === 'owner' ? form.ownerType === 'Group' && form.ownerId === s.value
     : String(form[s.field] ?? '') === String(s.value))
   const suggestions = answer.suggestions.filter(s => !current(s))
-  const apply = s => merge(s.field === 'owner'
-    ? { ownerId: s.value, ownerType: 'Group', ownerDisplayName: s.label ?? s.value }
-    : { [s.field]: s.value })
+  // TRI-09 : la suggestion appliquée est retenue (`_triage`, hors des champs), et part avec la création.
+  const apply = s => merge({
+    ...(s.field === 'owner' ? { ownerId: s.value, ownerType: 'Group', ownerDisplayName: s.label ?? s.value } : { [s.field]: s.value }),
+    _triage: [...(form._triage ?? []).filter(a => a.field !== s.field), { feature: 'assisted-ticket-triage', field: s.field, value: s.value }],
+  })
 
   if (!enabled || (suggestions.length === 0 && answer.related.length === 0)) return null
   return (

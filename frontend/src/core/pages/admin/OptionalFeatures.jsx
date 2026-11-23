@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { api } from '../../../api'
 import { dateTimeFr } from '../../fields'
 import { refreshFeatures } from '../../features'
+import TriageSettings from './TriageSettings'
 
 const TONE = { Activée: 't-done', Coupée: 't-wait', Indisponible: 't-bad' }
 
@@ -47,6 +48,8 @@ function FeatureCard({ f, onSwitched }) {
         {busy ? 'Vérification…' : on ? 'Couper' : 'Activer'}
       </button>
       {!on && !f.available && <p className="muted small">Indisponible tant que son conteneur ne la propose pas (exploitation).</p>}
+      {/* TRI-10, TRI-13 : réglages et mesure du tri, la fonctionnalité activée seulement (OPT-04). */}
+      {on && f.key === 'assisted-ticket-triage' && <TriageSettings />}
     </div>
   )
 }

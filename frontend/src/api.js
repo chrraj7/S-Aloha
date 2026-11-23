@@ -55,7 +55,8 @@ const forced = (opts) => (opts?.force ? `?force=true&reason=${encodeURIComponent
 const records = (path) => ({
   list: (params = {}) => request(path + '?' + new URLSearchParams(params)),
   get: (id) => request(`${path}/${id}`),
-  create: (dto) => request(path, { method: 'POST', body: JSON.stringify(dto) }),
+  // `opts.headers` : en-têtes propres à la création (suggestions appliquées à la saisie, TRI-09).
+  create: (dto, opts = {}) => request(path, { method: 'POST', body: JSON.stringify(dto), headers: opts.headers }),
   update: (id, dto, opts) => request(`${path}/${id}${forced(opts)}`, { method: 'PUT', body: JSON.stringify(dto) }),
   remove: (id) => request(`${path}/${id}`, { method: 'DELETE' }),
   // SOC-14 : ce que la suppression emporterait (Admin).
@@ -108,7 +109,11 @@ export const api = {
     testStorage: () => request('/admin/settings/storage/test', { method: 'POST' }),
     // OPT-01 à OPT-03 : fonctionnalités optionnelles, activation et coupure.
     features: () => request('/admin/features'),
-    switchFeature: (key, enabled) => request(`/admin/features/${key}`, { method: 'PUT', body: JSON.stringify({ enabled }) })
+    switchFeature: (key, enabled) => request(`/admin/features/${key}`, { method: 'PUT', body: JSON.stringify({ enabled }) }),
+    // TRI-13 : réglages propres d'une fonctionnalité ; TRI-10 : mesure du tri assisté.
+    featureSettings: key => request(`/admin/features/${key}/settings`),
+    saveFeatureSettings: (key, settings) => request(`/admin/features/${key}/settings`, { method: 'PUT', body: JSON.stringify(settings) }),
+    triageMetrics: () => request('/admin/triage/metrics')
   },
   login: (username, password) =>
     request('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }), quiet: true }),
