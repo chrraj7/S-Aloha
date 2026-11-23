@@ -106,6 +106,7 @@ aujourd'hui, la seule [CMDB assistée](cmdb-assistee.md). Le tri assisté des ti
 |---|---|---|
 | `GET /api/features` | User | Clés des fonctionnalités activées (OPT-04) |
 | `GET /api/admin/features`, `PUT /api/admin/features/{key}` | Admin | État, activation, coupure, réglages propres (OPT-01 à OPT-03) |
+| `GET`, `PUT /api/admin/features/{key}/settings` ; `GET /internal/features/{key}/settings` | Admin ; jeton du conteneur `features`, port interne, fonctionnalité activée (403 sinon) | Réglages propres d'une fonctionnalité (OPT-02, OPT-07), en JSON sur sa ligne ; aujourd'hui, ceux du tri assisté ([TRI-13](tri-assiste-des-tickets.md#5-api)) ; une autre clé : 404 |
 | `GET/PUT /api/admin/settings/language-model`, `POST …/language-model/test` | Admin | Modèle de langage (OPT-20 à OPT-26) |
 | `GET /api/<pratique>/{id}/proposals` ; `PUT /api/<pratique>/{id}` avec `X-S-Aloha-Proposal` ; `POST /api/<pratique>/{id}/proposals/{proposition}/reject` | User, droit de modifier la cible | Propositions ouvertes d'un enregistrement visible, acceptation (ou correction) par la route de la pratique, rejet (OPT-15) |
 | `POST /internal/proposals` | Jeton du conteneur `features`, port interne | Dépôt d'une proposition (OPT-14) : `201` ou `200` (doublon), `{ "id", "created" }` |
