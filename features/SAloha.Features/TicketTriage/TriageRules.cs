@@ -27,7 +27,7 @@ public static class TriageRules
         { ["Vitale"] = "Élevé", ["Majeure"] = "Élevé", ["Standard"] = "Moyen", ["Mineure"] = "Faible" };
 
     public static IReadOnlyList<Suggestion> Suggest(IncidentData incident, SimilarResult similar, IReadOnlyList<ServiceData> services,
-        IReadOnlyList<CategoryData> categories, IReadOnlyList<CiData> cis, TriageSettings settings)
+        IReadOnlyList<CategoryData> categories, IReadOnlyList<CiData> cis, TriageSettings settings, OutageGroup? outage = null)
     {
         var list = new List<Suggestion>();
         var neighbours = similar.Neighbours.Take(settings.Neighbours).Select(n => n.Incident).ToList();
@@ -67,7 +67,7 @@ public static class TriageRules
                 group.Voters, group.Share));
         }
 
-        if (Impact(incident, byId, cis) is { } impact) list.Add(impact);
+        if (Impact(incident, byId, cis, outage) is { } impact) list.Add(impact);
         return list;
     }
 
@@ -93,13 +93,21 @@ public static class TriageRules
             best.Members.Select(m => new CitedRef("incident", m.Neighbour.Id)).Take(20).ToList());
     }
 
+    /// <summary>TRI-04 : impact Élevé d'un incident d'une panne probable, motivé par elle ; null s'il l'est déjà.</summary>
+    public static Suggestion? OutageImpact(int incidentId, string? current, OutageGroup outage) =>
+        current == "Élevé" ? null : new("impact", "Élevé", $"Panne probable : {outage.Reasons}",
+            outage.Members.Where(m => m != incidentId).Take(20).Select(m => new CitedRef("incident", m)).ToList(), null);
+
     /// <summary>
     /// TRI-04 : la plus haute des valeurs données par la criticité du service et par celle des CI reliés,
     /// si elle diffère de l'impact saisi. Le motif nomme le service, partagé par toute l'organisation ;
     /// un CI est cité sans être nommé, pour qu'un lecteur qui ne le voit pas ne le lise pas (TRI-11).
     /// </summary>
-    public static Suggestion? Impact(IncidentData incident, IReadOnlyDictionary<int, ServiceData> services, IReadOnlyList<CiData> cis)
+    public static Suggestion? Impact(IncidentData incident, IReadOnlyDictionary<int, ServiceData> services, IReadOnlyList<CiData> cis,
+        OutageGroup? outage = null)
     {
+        // TRI-04 : une panne probable (TRI-07) suggère Élevé ; c'est la plus haute valeur, elle seule motive.
+        if (outage is not null) return OutageImpact(incident.Id, incident.Impact, outage);
         var sources = new List<(string Impact, string Reason, CitedRef Cited)>();
         if (incident.ServiceId is { } id && services.TryGetValue(id, out var service)
             && service.Criticality is { } sc && ServiceImpact.TryGetValue(sc, out var fromService))

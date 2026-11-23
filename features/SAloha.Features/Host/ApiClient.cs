@@ -8,8 +8,12 @@ namespace SAloha.Features.Host;
 // Vues de l'API publique lues sur le port interne (OPT-13, ADR-0016) : seuls les champs dont le
 // conteneur se sert ; les autres sont ignorés à la lecture.
 public record IncidentData(int Id, int PerimeterId, string? Reference, string? Title, string? Description, string? Status,
-    string? Category, int? ServiceId, string? Impact, string? OwnerType, string? OwnerId, string? OwnerDisplayName);
+    string? Category, int? ServiceId, string? Impact, string? OwnerType, string? OwnerId, string? OwnerDisplayName,
+    DateTime CreatedAt = default);
 public record IncidentRead(IncidentData Incident, List<int> ConfigurationItemIds);
+public record OpenPage(List<IncidentRead> Items, int? Next);
+/// <summary>TRI-07 : groupe signalé à l'API ; <c>Closed</c> : il s'est défait.</summary>
+public record OutageSignal(string Feature, IReadOnlyList<int> Members, string? Basis, int? ServiceId, string? Reasons, bool Closed = false);
 public record Neighbour(double Score, bool Lexical, bool Semantic, IncidentData Incident);
 public record SimilarResult(bool Semantic, List<Neighbour> Neighbours);
 public record SimilarQuery(string? Title, string? Description, int[] Perimeters, int? ExcludeId, int Limit);
@@ -78,6 +82,17 @@ public class ApiClient
 
     public async Task<List<CategoryData>> CategoriesAsync(string practice, CancellationToken ct) =>
         (await http.GetFromJsonAsync<List<CategoryData>>($"internal/categories?practice={practice}", Json, ct))!;
+
+    /// <summary>TRI-06 : une page des incidents ouverts, avec leurs CI reliés.</summary>
+    public async Task<OpenPage> OpenIncidentsAsync(int after, CancellationToken ct) =>
+        (await http.GetFromJsonAsync<OpenPage>($"internal/incidents/open?after={after}&limit=500", Json, ct))!;
+
+    /// <summary>TRI-07 : signalement d'une panne probable, formée, changée ou défaite.</summary>
+    public async Task<bool> SignalOutageAsync(OutageSignal signal, CancellationToken ct)
+    {
+        using var res = await http.PostAsJsonAsync("internal/outages", signal, Json, ct);
+        return res.IsSuccessStatusCode;
+    }
 
     /// <summary>OPT-14 : dépôt d'une proposition ; faux si l'API la refuse (champ, valeur, cible, fonctionnalité coupée).</summary>
     public async Task<bool> ProposeAsync(ProposalInput proposal, CancellationToken ct)
