@@ -14,8 +14,9 @@ public interface IContainerFeature
 }
 
 /// <summary>
-/// Hôte du conteneur <c>features</c> : jeton du conteneur (OPT-10) et contrôle de santé (OPT-01).
-/// Il n'exécute encore aucune fonctionnalité : chacune s'inscrit ici comme <see cref="IContainerFeature"/>.
+/// Hôte du conteneur <c>features</c> : jeton du conteneur (OPT-10), contrôle de santé (OPT-01), client du
+/// port interne de l'API et fil d'événements (OPT-12). Chaque fonctionnalité s'inscrit ici comme
+/// <see cref="IContainerFeature"/> : le tri assisté des tickets.
 /// </summary>
 public static class ContainerHost
 {
@@ -26,8 +27,15 @@ public static class ContainerHost
 
     public static void Configure(WebApplicationBuilder builder)
     {
-        // Les fonctionnalités s'inscrivent ici (services.AddSingleton<IContainerFeature, …>) :
-        // le tri assisté des tickets à l'étape 3 du chantier F14, la CMDB assistée à l'étape 5.
+        // Port interne de l'API (Api:Url), avec le jeton du conteneur ; puis le fil d'événements (OPT-12).
+        builder.Services.AddHttpClient<ApiClient>(c => c.Timeout = TimeSpan.FromSeconds(30));
+        builder.Services.AddSingleton<EventLoop>();
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<EventLoop>());
+        // Une fonctionnalité s'inscrit comme IContainerFeature (déclarée par /health) et, si elle lit le fil,
+        // comme IEventHandler. La CMDB assistée viendra à l'étape 5 du chantier F14.
+        builder.Services.AddSingleton<TicketTriage.TicketTriage>();
+        builder.Services.AddSingleton<IContainerFeature>(sp => sp.GetRequiredService<TicketTriage.TicketTriage>());
+        builder.Services.AddSingleton<IEventHandler>(sp => sp.GetRequiredService<TicketTriage.TicketTriage>());
     }
 
     public static void Map(WebApplication app)

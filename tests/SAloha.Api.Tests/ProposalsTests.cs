@@ -187,6 +187,56 @@ public class ProposalsTests(ApiFixture api, FakeFeaturesContainer container) : I
     }
 
     [Fact]
+    public async Task OPT_15_une_proposition_perimee_recalculee_a_l_identique_redevient_acceptable()
+    {
+        using var factory = await WithTriage(Factory);
+        var admin = Admin(factory);
+        var id = await CreateIncident(admin, "Messagerie (recalcul)");
+        var (_, created) = await Propose(factory, Triage(id, "impact", "Élevé"));
+        var proposal = created!.Value.GetProperty("id").GetInt32();
+        await Json(await admin.PutAsJsonAsync($"/api/incidents/{id}", Incident("Messagerie du siège (recalcul)")));
+        Assert.True((await Json(await admin.GetAsync($"/api/incidents/{id}/proposals"))).EnumerateArray().Single().GetProperty("stale").GetBoolean());
+
+        // Le conteneur recalcule après la modification : même proposition, rafraîchie, et acceptable de nouveau.
+        var (status, again) = await Propose(factory, Triage(id, "impact", "Élevé"));
+        Assert.Equal(200, status);
+        Assert.Equal(proposal, again!.Value.GetProperty("id").GetInt32());
+        Assert.False((await Json(await admin.GetAsync($"/api/incidents/{id}/proposals"))).EnumerateArray().Single().GetProperty("stale").GetBoolean());
+        Assert.Equal(HttpStatusCode.OK, (await admin.SendAsync(Apply(id, proposal, Incident("Messagerie du siège (recalcul)", "Élevé")))).StatusCode);
+        await using var db = api.Database();
+        Assert.Equal(Proposal.Accepted, (await db.Proposals.AsNoTracking().SingleAsync(p => p.Id == proposal)).Status);
+        Assert.Equal(1, await db.Proposals.CountAsync(p => p.TargetType == "incident" && p.TargetId == id));
+    }
+
+    [Fact]
+    public async Task OPT_14_une_valeur_rejetee_ou_corrigee_n_est_pas_reproposee()
+    {
+        using var factory = await WithTriage(Factory);
+        var admin = Admin(factory);
+        var id = await CreateIncident(admin, "VPN (écartée)");
+        var (_, rejected) = await Propose(factory, Triage(id, "impact", "Faible"));
+        var rejectedId = rejected!.Value.GetProperty("id").GetInt32();
+        Assert.Equal(HttpStatusCode.NoContent, (await admin.PostAsync($"/api/incidents/{id}/proposals/{rejectedId}/reject", null)).StatusCode);
+        await Json(await admin.PutAsJsonAsync($"/api/incidents/{id}", Incident("VPN du site de Lyon (écartée)")));
+
+        // Recalcul après la modification : la valeur rejetée ne revient pas.
+        var (status, again) = await Propose(factory, Triage(id, "impact", "Faible"));
+        Assert.Equal(200, status);
+        Assert.Equal((rejectedId, false), (again!.Value.GetProperty("id").GetInt32(), again.Value.GetProperty("created").GetBoolean()));
+        Assert.Empty((await Json(await admin.GetAsync($"/api/incidents/{id}/proposals"))).EnumerateArray());
+
+        // Corrigée : l'agent a retenu une autre valeur ; la valeur proposée ne revient pas non plus.
+        var (_, corrected) = await Propose(factory, Triage(id, "impact", "Élevé"));
+        var correctedId = corrected!.Value.GetProperty("id").GetInt32();
+        Assert.Equal(HttpStatusCode.OK, (await admin.SendAsync(Apply(id, correctedId, Incident("VPN du site de Lyon (écartée)", "Faible")))).StatusCode);
+        Assert.Equal(correctedId, (await Propose(factory, Triage(id, "impact", "Élevé"))).Body!.Value.GetProperty("id").GetInt32());
+        Assert.Empty((await Json(await admin.GetAsync($"/api/incidents/{id}/proposals"))).EnumerateArray());
+
+        // Une autre valeur du même champ reste proposable.
+        Assert.Equal(201, (await Propose(factory, Triage(id, "impact", "Moyen"))).Status);
+    }
+
+    [Fact]
     public async Task OPT_15_rejeter_et_OPT_04_coupee_la_proposition_disparait_sans_etre_effacee()
     {
         using var factory = await WithTriage(Factory);
