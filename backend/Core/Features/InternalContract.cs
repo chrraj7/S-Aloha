@@ -5,6 +5,7 @@ using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using SAloha.Api.Core.Data;
@@ -59,6 +60,27 @@ public class ContainerTokenHandler(IOptionsMonitor<AuthenticationSchemeOptions> 
             return Task.FromResult(AuthenticateResult.Fail("Jeton du conteneur refusé."));
         var identity = new ClaimsIdentity([new Claim(ClaimTypes.Name, FeatureCatalog.FeaturesContainer), new Claim(ClaimTypes.Role, Role)], SchemeName);
         return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(identity), SchemeName)));
+    }
+}
+
+/// <summary>
+/// OPT-04, OPT-13 : une lecture interne n'est servie au conteneur que si l'une des fonctionnalités qui
+/// s'en servent est activée ; sinon 403. Posée sur un contrôleur ou une action de <c>/internal/…</c>.
+/// </summary>
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
+public sealed class InternalFeatureAttribute(params string[] keys) : Attribute, IAsyncActionFilter
+{
+    public string[] Keys { get; } = keys.Select(k => FeatureCatalog.ByKey(k)?.Key ?? throw new ArgumentException($"Fonctionnalité inconnue : {k}", nameof(keys))).ToArray();
+
+    public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+    {
+        var enabled = await context.HttpContext.RequestServices.GetRequiredService<IFeatureGate>().EnabledAsync(context.HttpContext.RequestAborted);
+        if (!Keys.Any(enabled.Contains))
+        {
+            context.Result = new StatusCodeResult(StatusCodes.Status403Forbidden);
+            return;
+        }
+        await next();
     }
 }
 

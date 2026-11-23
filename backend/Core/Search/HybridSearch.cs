@@ -26,6 +26,13 @@ public partial class HybridSearch(AppDbContext db, IEmbeddingClient embeddings, 
     /// comme des réponses. 0,47 : valeur calibrée le 2026-11-09 (RAG-10), avec une marge sur
     /// les requêtes sans réponse, qui sortent autour de 0,42 à 0,45 avec bge-m3.
     /// </summary>
+    /// <summary>
+    /// La dernière recherche a pu interroger le sens (vecteur de la requête obtenu) ; faux quand le
+    /// service d'embeddings est absent, en panne ou que l'index n'a aucun vecteur (RAG-02). Lu par
+    /// le tri assisté, dont le motif dit « par les mots seuls » (TRI-03, TRI-08).
+    /// </summary>
+    public bool SemanticAvailable { get; private set; }
+
     private float MinSimilarity => float.TryParse(config["Search:MinSimilarity"], System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : 0.47f;
 
     /// <param name="query">Requête du vectoriel, et du lexical si <paramref name="lexicalQuery"/> est absent.</param>
@@ -114,10 +121,12 @@ public partial class HybridSearch(AppDbContext db, IEmbeddingClient embeddings, 
     /// </summary>
     private async Task<List<(string Type, int Id, int Passage)>> SemanticAsync(string query, IReadOnlyCollection<string> types, int[]? perimeters)
     {
+        SemanticAvailable = false;
         if (!embeddings.Enabled || !await db.SearchPassages.AnyAsync(p => p.Embedding != null)) return [];
         // Délai court : une recherche ne doit pas attendre un service lent ; le lexical répond seul.
         var vectors = await embeddings.EmbedAsync([query], TimeSpan.FromSeconds(5));
         if (vectors is null || vectors[0].Length != SearchPassage.Dimensions) return [];
+        SemanticAvailable = true;
         var q = vectors[0];
         try
         {
@@ -159,6 +168,7 @@ public partial class HybridSearch(AppDbContext db, IEmbeddingClient embeddings, 
         catch (Exception e) when (e is not OperationCanceledException)
         {
             log.LogWarning(e, "Requête vectorielle impossible (pgvector 0.8.0 ou plus requis) : recherche lexicale seule.");
+            SemanticAvailable = false;
             return [];
         }
     }
