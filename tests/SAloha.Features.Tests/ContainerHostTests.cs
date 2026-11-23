@@ -44,20 +44,20 @@ public class ContainerHostTests
     [Fact]
     public async Task OPT_01_le_controle_de_sante_rend_la_version_et_les_fonctionnalites_declarees()
     {
-        // Hôte nu : joignable, jeton reconnu, aucune fonctionnalité déclarée.
-        using (var bare = Factory(Token))
+        // Joignable, jeton reconnu ; le tri assisté des tickets est déclaré par sa clé, celle du catalogue de l'API.
+        using (var host = Factory(Token))
         {
-            var res = await Health(bare, Token);
+            var res = await Health(host, Token);
             Assert.Equal(HttpStatusCode.OK, res.StatusCode);
             var body = JsonDocument.Parse(await res.Content.ReadAsStringAsync()).RootElement;
             Assert.False(string.IsNullOrEmpty(body.GetProperty("version").GetString()));
             Assert.DoesNotContain("+", body.GetProperty("version").GetString());
-            Assert.Equal(0, body.GetProperty("features").GetArrayLength());
+            Assert.Equal(["assisted-ticket-triage"], body.GetProperty("features").EnumerateArray().Select(e => e.GetString()));
         }
-        // Une fonctionnalité inscrite est déclarée par sa clé, celle du catalogue de l'API.
-        using var withOne = Factory(Token, features: "assisted-ticket-triage");
-        var declared = JsonDocument.Parse(await (await Health(withOne, Token)).Content.ReadAsStringAsync()).RootElement.GetProperty("features");
-        Assert.Equal(["assisted-ticket-triage"], declared.EnumerateArray().Select(e => e.GetString()));
+        // Une fonctionnalité de plus s'ajoute à la liste ; une clé inscrite deux fois n'y figure qu'une fois.
+        using var withMore = Factory(Token, features: ["assisted-cmdb", "assisted-ticket-triage"]);
+        var declared = JsonDocument.Parse(await (await Health(withMore, Token)).Content.ReadAsStringAsync()).RootElement.GetProperty("features");
+        Assert.Equal(["assisted-ticket-triage", "assisted-cmdb"], declared.EnumerateArray().Select(e => e.GetString()));
     }
 
     [Fact]
