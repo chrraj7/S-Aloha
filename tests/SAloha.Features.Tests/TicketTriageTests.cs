@@ -1,10 +1,12 @@
 using System.Collections.Concurrent;
 using System.Net;
+using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace SAloha.Features.Tests;
 
@@ -251,5 +253,49 @@ public class TicketTriageTests(FakeInternalApi api) : IClassFixture<FakeInternal
         Event(api, "incident.resolved", 42, 11);
         var closed = Assert.Single(await OutagesWith(api, 41, Closed));
         Assert.Equal([41, 42, 43], closed.GetProperty("members").EnumerateArray().Select(m => m.GetInt32()));
+    }
+
+    [Fact]
+    public async Task TRI_02_a_la_saisie_le_conteneur_suggere_dans_les_perimetres_donnes_avec_les_incidents_ouverts_proches()
+    {
+        // Deux incidents ouverts sur un service : l'index les connaît dès le premier événement.
+        api.Incidents[51] = Incident(51, "Nouveau", perimeter: 12, service: 2, minutesAgo: 15, cis: []);
+        api.Incidents[52] = Incident(52, "En cours", perimeter: 12, service: 2, minutesAgo: 5, cis: []);
+        Event(api, "incident.created", 52, 12);
+        api.Similar = new { semantic = true, neighbours = new[] { Resolved(61, "Messagerie"), Resolved(62, "Messagerie"), Resolved(63, "Messagerie") } };
+
+        using var container = Container();
+        var triage = container.Services.GetRequiredService<SAloha.Features.TicketTriage.TicketTriage>();
+        for (var i = 0; i < 100 && !triage.Index.Built; i++) await Task.Delay(50);
+        Assert.True(triage.Index.Built);
+
+        var client = container.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", FakeInternalApi.Token);
+        var before = api.SimilarQueries.Count;
+        var res = await client.PostAsJsonAsync("/triage/suggest", new
+        {
+            title = "Outlook ne reçoit plus les courriels", description = "Depuis ce matin", serviceId = 2, configurationItemIds = Array.Empty<int>(),
+            impact = "Moyen", perimeters = new[] { 12, 13 },
+        });
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        var body = JsonDocument.Parse(await res.Content.ReadAsStringAsync()).RootElement;
+
+        // TRI-11 : les voisins se cherchent dans les périmètres de l'agent, sans incident à exclure.
+        var query = api.SimilarQueries.Skip(before).Single();
+        Assert.Equal([12, 13], query.GetProperty("perimeters").EnumerateArray().Select(e => e.GetInt32()));
+        Assert.Equal(JsonValueKind.Null, query.GetProperty("excludeId").ValueKind);
+        var suggestions = body.GetProperty("suggestions").EnumerateArray().ToList();
+        Assert.Equal("Messagerie", suggestions.Single(x => x.GetProperty("field").GetString() == "category").GetProperty("value").GetString());
+        // Les deux incidents ouverts du service sont proches ; avec le brouillon, ils font une panne probable (TRI-04).
+        Assert.Equal([52, 51], body.GetProperty("related").EnumerateArray().Select(e => e.GetInt32()));
+        var impact = suggestions.Single(x => x.GetProperty("field").GetString() == "impact");
+        Assert.Equal(("Élevé", "Panne probable : 3 incidents ouverts liés, celui-ci compris"),
+            (impact.GetProperty("value").GetString(), impact.GetProperty("reasons").GetString()));
+
+        // Un titre trop court ne cherche rien ; sans le jeton, rien ne répond (OPT-10).
+        var empty = JsonDocument.Parse(await (await client.PostAsJsonAsync("/triage/suggest", new { title = "Out", perimeters = new[] { 12 } }))
+            .Content.ReadAsStringAsync()).RootElement;
+        Assert.Equal(0, empty.GetProperty("suggestions").GetArrayLength());
+        Assert.Equal(HttpStatusCode.Unauthorized, (await container.CreateClient().PostAsJsonAsync("/triage/suggest", new { title = "Outlook muet" })).StatusCode);
     }
 }

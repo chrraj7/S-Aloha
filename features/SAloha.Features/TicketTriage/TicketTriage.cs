@@ -2,6 +2,16 @@ using SAloha.Features.Host;
 
 namespace SAloha.Features.TicketTriage;
 
+/// <summary>TRI-02 : un incident en cours de saisie, et les périmètres visibles de l'agent (TRI-11), que l'API fournit.</summary>
+public record DraftInput(string? Title, string? Description, int? ServiceId, int[]? ConfigurationItemIds, string? Category, string? Impact,
+    string? OwnerType, string? OwnerId, int[]? Perimeters);
+
+/// <summary>Suggestions pour un brouillon, et incidents ouverts proches (identifiants), que l'API filtre par visibilité.</summary>
+public record DraftSuggestions(IReadOnlyList<Suggestion> Suggestions, IReadOnlyList<int> Related)
+{
+    public static readonly DraftSuggestions Empty = new([], []);
+}
+
 /// <summary>
 /// Tri assisté des tickets (clé <c>assisted-ticket-triage</c>, docs/reference/tri-assiste-des-tickets.md).
 /// Après chaque enregistrement d'un incident (fil d'événements, TRI-02), il tient à jour son index des incidents
@@ -9,8 +19,10 @@ namespace SAloha.Features.TicketTriage;
 /// l'incident, ses CI reliés et ses voisins résolus dans le seul périmètre de l'incident (TRI-11) et dépose ses
 /// suggestions en propositions (OPT-14), que l'agent décide. Rien n'est jamais appliqué seul.
 /// </summary>
-public class TicketTriage(ApiClient api, EmbeddingClient embeddings, ILogger<TicketTriage> log) : IContainerFeature, IEventHandler
+public class TicketTriage(ApiClient api, EmbeddingClient embeddings, ILogger<TicketTriage> log) : IContainerFeature, IEventHandler, IEndpointFeature
 {
+    /// <summary>Incidents ouverts proches montrés à la saisie : 5 au plus, les plus récents.</summary>
+    public const int MaxRelated = 5;
     public const string FeatureKey = "assisted-ticket-triage";
     public const int EmbedBatch = 32;
     public string Key => FeatureKey;
@@ -59,6 +71,42 @@ public class TicketTriage(ApiClient api, EmbeddingClient embeddings, ILogger<Tic
         var outage = groups.FirstOrDefault(g => g.Members.Contains(incident.Id));
         foreach (var s in TriageRules.Suggest(incident, similar, services, categories, cis, Settings, outage))
             await ProposeAsync(incident.Id, s, ct);
+    }
+
+    /// <summary>OPT-16 : l'API relaie ici les suggestions à la saisie (TRI-02), dans les 2 secondes.</summary>
+    public void MapEndpoints(IEndpointRouteBuilder app) =>
+        app.MapPost("/triage/suggest", async (DraftInput draft, CancellationToken ct) => Results.Json(await SuggestDraftAsync(draft, ct)));
+
+    /// <summary>
+    /// TRI-02, TRI-11 : à la saisie, les voisins se cherchent dans les périmètres visibles de l'agent ; les
+    /// incidents ouverts proches viennent de l'index (TRI-05, TRI-06), dans ces mêmes périmètres. Si, avec le
+    /// brouillon, ils atteignent le seuil d'une panne probable, l'impact Élevé est suggéré (TRI-04).
+    /// </summary>
+    public async Task<DraftSuggestions> SuggestDraftAsync(DraftInput draft, CancellationToken ct)
+    {
+        var title = draft.Title?.Trim() ?? "";
+        if (title.Length < 4 || draft.Perimeters is not { Length: > 0 } perimeters) return DraftSuggestions.Empty;
+        var incident = new IncidentData(0, perimeters[0], null, title, draft.Description, "Nouveau", draft.Category, draft.ServiceId,
+            draft.Impact, draft.OwnerType, draft.OwnerId, null, DateTime.UtcNow);
+        var similar = await api.SimilarAsync(new SimilarQuery(title, draft.Description, perimeters, null, Settings.Neighbours), ct);
+        var (services, categories) = await ReferenceAsync(ct);
+        var cis = await api.ConfigurationItemsAsync(draft.ConfigurationItemIds ?? [], ct);
+
+        // Incidents ouverts proches : liés au brouillon par le service, un CI ou le sens, dans la fenêtre.
+        var related = new List<OpenEntry>();
+        if (Index.Built)
+        {
+            var text = OpenEntry.TextOf(incident);
+            var vector = (await embeddings.EmbedAsync([text], ct))?[0];
+            var probe = new OpenEntry(0, 0, draft.ServiceId, draft.ConfigurationItemIds ?? [], DateTime.UtcNow, "Nouveau", draft.Impact ?? "", text, vector);
+            related = perimeters.SelectMany(p => Index.InPerimeter(p).Where(e => OpenIncidents.Linked(probe with { PerimeterId = p }, e, Correlation)))
+                .OrderByDescending(e => e.CreatedAt).ToList();
+        }
+        var outage = related.Count + 1 >= Correlation.OutageThreshold
+            ? new OutageGroup(perimeters[0], [.. related.Select(r => r.Id)], "service", null, $"{related.Count + 1} incidents ouverts liés, celui-ci compris")
+            : null;
+        var suggestions = TriageRules.Suggest(incident, similar, services, categories, cis, Settings, outage);
+        return new DraftSuggestions(suggestions, related.Take(MaxRelated).Select(r => r.Id).ToList());
     }
 
     private async Task ProposeAsync(int incidentId, Suggestion s, CancellationToken ct)
