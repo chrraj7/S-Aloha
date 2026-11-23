@@ -31,7 +31,7 @@ son état actuel, et pas seulement *quel* est cet état.
 | [0020](adr-0020-pieces-jointes-s3-et-smtp-configurables.md) | Pièces jointes sur un stockage compatible S3 (Garage), courriels par un SMTP configurable, réglés dans la console | 2026-10-23 | accepté |
 | [0021](adr-0021-langage-visuel-v2-sombre-et-nouvel-embleme.md) | Langage visuel v2 : sombre par défaut, nouvel emblème, polices servies par l'application | 2026-10-23 | accepté |
 | [0022](adr-0022-pgvector-similarite-dans-postgresql.md) | pgvector : la similarité des vecteurs est calculée dans PostgreSQL | 2026-11-09 | accepté |
-| [0023](adr-0023-fonctionnalites-optionnelles-et-modele-de-langage.md) | Fonctionnalités optionnelles : un conteneur dédié par fonctionnalité, activé par l'Admin ; modèle de langage par un connecteur unique, dans le SI ou hébergé | 2026-11-23 | accepté, revient sur l'ADR-0013 pour le modèle de langage |
+| [0023](adr-0023-fonctionnalites-optionnelles-et-modele-de-langage.md) | Fonctionnalités optionnelles : un conteneur commun, à part des fonctions de base, activé par l'Admin ; modèle de langage par un connecteur unique, dans le SI ou hébergé | 2026-11-23 | accepté, revient sur l'ADR-0013 pour le modèle de langage |
 | [0024](adr-0024-serveur-mcp-conteneur-separe-lecture-seule.md) | Serveur MCP : conteneur séparé, lecture seule, jetons personnels | 2026-11-23 | accepté |
 
 Les choix fondateurs antérieurs à cette base (authentification AD LDAP → JWT, analyses

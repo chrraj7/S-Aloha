@@ -89,7 +89,8 @@ Indépendants des processus, accessibles à tous les rôles :
   doublons ; pour les gestionnaires et l'Admin : catégories d'incident et de problème,
   découverte du réseau ([administration](administration.md)) ;
 - **Fonctionnalités optionnelles** (à venir, chantier F14) — activées ou coupées par
-  l'Admin, chacune dans son propre conteneur : **tri assisté des tickets** (suggestions et
+  l'Admin, exécutées hors de l'API, dans un conteneur à part des fonctions de base :
+  **tri assisté des tickets** (suggestions et
   panne probable sur les incidents), **CMDB assistée** (propositions d'un modèle de langage,
   dans le SI ou hébergé, au choix de l'organisation), **serveur MCP** (S-Aloha en lecture
   pour les assistants des utilisateurs) ([fonctionnalités optionnelles](fonctionnalites-optionnelles.md)) ;

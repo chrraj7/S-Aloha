@@ -1,10 +1,11 @@
 # 🎛️ Fonctionnalités optionnelles
 
 > Ce que l'Admin active ou coupe dans la console : le [tri assisté des tickets](tri-assiste-des-tickets.md),
-> la [CMDB assistée](cmdb-assistee.md) et le [serveur MCP](serveur-mcp.md). Chacune tourne
-> dans **son propre conteneur**, hors de l'API ; l'API garde le socle : activation,
-> propositions, journal d'audit. Ce document décrit ce socle, le contrat entre l'API et les
-> conteneurs, et le connecteur de modèle de langage. Préfixe des règles : **OPT**.
+> la [CMDB assistée](cmdb-assistee.md) et le [serveur MCP](serveur-mcp.md). Elles tournent
+> **hors de l'API** : le tri assisté, la CMDB assistée et toute fonctionnalité future dans
+> un conteneur commun, `features` ; le serveur MCP dans le sien, `mcp`. L'API garde le
+> socle : activation, propositions, journal d'audit. Ce document décrit ce socle, le
+> contrat entre l'API et le conteneur `features`, et le connecteur de modèle de langage. Préfixe des règles : **OPT**.
 > Conventions (✅ / 🔜, lots) : [règles métier](regles-metier.md#3-conventions-de-ce-référentiel).
 > Décisions : [ADR-0023](../decisions/adr-0023-fonctionnalites-optionnelles-et-modele-de-langage.md),
 > [ADR-0024](../decisions/adr-0024-serveur-mcp-conteneur-separe-lecture-seule.md).
@@ -17,8 +18,8 @@
 
 | Fonctionnalité | Clé | Conteneur | Ce qu'elle fait | Dépend de | Règles | Statut |
 |---|---|---|---|---|---|---|
-| [Tri assisté des tickets](tri-assiste-des-tickets.md) | `assisted-ticket-triage` | `ticket-triage` | Suggère la catégorie, le service, le groupe et l'impact d'un incident ; signale les incidents ouverts qui semblent liés | Service d'embeddings (facultatif : sans lui, règles et mots seuls) | TRI | 🔜 |
-| [CMDB assistée](cmdb-assistee.md) | `assisted-cmdb` | `assisted-cmdb` | Propose de renommer, reclasser, fusionner et relier des CI, et d'aider au rapprochement du sas | Modèle de langage (§ 4) | CMA | 🔜 |
+| [Tri assisté des tickets](tri-assiste-des-tickets.md) | `assisted-ticket-triage` | `features` | Suggère la catégorie, le service, le groupe et l'impact d'un incident ; signale les incidents ouverts qui semblent liés | Service d'embeddings (facultatif : sans lui, règles et mots seuls) | TRI | 🔜 |
+| [CMDB assistée](cmdb-assistee.md) | `assisted-cmdb` | `features` | Propose de renommer, reclasser, fusionner et relier des CI, et d'aider au rapprochement du sas | Modèle de langage (§ 4) | CMA | 🔜 |
 | [Serveur MCP](serveur-mcp.md) | `mcp-server` | `mcp` | Ouvre S-Aloha en lecture aux assistants des utilisateurs, avec les droits de chacun | — | MCP | 🔜 |
 
 ```mermaid
@@ -28,71 +29,73 @@ flowchart LR
     W -- "/api/" --> A["api<br/>socle"]
     W -- "/mcp" --> M["mcp"]
     M -- "routes publiques,<br/>jeton personnel" --> A
-    T["ticket-triage"] -- "port interne :<br/>événements, lectures,<br/>propositions" --> A
-    K["assisted-cmdb"] -- "port interne" --> A
-    A -- "suggestions à la saisie<br/>(délai court)" --> T
-    T -.-> E["embeddings"]
-    K -.-> L["modèle de langage<br/>dans le SI ou hébergé"]
+    F["features<br/>tri assisté, CMDB assistée,<br/>fonctionnalités à venir"] -- "port interne :<br/>événements, lectures,<br/>propositions" --> A
+    A -- "suggestions à la saisie<br/>(délai court)" --> F
+    F -.-> E["embeddings"]
+    A -.-> E
+    F -.-> L["modèle de langage<br/>dans le SI ou hébergé"]
     A --> D[("db")]
 ```
 
 Aucun conteneur optionnel n'accède à la base. Chacun est rangé dans un profil du compose
-(`tri-assiste`, `cmdb-assistee`, `mcp`) : un conteneur arrêté laisse sa fonctionnalité
-indisponible, rien d'autre.
+(`fonctionnalites`, `mcp`) : un conteneur arrêté laisse ses fonctionnalités
+indisponibles, rien d'autre. Le service d'embeddings reste à part : la recherche, fonction
+de base, en dépend ([ADR-0023](../decisions/adr-0023-fonctionnalites-optionnelles-et-modele-de-langage.md)).
+Une fonctionnalité future rejoint le conteneur `features`, sans image ni profil de plus.
 
 ## 2. Activation
 
 | ID | Règle | Statut | Lot |
 |---|---|---|---|
-| OPT-01 | **Disponible, activée, coupée** : une fonctionnalité est **disponible** quand l'adresse de son conteneur est configurée (`Features:<Clé>:Url`) et que le conteneur répond à son contrôle de santé en reconnaissant son jeton (OPT-10) ; elle est **activée** par l'Admin. À l'installation, toutes sont coupées | 🔜 | 3 |
+| OPT-01 | **Disponible, activée, coupée** : une fonctionnalité est **disponible** quand l'adresse de son conteneur est configurée (`Features:Url` pour le conteneur `features`, `Mcp:Url` pour `mcp`) et que le conteneur répond à son contrôle de santé, reconnaît son jeton (OPT-10) et déclare la fonctionnalité parmi les siennes ; elle est **activée** par l'Admin. À l'installation, toutes sont coupées | 🔜 | 3 |
 | OPT-02 | **Administration › Fonctionnalités optionnelles** (Admin) : pour chacune, état (indisponible, coupée, activée), état du conteneur (joignable, version, dernier contrôle), dépendances et leur état, réglages propres, date et auteur du dernier changement ; boutons « Activer » et « Couper », avec confirmation | 🔜 | 3 |
 | OPT-03 | **Activation refusée** (400, motif affiché) si le conteneur est injoignable, si son jeton est refusé, ou si une dépendance obligatoire manque (CMDB assistée sans modèle de langage réglé). Une dépendance facultative absente (service d'embeddings du tri) n'empêche pas l'activation : la page dit ce qui manque et ce que la fonctionnalité fait sans | 🔜 | 3 |
-| OPT-04 | **Coupée = absente** : l'API répond 404 sur les routes de la fonctionnalité, refuse le jeton de son conteneur (401) et ne lui sert plus d'événements ; l'interface ne montre ni entrée de menu, ni encadré, ni réglage. `GET /api/features` (tout utilisateur connecté) renvoie la seule liste des clés activées, que le registre de l'interface lit à la connexion et à l'ouverture de la console. Une coupure prend effet en moins de 30 secondes | 🔜 | 3 |
-| OPT-05 | **Conteneur perdu** : une fonctionnalité activée dont le conteneur ne répond plus reste activée ; la page Santé la signale « Dégradé », ses suggestions et propositions déjà produites restent visibles, et rien n'est bloqué dans les pratiques | 🔜 | 3 |
+| OPT-04 | **Coupée = absente** : l'API répond 404 sur les routes de la fonctionnalité, refuse au conteneur ses routes internes (403) et ne lui sert plus ses événements ; le conteneur n'exécute pas une fonctionnalité coupée ; l'interface ne montre ni entrée de menu, ni encadré, ni réglage. `GET /api/features` (tout utilisateur connecté) renvoie la seule liste des clés activées, que le registre de l'interface lit à la connexion et à l'ouverture de la console. Une coupure prend effet en moins de 30 secondes | 🔜 | 3 |
+| OPT-05 | **Conteneur perdu** : une fonctionnalité activée dont le conteneur ne répond plus reste activée (toutes celles du conteneur `features` à la fois) ; la page Santé la signale « Dégradé », ses suggestions et propositions déjà produites restent visibles, et rien n'est bloqué dans les pratiques | 🔜 | 3 |
 | OPT-06 | **Données conservées** : couper une fonctionnalité ne supprime rien ; ses propositions restent en base et reparaissent à la réactivation. Ce qu'un conteneur tient en mémoire (index des incidents ouverts du tri) se reconstruit à son démarrage | 🔜 | 3 |
 | OPT-07 | **Traçabilité** : chaque activation, coupure ou réglage modifié est tracé au journal d'audit (type `parametre`, référence « Fonctionnalités · <nom> ») ; la page **Santé** ([ADM-20](administration.md#3-santé)) liste chaque fonctionnalité activée, son conteneur et ses dépendances | 🔜 | 3 |
 | OPT-08 | **Origine des modifications** : chaque ligne du journal d'audit porte une origine (`Origin`) : « Saisie » par défaut, « Tri assisté des tickets » ou « CMDB assistée » quand la modification applique une proposition (OPT-14). L'onglet Historique des fiches et le journal global l'affichent et la filtrent. Les lignes antérieures valent « Saisie » | 🔜 | 3 |
 
-## 3. Contrat entre l'API et les conteneurs
+## 3. Contrat entre l'API et le conteneur des fonctionnalités
 
-Vaut pour le tri assisté des tickets et la CMDB assistée. Le serveur MCP n'agit que pour un
+Vaut pour le conteneur `features` : le tri assisté des tickets, la CMDB assistée et les fonctionnalités à venir. Le serveur MCP n'agit que pour un
 utilisateur, avec son jeton personnel, sur les routes publiques : il n'utilise ni le port
 interne, ni le fil d'événements ([MCP-02](serveur-mcp.md)).
 
 | ID | Règle | Statut | Lot |
 |---|---|---|---|
-| OPT-10 | **Jeton de conteneur** : un secret par conteneur, fourni par l'environnement à l'API (`Features:<Clé>:Token`) et au conteneur ; chaque appel, dans un sens comme dans l'autre, le porte en `Authorization: Bearer`. Une valeur d'exemple est refusée hors du mode démonstration ([S7](../plan-action.md#5-avant-une-mise-en-production)). Le jeton n'ouvre que les routes internes de sa fonctionnalité (section API de son document) ; il n'est jamais journalisé | 🔜 | 3 |
+| OPT-10 | **Jeton de conteneur** : un secret pour le conteneur `features`, fourni par l'environnement à l'API (`Features:Token`) et au conteneur ; chaque appel, dans un sens comme dans l'autre, le porte en `Authorization: Bearer`. Une valeur d'exemple est refusée hors du mode démonstration ([S7](../plan-action.md#5-avant-une-mise-en-production)). Le jeton n'ouvre que les routes internes des fonctionnalités activées (section API de leur document) ; il n'est jamais journalisé | 🔜 | 3 |
 | OPT-11 | **Port interne** : les routes internes (`/internal/…`) écoutent sur un second port de l'API (`8081`), publié nulle part et que nginx ne relaie pas ; sur le port public, elles n'existent pas (404) | 🔜 | 3 |
-| OPT-12 | **Fil d'événements** : l'API inscrit dans un fil (`FeatureEvents` : numéro croissant, type, type et identifiant de l'enregistrement, périmètre, date) les événements utiles aux fonctionnalités activées : incident créé, modifié, résolu, supprimé ; CI créé, modifié, retiré ; actif du sas créé ; tâche de découverte terminée ; analyse demandée. Un conteneur lit `GET /internal/events?after=<numéro>` les seuls types de sa fonctionnalité, à son rythme : arrêté, il rattrape son retard à la reprise. L'enregistrement d'une fiche n'attend jamais un conteneur. Le fil garde 7 jours ; un conteneur en retard de plus de 7 jours repart d'un état complet (OPT-06) | 🔜 | 3 |
+| OPT-12 | **Fil d'événements** : l'API inscrit dans un fil (`FeatureEvents` : numéro croissant, type, type et identifiant de l'enregistrement, périmètre, date) les événements utiles aux fonctionnalités activées : incident créé, modifié, résolu, supprimé ; CI créé, modifié, retiré ; actif du sas créé ; tâche de découverte terminée ; analyse demandée. Le conteneur lit `GET /internal/events?after=<numéro>` les seuls types des fonctionnalités activées, à son rythme : arrêté, il rattrape son retard à la reprise. L'enregistrement d'une fiche n'attend jamais le conteneur. Le fil garde 7 jours ; un conteneur en retard de plus de 7 jours repart d'un état complet (OPT-06) | 🔜 | 3 |
 | OPT-13 | **Lectures** : les routes internes de lecture rendent les **mêmes vues** que l'API publique ([ADR-0016](../decisions/adr-0016-reponses-de-l-api-en-dto.md)). Un appel fait pour un utilisateur (OPT-15) porte les périmètres visibles de cet utilisateur, que l'API applique ([RAG-13](recherche.md)) ; un traitement de fond lit dans le périmètre de l'enregistrement qu'il traite, et jamais au-delà | 🔜 | 3 |
-| OPT-14 | **Propositions** : la seule écriture permise à un conteneur est `POST /internal/proposals` : fonctionnalité, enregistrement visé (type et identifiant), champ ou opération, valeur avant, valeur proposée, motifs (texte court et références citées), confiance éventuelle (indicative, jamais utilisée pour appliquer). L'API vérifie que la cible existe, que la valeur appartient à la liste fermée du champ, et écarte une proposition identique à une proposition ouverte. Le périmètre de la proposition est celui de sa cible | 🔜 | 3 |
+| OPT-14 | **Propositions** : la seule écriture permise au conteneur est `POST /internal/proposals` : fonctionnalité, enregistrement visé (type et identifiant), champ ou opération, valeur avant, valeur proposée, motifs (texte court et références citées), confiance éventuelle (indicative, jamais utilisée pour appliquer). L'API vérifie que la cible existe, que la valeur appartient à la liste fermée du champ, et écarte une proposition identique à une proposition ouverte. Le périmètre de la proposition est celui de sa cible | 🔜 | 3 |
 | OPT-15 | **Décision** : une proposition se décide par un utilisateur qui a le droit de modifier sa cible ([PER-06](perimetres.md)) : **accepter** (au besoin en corrigeant la valeur), **rejeter**, ou la laisser. Accepter applique la modification par le chemin normal de la pratique : toutes ses règles s'appliquent (400, 409, transitions), et le journal d'audit porte l'origine (OPT-08). Une proposition dont la cible a changé depuis sa création est **périmée** : elle ne s'accepte plus et le conteneur la recalcule. Un motif qui cite un enregistrement invisible pour l'utilisateur ne l'affiche pas | 🔜 | 3 |
-| OPT-16 | **Appels de l'API vers un conteneur** : réservés aux réponses attendues par un écran (suggestions à la saisie, [TRI-02](tri-assiste-des-tickets.md)) ; délai de 2 secondes au plus ; un échec, un délai dépassé ou un conteneur absent rendent une réponse vide, journalisée, jamais une erreur à l'écran | 🔜 | 3 |
+| OPT-16 | **Appels de l'API vers le conteneur** : réservés aux réponses attendues par un écran (suggestions à la saisie, [TRI-02](tri-assiste-des-tickets.md)) ; délai de 2 secondes au plus ; un échec, un délai dépassé ou un conteneur absent rendent une réponse vide, journalisée, jamais une erreur à l'écran | 🔜 | 3 |
 | OPT-17 | **Conservation** : une proposition ouverte expire 30 jours après sa création ; une proposition décidée est gardée 13 mois, puis purgée par une tâche quotidienne ; les compteurs mensuels (acceptées, corrigées, rejetées, expirées) sont gardés. Une proposition est supprimée avec sa cible | 🔜 | 3 |
 
 ## 4. Connecteur de modèle de langage
 
-Bibliothèque partagée par les conteneurs qui en ont besoin : aujourd'hui, la seule
-[CMDB assistée](cmdb-assistee.md). Le tri assisté des tickets s'en passe.
+Dans le conteneur `features`, partagé par les fonctionnalités qui en ont besoin :
+aujourd'hui, la seule [CMDB assistée](cmdb-assistee.md). Le tri assisté des tickets s'en passe.
 
 | ID | Règle | Statut | Lot |
 |---|---|---|---|
 | OPT-20 | **Réglages** (Admin, Administration › Fonctionnalités optionnelles › Modèle de langage), une seule ligne en base comme le SMTP ([ADM-60](administration.md#7-messagerie-et-stockage)) : activé ou non, emplacement (**dans le SI** ou **hébergé hors du SI**), adresse http(s) de l'API du modèle (`…/v1`), nom du modèle, clé facultative, délai d'une requête (10 à 300 s, 120 par défaut), taille maximale d'une réponse | 🔜 | 3 |
 | OPT-21 | **Format unique** : `POST {adresse}/chat/completions`, format de complétion de conversation que parlent les serveurs d'inférence courants (Ollama, vLLM, LocalAI, llama.cpp) et la plupart des offres hébergées ; sortie JSON demandée selon le schéma de la tâche quand le serveur le permet. Aucun autre client de modèle | 🔜 | 3 |
 | OPT-22 | **Emplacement** : l'adresse est résolue à l'enregistrement et à chaque appel. Un hôte qui se résout hors des plages privées, de bouclage et locales au lien (RFC 1918, RFC 4193, `127.0.0.0/8`, `::1`, `169.254.0.0/16`) n'est accepté que si l'emplacement déclaré est « hébergé hors du SI » ; sinon 400 à l'enregistrement, et aucun appel ensuite. Déclarer un modèle hébergé demande une confirmation explicite ; la page l'affiche alors en permanence (« les données envoyées au modèle quittent le SI ») et rappelle de l'inscrire au registre des traitements. Chaque changement d'emplacement est tracé (OPT-07) | 🔜 | 3 |
-| OPT-23 | **Clé** chiffrée par le coffre (`Discovery:VaultKey`, comme [ADM-62](administration.md#7-messagerie-et-stockage)), jamais renvoyée à l'interface. Le conteneur qui utilise le modèle reçoit les réglages, clé comprise, par une route interne (`GET /internal/language-model`), à son démarrage et à chaque changement ; il ne l'écrit nulle part | 🔜 | 3 |
+| OPT-23 | **Clé** chiffrée par le coffre (`Discovery:VaultKey`, comme [ADM-62](administration.md#7-messagerie-et-stockage)), jamais renvoyée à l'interface. Le conteneur `features` reçoit les réglages, clé comprise, par une route interne (`GET /internal/language-model`), à son démarrage et à chaque changement ; il ne l'écrit nulle part | 🔜 | 3 |
 | OPT-24 | **Données minimales, pseudonymisées** : seuls les champs utiles à la tâche sont envoyés. Les adresses IP et MAC, les noms d'hôte et FQDN, les numéros de série, les comptes et les adresses de courriel sont remplacés par des jetons stables pour la durée d'une requête (`IP_1`, `HOTE_3`, `COMPTE_2`), et rétablis dans la réponse. Aucun secret du coffre n'est envoyé. La règle vaut dans le SI comme hors du SI | 🔜 | 3 |
 | OPT-25 | **Sortie validée** : la réponse est lue comme du JSON et validée contre le schéma de la tâche ; une réponse non conforme, ou qui cite un jeton ou une référence inconnus, est écartée et comptée, et réessayée une fois au plus. Une sortie du modèle n'est jamais exécutée ni lue comme une consigne : elle ne produit que des propositions (OPT-14) | 🔜 | 3 |
-| OPT-26 | **Essai** avec les réglages enregistrés, même désactivés : une requête courte passe par le conteneur qui utilise le modèle ; la page affiche le résultat (modèle joignable, durée, sortie JSON valide ou non) ou le message de l'erreur, sans secret, comme [ADM-63](administration.md#7-messagerie-et-stockage) | 🔜 | 3 |
+| OPT-26 | **Essai** avec les réglages enregistrés, même désactivés : une requête courte passe par le conteneur `features` ; la page affiche le résultat (modèle joignable, durée, sortie JSON valide ou non) ou le message de l'erreur, sans secret, comme [ADM-63](administration.md#7-messagerie-et-stockage) | 🔜 | 3 |
 | OPT-27 | **Trace** de chaque appel, remise à l'API : fonctionnalité, tâche, modèle, emplacement, version du gabarit d'invite, empreinte SHA-256 de l'entrée pseudonymisée, durée, issue (valide, non conforme, délai, erreur). Ni l'invite ni la réponse en clair. Gardée 90 jours ; la page de la fonctionnalité en tire ses compteurs | 🔜 | 3 |
-| OPT-28 | **Charge** : une requête à la fois par conteneur (file), délai borné (OPT-20) ; un modèle en panne met l'analyse en cours en échec, motif affiché, sans rien bloquer d'autre | 🔜 | 3 |
+| OPT-28 | **Charge** : chaque fonctionnalité a sa file de travail dans le conteneur, pour qu'une analyse longue n'en retarde pas une autre ; une requête au modèle à la fois, délai borné (OPT-20) ; un modèle en panne met l'analyse en cours en échec, motif affiché, sans rien bloquer d'autre | 🔜 | 3 |
 
 ## 5. Interface
 
 | Endroit | Contenu | Statut |
 |---|---|---|
 | Administration › Fonctionnalités optionnelles | État des trois fonctionnalités, conteneurs, dépendances, activation (OPT-01 à OPT-03), réglages propres ; sous-page **Modèle de langage** (OPT-20 à OPT-26) | 🔜 |
-| Administration › Santé | Une ligne par fonctionnalité activée et son conteneur (OPT-05, OPT-07) | 🔜 |
+| Administration › Santé | Une ligne par conteneur (`features`, `mcp`) et par fonctionnalité activée (OPT-05, OPT-07) | 🔜 |
 | Onglet Historique, journal global | Colonne et filtre « Origine » (OPT-08) | 🔜 |
 | Pratiques concernées | Encadrés de propositions, propres à chaque fonctionnalité ([tri](tri-assiste-des-tickets.md#4-interface), [CMDB](cmdb-assistee.md#4-interface)) | 🔜 |
 
@@ -104,13 +107,14 @@ Bibliothèque partagée par les conteneurs qui en ont besoin : aujourd'hui, la s
 | `GET /api/admin/features`, `PUT /api/admin/features/{key}` | Admin | État, activation, coupure, réglages propres (OPT-01 à OPT-03) |
 | `GET/PUT /api/admin/settings/language-model`, `POST …/language-model/test` | Admin | Modèle de langage (OPT-20 à OPT-26) |
 | `GET /api/proposals?target=&feature=&status=`, `POST /api/proposals/{id}/accept` (valeur corrigée facultative), `POST /api/proposals/{id}/reject` | User, droit de modifier la cible | Propositions et décision (OPT-15) |
-| `GET /internal/events`, `POST /internal/proposals`, `GET /internal/language-model`, lectures propres à chaque fonctionnalité | Jeton de conteneur, port interne | Contrat (OPT-10 à OPT-14, OPT-23) |
+| `GET /internal/events`, `POST /internal/proposals`, `GET /internal/language-model`, lectures propres à chaque fonctionnalité | Jeton du conteneur `features`, port interne | Contrat (OPT-10 à OPT-14, OPT-23) |
 
 ## 7. Exploitation
 
-- **Profils du compose** : `tri-assiste` (`ticket-triage`), `cmdb-assistee`
-  (`assisted-cmdb`), `mcp` (`mcp`). Chaque conteneur reçoit l'adresse de l'API (port
-  interne) et son jeton ; l'API reçoit l'adresse et le jeton de chaque conteneur.
+- **Profils du compose** : `fonctionnalites` (conteneur `features`) et `mcp` (conteneur
+  `mcp`). Le conteneur `features` reçoit l'adresse du port interne de l'API, son jeton,
+  l'adresse du service d'embeddings ; l'API reçoit son adresse et le même jeton. Le
+  conteneur `mcp` ne reçoit que l'adresse de l'API.
 - **Modèle de langage dans le SI** : un serveur d'inférence au format OPT-21, sur le
   réseau de l'organisation. La mémoire et le temps de réponse nécessaires dépendent du
   modèle ; le jeu d'essai de la CMDB assistée ([CMA-11](cmdb-assistee.md)) les mesure et les
@@ -120,7 +124,7 @@ Bibliothèque partagée par les conteneurs qui en ont besoin : aujourd'hui, la s
 
 ## 8. Scénarios d'acceptation
 
-- **OPT-03** — *Étant donné* le conteneur `ticket-triage` arrêté, *quand* l'Admin active le tri assisté des tickets, *alors* l'API refuse (400 « Conteneur injoignable ») et rien n'est tracé comme activé.
+- **OPT-03** — *Étant donné* le conteneur `features` arrêté, *quand* l'Admin active le tri assisté des tickets, *alors* l'API refuse (400 « Conteneur injoignable ») et rien n'est tracé comme activé.
 - **OPT-04** — *Étant donné* le tri assisté activé puis coupé, *quand* un utilisateur ouvre un incident, *alors* aucun encadré de suggestions n'apparaît, `GET /api/features` ne contient plus sa clé, et `GET /api/incidents/{id}/triage` répond 404.
 - **OPT-11** — *Étant donné* une requête `GET /internal/events` adressée à nginx, *alors* elle répond 404 ; adressée au port interne sans jeton, 401.
 - **OPT-12** — *Étant donné* le conteneur du tri arrêté pendant la création de trois incidents, *quand* il redémarre, *alors* il lit les trois événements et produit leurs suggestions, et aucune création n'a attendu.

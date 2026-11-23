@@ -1,4 +1,4 @@
-# ADR-0023 — Fonctionnalités optionnelles : un conteneur dédié par fonctionnalité, activé par l'Admin ; modèle de langage par un connecteur unique
+# ADR-0023 — Fonctionnalités optionnelles : un conteneur commun, à part des fonctions de base, activé par l'Admin ; modèle de langage par un connecteur unique
 
 <sub>[← Documentation](../readme.md) · [Toutes les décisions](readme.md)</sub>
 
@@ -13,9 +13,10 @@ Trois fonctionnalités doivent rejoindre S-Aloha avant la première version stab
 **serveur MCP**. Elles ne servent pas toutes les organisations. Certaines demandent des
 ressources (modèle de langage, service d'embeddings) ou ouvrent une surface nouvelle :
 chacune doit pouvoir être activée ou coupée par l'Admin, dans la console, sans
-réinstaller. Le mainteneur a fixé un principe : **une fonctionnalité optionnelle est
-hébergée et exécutée dans un conteneur dédié, séparé des fonctions de base**. Une panne,
-une charge ou une faille d'une fonctionnalité optionnelle ne doit pas atteindre l'API.
+réinstaller. Le mainteneur a fixé un principe : **les fonctionnalités optionnelles, présentes et
+futures, sont hébergées et exécutées dans un conteneur commun, séparé des fonctions de
+base** ; seul le serveur MCP a le sien. Une panne, une charge ou une faille d'une
+fonctionnalité optionnelle ne doit pas atteindre l'API.
 
 Aujourd'hui, un composant facultatif se règle de deux façons : par la configuration de
 l'API (`Embeddings:Url`, [ADR-0013](adr-0013-recherche-hybride-service-embeddings-separe.md)),
@@ -38,48 +39,51 @@ est **permis**, et c'est à l'Admin de choisir, selon la politique de son organi
 
 ## Décision
 
-1. **Un conteneur par fonctionnalité optionnelle** : `ticket-triage`, `assisted-cmdb` et
-   `mcp`, chacun construit depuis le dépôt (projets .NET à part,
-   [ADR-0004](adr-0004-conserver-le-stack-dotnet-react.md)) et rangé dans un profil du
-   compose. L'exploitant démarre ceux qu'il veut rendre disponibles. Aucun ne touche à la
-   base : un conteneur ne parle qu'à l'API, et aux services dont il a besoin (service
-   d'embeddings, modèle de langage).
+1. **Un conteneur commun, `features`**, pour toutes les fonctionnalités optionnelles,
+   celles d'aujourd'hui (tri assisté des tickets, CMDB assistée) comme celles à venir :
+   un projet .NET à part de l'API ([ADR-0004](adr-0004-conserver-le-stack-dotnet-react.md)),
+   une image, un profil du compose que l'exploitant démarre ou non. Chaque fonctionnalité
+   y est un module que l'Admin active à part ; une fonctionnalité coupée n'y tourne pas.
+   Le conteneur ne touche pas à la base : il ne parle qu'à l'API, et aux services dont
+   ses fonctionnalités ont besoin (service d'embeddings, modèle de langage). Le **serveur
+   MCP** a son propre conteneur, `mcp` ([ADR-0024](adr-0024-serveur-mcp-conteneur-separe-lecture-seule.md)).
 2. **L'API garde le socle, et lui seul** : la liste des fonctionnalités et leur état,
    l'activation par l'Admin, le stockage (propositions, analyses demandées, réglages) et
    la décision des propositions, le journal d'audit, et les routes minces qui exposent une
    fonctionnalité aux utilisateurs (relais vers le conteneur, lectures). Le **calcul** d'une
    fonctionnalité (vote, corrélation, appels au modèle, outils MCP) s'exécute dans son
    conteneur, jamais dans l'API.
-3. **Un contrat unique entre l'API et les conteneurs** :
+3. **Un contrat unique entre l'API et le conteneur `features`** :
    - des **routes internes** sur un port de l'API que nginx ne relaie pas, chaque appel
-     authentifié par le jeton propre au conteneur, qui n'ouvre que ce dont sa
-     fonctionnalité a besoin ;
+     authentifié par le jeton du conteneur, qui n'ouvre que les routes des
+     fonctionnalités activées ;
    - un **fil d'événements** (incident créé, CI modifié, tâche de découverte terminée…)
-     que les conteneurs lisent à leur rythme avec un curseur : un conteneur arrêté
-     rattrape son retard, l'API n'attend jamais ;
+     que le conteneur lit à son rythme avec un curseur : arrêté, il rattrape son retard,
+     et l'API n'attend jamais ;
    - des **lectures** qui rendent les mêmes vues que l'API publique
      ([ADR-0016](adr-0016-reponses-de-l-api-en-dto.md)), dans les périmètres de
      l'utilisateur quand l'appel est fait pour lui ([ADR-0014](adr-0014-perimetres-droits-scopes.md)) ;
-   - des **propositions** : seule écriture permise à un conteneur ;
-   - de rares appels de l'API vers un conteneur (suggestions à la saisie), bornés par un
+   - des **propositions** : seule écriture permise au conteneur ;
+   - de rares appels de l'API vers le conteneur (suggestions à la saisie), bornés par un
      délai court et jamais bloquants.
 
-   Le serveur MCP fait exception : il agit pour un utilisateur, avec le jeton personnel de
-   celui-ci, sur les routes publiques de lecture
+   Le serveur MCP n'utilise pas ce contrat : il agit pour un utilisateur, avec le jeton
+   personnel de celui-ci, sur les routes publiques de lecture
    ([ADR-0024](adr-0024-serveur-mcp-conteneur-separe-lecture-seule.md)).
 4. **L'Admin active ou coupe**, dans Administration › Fonctionnalités optionnelles. Une
-   fonctionnalité ne s'active que si son conteneur répond et reconnaît le jeton. Chaque
-   changement est tracé au journal d'audit.
+   fonctionnalité ne s'active que si son conteneur répond, reconnaît le jeton et la
+   déclare parmi les siennes (sa version la contient). Chaque changement est tracé au
+   journal d'audit.
 5. **Coupée, une fonctionnalité est absente** : l'API répond 404 sur ses routes, refuse
-   le jeton de son conteneur et ne lui sert plus d'événements ; l'interface ne l'affiche
-   pas (elle lit la liste des fonctionnalités actives, `GET /api/features`). Les
+   au conteneur les routes et les événements de cette fonctionnalité ; l'interface ne
+   l'affiche pas (elle lit la liste des fonctionnalités actives, `GET /api/features`). Les
    propositions déjà produites restent en base et reparaissent à la réactivation.
 6. **Une proposition n'est jamais appliquée seule** : elle est décidée par un utilisateur
    qui a le droit de modifier l'enregistrement visé. L'application passe par le chemin
    normal de la pratique : toutes ses règles s'appliquent. Le journal d'audit garde
    l'**origine** de chaque modification (saisie, tri assisté des tickets, CMDB assistée).
-7. **Un seul connecteur de modèle de langage**, bibliothèque partagée par les conteneurs
-   qui en ont besoin : le format de complétion de conversation `POST …/v1/chat/completions`,
+7. **Un seul connecteur de modèle de langage**, dans le conteneur `features`, partagé
+   par les fonctionnalités qui en ont besoin : le format de complétion de conversation `POST …/v1/chat/completions`,
    que parlent les serveurs d'inférence courants (Ollama, vLLM, LocalAI, llama.cpp) et la
    plupart des offres hébergées. Adresse, modèle et clé (chiffrée par le coffre) se règlent
    dans la console, comme le SMTP ([ADR-0020](adr-0020-pieces-jointes-s3-et-smtp-configurables.md)) ;
@@ -95,7 +99,8 @@ est **permis**, et c'est à l'Admin de choisir, selon la politique de son organi
 9. **Le service d'embeddings ne change pas** : il reste local
    ([ADR-0013](adr-0013-recherche-hybride-service-embeddings-separe.md)), et l'index de la
    recherche ne contient toujours que du contenu validé. Le tri assisté des tickets tient
-   son propre index des incidents ouverts, dans son conteneur.
+   son propre index des incidents ouverts, dans le conteneur `features`. Le service
+   d'embeddings garde son conteneur : la recherche, fonction de base, en dépend.
 
 Spécification : [fonctionnalités optionnelles](../reference/fonctionnalites-optionnelles.md),
 [tri assisté des tickets](../reference/tri-assiste-des-tickets.md),
@@ -103,15 +108,21 @@ Spécification : [fonctionnalités optionnelles](../reference/fonctionnalites-op
 
 ## Conséquences
 
-- Trois images de plus à construire et publier, et leurs projets de tests : la CI change
-  (workflows), ce qui demande l'accord du mainteneur (étiquette `outillage`).
+- Deux images de plus à construire et publier (`features`, `mcp`), et leurs projets de
+  tests : la CI change (workflows), ce qui demande l'accord du mainteneur (étiquette
+  `outillage`). Une fonctionnalité future ne demande ni image ni profil de plus.
+- Le conteneur commun est un point de panne commun : arrêté, il suspend toutes les
+  fonctionnalités optionnelles, jamais les fonctions de base. À l'intérieur, chaque
+  fonctionnalité a sa file de travail, pour qu'une analyse longue n'en retarde pas une
+  autre.
 - Dans l'API : la liste des fonctionnalités, la table des propositions, le fil
   d'événements, une colonne `Origin` au journal d'audit (migration ; les lignes
   existantes valent « Saisie »), les réglages du modèle de langage, un second port
-  d'écoute pour les routes internes et un schéma d'authentification des conteneurs
+  d'écoute pour les routes internes et un schéma d'authentification du conteneur
   (chemins sensibles).
-- Un secret par conteneur, fourni par l'environnement à l'API et au conteneur ; une
-  valeur d'exemple est refusée hors du mode démonstration, comme les autres secrets.
+- Un secret pour le conteneur `features`, fourni par l'environnement à l'API et au
+  conteneur ; une valeur d'exemple est refusée hors du mode démonstration, comme les
+  autres secrets.
 - Chaque fonctionnalité se teste **activée et coupée** (404 quand elle est coupée).
   Les conteneurs se testent contre une API simulée, et le connecteur contre un faux
   serveur de modèle : aucun modèle réel dans la CI.
@@ -128,9 +139,17 @@ Spécification : [fonctionnalités optionnelles](../reference/fonctionnalites-op
 - **Fonctionnalités dans le processus de l'API**, activées par un interrupteur — écarté
   par le mainteneur : une panne ou une charge d'une fonctionnalité optionnelle
   atteindrait les fonctions de base.
-- **Un seul conteneur pour toutes les fonctionnalités optionnelles** — écarté : on ne
-  pourrait pas en démarrer une sans les autres, et la panne de l'une arrêterait toutes
-  les autres.
+- **Un conteneur par fonctionnalité** — écarté par le mainteneur : autant d'images, de
+  secrets et de profils que de fonctionnalités ; l'activation par l'Admin suffit à
+  n'exécuter que les fonctionnalités voulues.
+- **Le serveur MCP dans le conteneur commun** — écarté : il est exposé aux clients par
+  nginx et agit pour des utilisateurs, alors que le conteneur commun agit pour lui-même
+  sur le port interne ; réunis, le processus exposé détiendrait le jeton du conteneur.
+- **Le service d'embeddings dans le conteneur commun** — écarté : la recherche, fonction
+  de base, en dépend même quand aucune fonctionnalité optionnelle n'est activée ; la base
+  dépendrait d'un conteneur optionnel, et un même conteneur porterait deux processus aux
+  cycles de mise à jour et aux plafonds de mémoire différents (serveur de modèle et
+  application .NET).
 - **Greffons chargés à chaud** (assemblies déposées dans un dossier) — écarté : exécution
   de code tiers dans le processus de l'API, contraire à l'[ADR-0003](adr-0003-plateforme-modulaire-par-processus-itil.md).
 - **Conteneurs avec accès direct à la base** — écarté : ils devraient refaire les

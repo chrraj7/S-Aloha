@@ -32,12 +32,12 @@ Trois contraintes :
 
 ## Décision
 
-1. **Un conteneur dédié**, `mcp`, comme toute fonctionnalité optionnelle
-   ([ADR-0023](adr-0023-fonctionnalites-optionnelles-et-modele-de-langage.md)) : construit
-   depuis le dépôt, rangé dans un profil du compose, démarré ou non par l'exploitant.
-   nginx lui transmet `/mcp`. À la différence des autres conteneurs, il agit toujours
-   **pour un utilisateur** : il n'a ni jeton de conteneur, ni route interne, ni accès à la
-   base, ni secret. Il appelle les routes publiques de l'API (`http://api:8080/api/…`)
+1. **Un conteneur dédié**, `mcp`, à part du conteneur commun des fonctionnalités
+   optionnelles ([ADR-0023](adr-0023-fonctionnalites-optionnelles-et-modele-de-langage.md)) :
+   construit depuis le dépôt, rangé dans son profil du compose, démarré ou non par
+   l'exploitant. nginx lui transmet `/mcp`. À la différence du conteneur commun, il agit
+   toujours **pour un utilisateur** : il n'a ni jeton de conteneur, ni route interne, ni
+   accès à la base, ni secret. Il appelle les routes publiques de l'API (`http://api:8080/api/…`)
    avec le jeton personnel de l'utilisateur, si bien que les périmètres, les vues en DTO
    ([ADR-0016](adr-0016-reponses-de-l-api-en-dto.md)) et la recherche sont ceux de l'API.
    Une donnée qui manque à un outil s'ajoute à l'API, jamais au conteneur.
@@ -60,7 +60,7 @@ Spécification : [serveur MCP](../reference/serveur-mcp.md).
 
 ## Conséquences
 
-- Une image et un projet de tests de plus, avec les deux autres conteneurs de
+- Une image et un projet de tests de plus, avec le conteneur commun de
   l'[ADR-0023](adr-0023-fonctionnalites-optionnelles-et-modele-de-langage.md) : la CI
   change (workflows), ce qui demande l'accord du mainteneur (étiquette `outillage`).
 - Une table des jetons personnels et un schéma d'authentification de plus dans l'API
@@ -72,10 +72,13 @@ Spécification : [serveur MCP](../reference/serveur-mcp.md).
 
 ## Alternatives envisagées
 
-- **Serveur MCP dans le processus de l'API** (`/mcp`) — écarté par le mainteneur : toute
-  fonctionnalité optionnelle tourne dans son conteneur
+- **Serveur MCP dans le processus de l'API** (`/mcp`) — écarté par le mainteneur : les
+  fonctionnalités optionnelles tournent hors de l'API
   ([ADR-0023](adr-0023-fonctionnalites-optionnelles-et-modele-de-langage.md)) ; un SDK de
   plus dans le processus web serait une surface de plus dans l'API elle-même.
+- **Serveur MCP dans le conteneur commun des fonctionnalités** — écarté : voir
+  l'[ADR-0023](adr-0023-fonctionnalites-optionnelles-et-modele-de-langage.md) (le
+  processus exposé détiendrait le jeton du conteneur commun).
 - **Jeton de conteneur et routes internes**, comme les autres fonctionnalités — écarté :
   le conteneur verrait alors tous les périmètres, et devrait refaire le filtrage de chaque
   utilisateur.

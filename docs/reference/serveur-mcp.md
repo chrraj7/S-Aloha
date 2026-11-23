@@ -1,7 +1,7 @@
 # 🔌 Serveur MCP
 
 > [Fonctionnalité optionnelle](fonctionnalites-optionnelles.md) (clé `mcp-server`,
-> conteneur `mcp`). S-Aloha ouvre en **lecture**, par le *Model Context Protocol*, ses
+> conteneur propre `mcp`, à part du conteneur commun des autres fonctionnalités). S-Aloha ouvre en **lecture**, par le *Model Context Protocol*, ses
 > enregistrements et sa recherche aux assistants qu'emploient ses utilisateurs, avec les
 > droits de chacun. Rien ne s'y écrit. Préfixe des règles : **MCP**. Décision :
 > [ADR-0024](../decisions/adr-0024-serveur-mcp-conteneur-separe-lecture-seule.md).

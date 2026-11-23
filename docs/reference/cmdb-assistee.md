@@ -1,7 +1,7 @@
 # 🧹 CMDB assistée
 
 > [Fonctionnalité optionnelle](fonctionnalites-optionnelles.md) (clé `assisted-cmdb`,
-> conteneur `assisted-cmdb`). Un modèle de langage, dans le SI ou hébergé au choix de
+> conteneur commun `features`). Un modèle de langage, dans le SI ou hébergé au choix de
 > l'Admin, propose de renommer, normaliser, reclasser, fusionner et relier des CI, et aide
 > au rapprochement des actifs du sas. Ses propositions entrent dans le circuit de la
 > [gestion de la configuration](processus/gestion-de-la-configuration.md) : un
@@ -36,7 +36,7 @@ Ce qui existe déjà, et qu'elle ne refait pas :
 sequenceDiagram
     actor G as Gestionnaire
     participant A as API
-    participant K as assisted-cmdb
+    participant K as features
     participant L as Modèle de langage
     G->>A: lance une analyse (périmètre, tâches)
     A-)K: événement « analyse demandée »
@@ -55,8 +55,8 @@ sequenceDiagram
 | ID | Règle | Statut | Lot |
 |---|---|---|---|
 | CMA-01 | **Analyse** : un gestionnaire du périmètre lance une analyse sur tout le périmètre ou sur une sélection de CI (500 au plus, `AssistedCmdb:MaxItems`), en choisissant ses tâches (CMA-02). Une seule analyse à la fois par périmètre ; elle est mise en file, puis En cours, Terminée ou En échec (motif affiché, [OPT-28](fonctionnalites-optionnelles.md#4-connecteur-de-modèle-de-langage)) | 🔜 | 3 |
-| CMA-02 | **Propositions typées** ([OPT-14](fonctionnalites-optionnelles.md#3-contrat-entre-lapi-et-les-conteneurs)), chacune avec sa cible, l'avant, l'après et un motif court : **Renommer** un CI selon la convention (CMA-04) ; **Normaliser** l'écriture du système, du constructeur ou du modèle (« Win2019 std » → « Windows Server 2019 Standard ») ; **Reclasser** un CI dans un type de la liste (`Application`, `Serveur`, `Base de données`, `Réseau`, `Stockage`, `Poste de travail`, `Logiciel`, `Autre`) ; **Fusionner** deux CI (CMA-05) ; **Relier** deux CI existants par une relation de la liste (« Dépend de », « Héberge », « Fait partie de », « Se connecte à ») ; **Criticité** d'une application qui n'en a pas (Vitale, Majeure, Standard, Mineure, [CFG-43](processus/gestion-de-la-configuration.md)) | 🔜 | 3 |
-| CMA-03 | **Décision** ([OPT-15](fonctionnalites-optionnelles.md#3-contrat-entre-lapi-et-les-conteneurs)) : un utilisateur qui a le droit de modifier le CI accepte (au besoin en corrigeant), rejette ou laisse ; une à une, ou par sélection dans la file. Accepter passe par les règles de la pratique : un renommage qui viole l'unicité ([CFG-17](processus/gestion-de-la-configuration.md)) est refusé (409) et la proposition reste ouverte. Le journal d'audit porte l'origine « CMDB assistée » ([OPT-08](fonctionnalites-optionnelles.md#2-activation)) | 🔜 | 3 |
+| CMA-02 | **Propositions typées** ([OPT-14](fonctionnalites-optionnelles.md#3-contrat-entre-lapi-et-le-conteneur-des-fonctionnalités)), chacune avec sa cible, l'avant, l'après et un motif court : **Renommer** un CI selon la convention (CMA-04) ; **Normaliser** l'écriture du système, du constructeur ou du modèle (« Win2019 std » → « Windows Server 2019 Standard ») ; **Reclasser** un CI dans un type de la liste (`Application`, `Serveur`, `Base de données`, `Réseau`, `Stockage`, `Poste de travail`, `Logiciel`, `Autre`) ; **Fusionner** deux CI (CMA-05) ; **Relier** deux CI existants par une relation de la liste (« Dépend de », « Héberge », « Fait partie de », « Se connecte à ») ; **Criticité** d'une application qui n'en a pas (Vitale, Majeure, Standard, Mineure, [CFG-43](processus/gestion-de-la-configuration.md)) | 🔜 | 3 |
+| CMA-03 | **Décision** ([OPT-15](fonctionnalites-optionnelles.md#3-contrat-entre-lapi-et-le-conteneur-des-fonctionnalités)) : un utilisateur qui a le droit de modifier le CI accepte (au besoin en corrigeant), rejette ou laisse ; une à une, ou par sélection dans la file. Accepter passe par les règles de la pratique : un renommage qui viole l'unicité ([CFG-17](processus/gestion-de-la-configuration.md)) est refusé (409) et la proposition reste ouverte. Le journal d'audit porte l'origine « CMDB assistée » ([OPT-08](fonctionnalites-optionnelles.md#2-activation)) | 🔜 | 3 |
 | CMA-04 | **Convention de nommage**, tenue par les gestionnaires dans Paramétrage : une description et des exemples par type de CI, transmis au modèle. Sans convention pour un type, la tâche Renommer ne s'y applique pas | 🔜 | 3 |
 | CMA-05 | **Fusion** : le gestionnaire choisit le CI conservé (la proposition en suggère un). Les liens, les relations et les actifs du sas rapprochés du doublon lui sont reportés, sans relation vers lui-même ni en double ; le doublon passe au statut **Retiré**, avec le motif « Fusionné dans <référence> » ; l'opération est tracée au journal d'audit des deux CI. Refusée (400) entre deux périmètres ou deux environnements différents | 🔜 | 3 |
 | CMA-06 | **Doublons candidats** : le conteneur présélectionne lui-même les paires à soumettre (même périmètre, même environnement, types compatibles, noms proches une fois normalisés) ; le modèle ne juge que ces paires, 50 au plus par requête, et ne voit jamais toute la CMDB. Une paire rejetée n'est plus soumise | 🔜 | 3 |
@@ -86,8 +86,8 @@ sequenceDiagram
 | Décision | — | Routes communes des propositions ([OPT-15](fonctionnalites-optionnelles.md#6-api)) |
 | `GET /api/assisted-cmdb/naming`, `PUT /api/assisted-cmdb/naming/{ciType}` | User (lecture), gestionnaire (écriture) | Convention de nommage (CMA-04) |
 | `GET /api/admin/assisted-cmdb/metrics` | Admin | Mesure (CMA-10) |
-| `GET /internal/configuration-items?perimeter=&ids=`, `GET /internal/discovery/staging/{id}`, `PUT /internal/assisted-cmdb/analyses/{id}` (état), `POST /internal/language-model/calls` (trace) | Jeton du conteneur `assisted-cmdb` | Lectures et comptes rendus du conteneur (OPT-13, OPT-27) |
-| `POST /language-model/test`, `GET /health` (conteneur) | Jeton du conteneur | Appelées par l'API ([OPT-26](fonctionnalites-optionnelles.md#4-connecteur-de-modèle-de-langage), OPT-01) |
+| `GET /internal/configuration-items?perimeter=&ids=`, `GET /internal/discovery/staging/{id}`, `PUT /internal/assisted-cmdb/analyses/{id}` (état), `POST /internal/language-model/calls` (trace) | Jeton du conteneur `features` | Lectures et comptes rendus du conteneur (OPT-13, OPT-27) |
+| `POST /language-model/test`, `GET /health` (conteneur `features`) | Jeton du conteneur | Appelées par l'API ([OPT-26](fonctionnalites-optionnelles.md#4-connecteur-de-modèle-de-langage), OPT-01) |
 
 ## 6. Scénarios d'acceptation
 

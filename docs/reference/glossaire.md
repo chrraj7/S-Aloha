@@ -76,8 +76,8 @@
 | **Pratiques** | Section du menu qui regroupe les huit pratiques ITIL (registres et vues), visible par tous. |
 | **Paramétrage** | Section du menu réservée aux gestionnaires et administrateurs : ce qui règle le **fonctionnement des pratiques** (catalogues, modèles, périodes de gel, référentiels). |
 | **Administration** | Section du menu réservée à l'administrateur : la **plateforme** elle-même (utilisateurs et rôles, santé, journal d'audit, nettoyage). |
-| **Fonctionnalité optionnelle** | Capacité que l'Admin active ou coupe (tri assisté des tickets, CMDB assistée, serveur MCP), exécutée dans son propre conteneur hors de l'API ; coupée, elle est absente ([fonctionnalités optionnelles](fonctionnalites-optionnelles.md)). |
-| **Proposition** | Modification suggérée par une fonctionnalité optionnelle ; elle n'est appliquée que si un utilisateur qui en a le droit l'accepte, et le journal d'audit en garde l'origine ([OPT-14, OPT-15](fonctionnalites-optionnelles.md#3-contrat-entre-lapi-et-les-conteneurs)). |
+| **Fonctionnalité optionnelle** | Capacité que l'Admin active ou coupe (tri assisté des tickets, CMDB assistée, serveur MCP), exécutée hors de l'API : dans le conteneur commun `features`, ou, pour le serveur MCP, dans le sien ; coupée, elle est absente ([fonctionnalités optionnelles](fonctionnalites-optionnelles.md)). |
+| **Proposition** | Modification suggérée par une fonctionnalité optionnelle ; elle n'est appliquée que si un utilisateur qui en a le droit l'accepte, et le journal d'audit en garde l'origine ([OPT-14, OPT-15](fonctionnalites-optionnelles.md#3-contrat-entre-lapi-et-le-conteneur-des-fonctionnalités)). |
 | **Panne probable** | Groupe d'au moins trois incidents ouverts d'un même périmètre, liés par leur service, leur CI ou leur sens, signalé par le tri assisté ([TRI-07](tri-assiste-des-tickets.md)). |
 | **Ma console** | Page d'accueil par rôle, orientée action : groupes Urgent, Décisions, Relances, Mon travail, À suivre. |
 | **Règle ✅ / 🔜** | Règle fonctionnelle implémentée (✅) ou à implémenter (🔜), identifiée par un code stable (`INC-06`) ; voir les [conventions](regles-metier.md#3-conventions-de-ce-référentiel). |
@@ -105,7 +105,7 @@
 | **Pseudonymisation** | Remplacement, avant l'envoi au modèle de langage, des adresses, noms d'hôte, numéros de série et comptes par des jetons stables (`IP_1`, `HOTE_3`), rétablis dans la réponse ([OPT-24](fonctionnalites-optionnelles.md#4-connecteur-de-modèle-de-langage)). |
 | **MCP** | *Model Context Protocol* : protocole par lequel un assistant (client MCP) appelle les outils et lit les ressources d'un serveur ; le serveur MCP de S-Aloha est en lecture seule ([serveur MCP](serveur-mcp.md)). |
 | **Jeton d'accès personnel** | Secret créé par un utilisateur pour un client MCP, affiché une fois, à durée limitée, révocable, valable sur les seules routes de lecture ([MCP-03](serveur-mcp.md)). |
-| **Port interne** | Second port de l'API, publié nulle part, par lequel les conteneurs des fonctionnalités optionnelles lisent les événements et déposent leurs propositions ([OPT-11](fonctionnalites-optionnelles.md#3-contrat-entre-lapi-et-les-conteneurs)). |
+| **Port interne** | Second port de l'API, publié nulle part, par lequel le conteneur `features` des fonctionnalités optionnelles lit les événements et déposent leurs propositions ([OPT-11](fonctionnalites-optionnelles.md#3-contrat-entre-lapi-et-le-conteneur-des-fonctionnalités)). |
 | **ADR** | *Architecture Decision Record* : une décision structurante par fichier, dans [`decisions/`](../decisions/). |
 
 ## Vocabulaire malgache
