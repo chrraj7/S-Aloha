@@ -49,7 +49,7 @@ backend/                              # projet SAloha.Api (namespace SAloha.Api.
 │   ├── Data/                         # AppDbContext, References (XXX-AAAA-NNNN), DatabaseSchema + Migrations/
 │   ├── Comments/                     # Comment, CommentsController (fil de commentaires, SOC-24)
 │   ├── Directory/                    # DirectoryController, DirectoryEntry (recherche AD)
-│   ├── Features/                     # fonctionnalités optionnelles (ADR-0023) : FeatureCatalog, FeatureGate et [RequiresFeature], ContainerProbe, FeatureStatus, FeaturesController ; port interne et jeton du conteneur (InternalContract), fil d'événements (FeatureEvents), propositions (Proposals, InternalProposalsController)
+│   ├── Features/                     # fonctionnalités optionnelles (ADR-0023) : FeatureCatalog, FeatureGate et [RequiresFeature], ContainerProbe, FeaturesClient (appels vers le conteneur, OPT-16), FeatureStatus, FeaturesController ; port interne et jeton du conteneur (InternalContract), fil d'événements (FeatureEvents), propositions (Proposals, InternalProposalsController)
 │   ├── Itil/                         # Priority (matrice impact × urgence → P1–P4)
 │   ├── Links/                        # ItemLink, registre ItemLinks, LinksController (liens inter-processus)
 │   ├── Notifications/                # Notification, NotificationRead, Notifier (émission), DatedEvents (événements datés), NotificationsController (SOC-21)
