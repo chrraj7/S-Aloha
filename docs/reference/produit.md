@@ -88,6 +88,11 @@ Indépendants des processus, accessibles à tous les rôles :
   l'annuaire, santé de la plateforme, journal d'audit global et export, nettoyage des
   doublons ; pour les gestionnaires et l'Admin : catégories d'incident et de problème,
   découverte du réseau ([administration](administration.md)) ;
+- **Fonctionnalités optionnelles** (à venir, chantier F14) — activées ou coupées par
+  l'Admin, chacune dans son propre conteneur : **tri assisté des tickets** (suggestions et
+  panne probable sur les incidents), **CMDB assistée** (propositions d'un modèle de langage,
+  dans le SI ou hébergé, au choix de l'organisation), **serveur MCP** (S-Aloha en lecture
+  pour les assistants des utilisateurs) ([fonctionnalités optionnelles](fonctionnalites-optionnelles.md)) ;
 - **Reporting** — tableau de bord à onglets : score de santé des services, incidents
   (MTTR, MTTD, résolution au premier contact, SLA), problèmes, changements et projets,
   conformité ; filtres période et service, exports CSV et PDF ([reporting](reporting.md)).
@@ -134,3 +139,6 @@ Règles détaillées : [gestion des problèmes](processus/gestion-des-problemes.
   l'identité et les rôles viennent de l'AD.
 - **Une collection d'applications** : les processus partagent un socle (identité,
   annuaire, console, reporting) et une navigation uniques.
+- **Un outil qui décide à la place des équipes** : les fonctionnalités optionnelles
+  suggèrent et proposent ; une personne décide, et le journal d'audit garde l'origine de
+  chaque modification.

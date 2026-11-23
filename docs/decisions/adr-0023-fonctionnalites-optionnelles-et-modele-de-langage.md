@@ -45,8 +45,11 @@ est **permis**, et c'est à l'Admin de choisir, selon la politique de son organi
    base : un conteneur ne parle qu'à l'API, et aux services dont il a besoin (service
    d'embeddings, modèle de langage).
 2. **L'API garde le socle, et lui seul** : la liste des fonctionnalités et leur état,
-   l'activation par l'Admin, le stockage des propositions et leur décision, le journal
-   d'audit. Aucun code propre à une fonctionnalité optionnelle ne s'exécute dans l'API.
+   l'activation par l'Admin, le stockage (propositions, analyses demandées, réglages) et
+   la décision des propositions, le journal d'audit, et les routes minces qui exposent une
+   fonctionnalité aux utilisateurs (relais vers le conteneur, lectures). Le **calcul** d'une
+   fonctionnalité (vote, corrélation, appels au modèle, outils MCP) s'exécute dans son
+   conteneur, jamais dans l'API.
 3. **Un contrat unique entre l'API et les conteneurs** :
    - des **routes internes** sur un port de l'API que nginx ne relaie pas, chaque appel
      authentifié par le jeton propre au conteneur, qui n'ouvre que ce dont sa

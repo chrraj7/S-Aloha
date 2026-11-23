@@ -76,6 +76,9 @@
 | **Pratiques** | Section du menu qui regroupe les huit pratiques ITIL (registres et vues), visible par tous. |
 | **Paramétrage** | Section du menu réservée aux gestionnaires et administrateurs : ce qui règle le **fonctionnement des pratiques** (catalogues, modèles, périodes de gel, référentiels). |
 | **Administration** | Section du menu réservée à l'administrateur : la **plateforme** elle-même (utilisateurs et rôles, santé, journal d'audit, nettoyage). |
+| **Fonctionnalité optionnelle** | Capacité que l'Admin active ou coupe (tri assisté des tickets, CMDB assistée, serveur MCP), exécutée dans son propre conteneur hors de l'API ; coupée, elle est absente ([fonctionnalités optionnelles](fonctionnalites-optionnelles.md)). |
+| **Proposition** | Modification suggérée par une fonctionnalité optionnelle ; elle n'est appliquée que si un utilisateur qui en a le droit l'accepte, et le journal d'audit en garde l'origine ([OPT-14, OPT-15](fonctionnalites-optionnelles.md#3-contrat-entre-lapi-et-les-conteneurs)). |
+| **Panne probable** | Groupe d'au moins trois incidents ouverts d'un même périmètre, liés par leur service, leur CI ou leur sens, signalé par le tri assisté ([TRI-07](tri-assiste-des-tickets.md)). |
 | **Ma console** | Page d'accueil par rôle, orientée action : groupes Urgent, Décisions, Relances, Mon travail, À suivre. |
 | **Règle ✅ / 🔜** | Règle fonctionnelle implémentée (✅) ou à implémenter (🔜), identifiée par un code stable (`INC-06`) ; voir les [conventions](regles-metier.md#3-conventions-de-ce-référentiel). |
 | **Lot** | Ordre d'implémentation des règles 🔜 : 1 robustesse, 2 pratique ITIL complète, 3 confort ([plan du lot 1](processus/readme.md#plan-dimplémentation-conseillé--lot-1)). |
@@ -98,6 +101,11 @@
 | **SNMP v3 / USM** | Version de SNMP qui authentifie (SHA-2) et chiffre (AES) les échanges, par utilisateur (*User-based Security Model*) ; la v2c n'a qu'une communauté en clair ([CFG-51](processus/gestion-de-la-configuration.md)). |
 | **WinRM / WS-Management** | Accès d'administration à distance de Windows, par messages SOAP sur HTTPS (port 5986) ; la découverte y lit les classes WMI de l'inventaire ([CFG-57](processus/gestion-de-la-configuration.md)). |
 | **NTLM** | Protocole d'authentification Windows par défi et réponse, sans envoyer le mot de passe ; utilisé par l'inventaire WinRM. |
+| **Modèle de langage** | Modèle qui produit du texte à partir d'une invite ; la CMDB assistée l'interroge par un connecteur unique, au format `…/v1/chat/completions`, et n'en retient que des propositions validées ([OPT-20 à OPT-28](fonctionnalites-optionnelles.md#4-connecteur-de-modèle-de-langage)). |
+| **Pseudonymisation** | Remplacement, avant l'envoi au modèle de langage, des adresses, noms d'hôte, numéros de série et comptes par des jetons stables (`IP_1`, `HOTE_3`), rétablis dans la réponse ([OPT-24](fonctionnalites-optionnelles.md#4-connecteur-de-modèle-de-langage)). |
+| **MCP** | *Model Context Protocol* : protocole par lequel un assistant (client MCP) appelle les outils et lit les ressources d'un serveur ; le serveur MCP de S-Aloha est en lecture seule ([serveur MCP](serveur-mcp.md)). |
+| **Jeton d'accès personnel** | Secret créé par un utilisateur pour un client MCP, affiché une fois, à durée limitée, révocable, valable sur les seules routes de lecture ([MCP-03](serveur-mcp.md)). |
+| **Port interne** | Second port de l'API, publié nulle part, par lequel les conteneurs des fonctionnalités optionnelles lisent les événements et déposent leurs propositions ([OPT-11](fonctionnalites-optionnelles.md#3-contrat-entre-lapi-et-les-conteneurs)). |
 | **ADR** | *Architecture Decision Record* : une décision structurante par fichier, dans [`decisions/`](../decisions/). |
 
 ## Vocabulaire malgache

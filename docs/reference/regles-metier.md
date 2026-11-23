@@ -118,6 +118,10 @@ identifiant n'est jamais réattribué : une règle abandonnée reste listée ave
 | `NIS` | [Conformité NIS 2](processus/conformite-nis2.md) |
 | `DRG` | [Déclarations réglementaires](processus/declarations-reglementaires.md) |
 | `RAG` | [Recherche](recherche.md) (capacité transverse) |
+| `OPT` | [Fonctionnalités optionnelles](fonctionnalites-optionnelles.md) : activation, contrat avec les conteneurs, modèle de langage |
+| `TRI` | [Tri assisté des tickets](tri-assiste-des-tickets.md) (fonctionnalité optionnelle) |
+| `CMA` | [CMDB assistée](cmdb-assistee.md) (fonctionnalité optionnelle) |
+| `MCP` | [Serveur MCP](serveur-mcp.md) (fonctionnalité optionnelle) |
 
 ### Lots
 

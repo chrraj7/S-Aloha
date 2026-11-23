@@ -3,7 +3,7 @@
 <sub>[← Documentation](../readme.md) · [Toutes les décisions](readme.md)</sub>
 
 - **Date** : 2026-10-08
-- **Statut** : accepté — point 3 (« vecteurs sans pgvector ») remplacé par [ADR-0022](adr-0022-pgvector-similarite-dans-postgresql.md) le 2026-11-09
+- **Statut** : accepté — point 3 (« vecteurs sans pgvector ») remplacé par [ADR-0022](adr-0022-pgvector-similarite-dans-postgresql.md) le 2026-11-09 ; l'alternative écartée « service hébergé chez un tiers » est revue par l'[ADR-0023](adr-0023-fonctionnalites-optionnelles-et-modele-de-langage.md) le 2026-11-23 pour le seul modèle de langage, au choix de l'Admin (le service d'embeddings reste local)
 - **Décideur** : Leipa
 
 ## Contexte
