@@ -27,11 +27,11 @@
 | [Périmètres](../perimetres.md) | PER | 13 | 0 | 0 | 0 |
 | [Recherche](../recherche.md) | RAG | 12 | 0 | 0 | 1 |
 | [Reporting](../reporting.md) | REP | 43 | 0 | 0 | 0 |
-| [Fonctionnalités optionnelles](../fonctionnalites-optionnelles.md) | OPT | 11 | 0 | 0 | 14 |
+| [Fonctionnalités optionnelles](../fonctionnalites-optionnelles.md) | OPT | 14 | 0 | 0 | 11 |
 | [Tri assisté des tickets](../tri-assiste-des-tickets.md) | TRI | 0 | 0 | 0 | 14 |
 | [CMDB assistée](../cmdb-assistee.md) | CMA | 0 | 0 | 0 | 12 |
 | [Serveur MCP](../serveur-mcp.md) | MCP | 0 | 0 | 0 | 9 |
-| **Total** | | **363** | **0** | **0** | **50** |
+| **Total** | | **366** | **0** | **0** | **47** |
 
 *Comptes au 2026-11-16 (main `84c4070`), sur les tableaux de règles (hors indicateurs du § 8
 des pratiques ; les règles REP du [reporting](../reporting.md) qui les affichent sont comptées).
@@ -39,7 +39,7 @@ Une règle faite en partie compte ✅ (7 règles, la part restante est décrite 
 Dernière règle de lot 1, RAG-10 (calibrage de la recherche), faite le 2026-11-09 ; reste
 RAG-12 (pièces jointes, lot 3). Les 60 règles des fonctionnalités optionnelles (OPT, TRI, CMA,
 MCP, chantier F14) ont été spécifiées le 2026-11-23, toutes en lot 3, à livrer avant la
-version stable ; OPT-01 à OPT-08 (étape 1, #363) et OPT-10 à OPT-12 (#364, partie 2a) sont faites le même jour.*
+version stable ; OPT-01 à OPT-08 (étape 1, #363) OPT-10 à OPT-12 et OPT-14, OPT-15, OPT-17 (#364, parties 2a et 2b) sont faites le même jour.*
 
 ## Interface et navigation
 
