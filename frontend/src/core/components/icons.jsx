@@ -68,6 +68,7 @@ export const IconIndex = (p) => <Svg {...p}><ellipse cx="12" cy="5.5" rx="7.5" r
 export const IconMail = (p) => <Svg {...p}><rect x="3" y="5" width="18" height="14" /><path d="m3 6 9 7 9-7" /></Svg>
 export const IconHealth = (p) => <Svg {...p}><path d="M2.5 12h4l2.5-6 4 12 2.5-6h6" /></Svg>
 export const IconAudit = (p) => <Svg {...p}><path d="M8 4H5v17h14V4h-3" /><rect x="8" y="2.5" width="8" height="3.5" /><path d="M8.5 11h7M8.5 15h7M8.5 19h4" /></Svg>
+export const IconFeatures = (p) => <Svg {...p}><rect x="3" y="5" width="18" height="6" /><circle cx="15" cy="8" r="1.5" /><rect x="3" y="13" width="18" height="6" /><circle cx="9" cy="16" r="1.5" /></Svg>
 export const IconDuplicates = (p) => <Svg {...p}><rect x="8.5" y="8.5" width="12" height="12" /><path d="M15.5 8.5v-5h-12v12h5" /></Svg>
 
 // Sections entières, dans le rail (une icône par section, menu volant des entrées).
@@ -83,6 +84,7 @@ export const SECTION_ICONS = {
   perimeters: IconPerimeter,
   'search-index': IconIndex,
   platform: IconMail,
+  features: IconFeatures,
   health: IconHealth,
   audit: IconAudit,
   duplicates: IconDuplicates,

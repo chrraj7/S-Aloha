@@ -226,7 +226,9 @@ comme les autres. Une fonctionnalité future est un dossier de plus dans
 
 #### Étapes
 
-Une PR par étape, sa documentation dans la même PR (règles 🔜 → ✅, référence, journal,
+Suivi : [#362](https://github.com/chrraj7/S-Aloha/issues/362) et ses sous-issues ; chaque issue d'étape
+propose un découpage en PR de 10 fichiers au plus. Une issue **assignée** est bloquée par la
+dépendance qu'elle cite, et désassignée à sa fusion. Une PR par étape ou par sous-partie, sa documentation dans la même PR (règles 🔜 → ✅, référence, journal,
 note du journal des versions), ses tests **activée et coupée**. Toutes touchent des
 chemins sensibles (migrations, `Program.cs`, authentification, compose) : fusion par le
 mainteneur. Les étapes 2 et 6 ajoutent un projet et une image à la CI : étiquette
@@ -234,12 +236,12 @@ mainteneur. Les étapes 2 et 6 ajoutent un projet et une image à la CI : étiqu
 
 | Étape | Contenu | Règles | Statut |
 |---|---|---|---|
-| 1 | Socle : registre, Administration › Fonctionnalités optionnelles, `GET /api/features`, garde des routes, origine au journal d'audit | OPT-01 à OPT-08 | 🔜 |
-| 2 | Contrat : port interne, jeton du conteneur, fil d'événements, lectures, propositions et décision ; conteneur `features` (hôte, sans fonctionnalité) | OPT-10 à OPT-17 | 🔜 |
-| 3 | Tri assisté des tickets dans le conteneur `features` : vote, impact, corrélation par règles et par le sens, panne probable, interface, jeu d'essai | TRI-01 à TRI-14 | 🔜 |
-| 4 | Modèle de langage : réglages, emplacement, pseudonymisation, validation, essai, trace | OPT-20 à OPT-28 | 🔜 |
-| 5 | CMDB assistée dans le conteneur `features` : analyses, propositions, fusion, aide au sas, convention de nommage, jeu d'essai | CMA-01 à CMA-12 | 🔜 |
-| 6 | Conteneur `mcp` : jetons personnels, outils de lecture, limites | MCP-01 à MCP-09 | 🔜 |
+| 1 ([#363](https://github.com/chrraj7/S-Aloha/issues/363)) | Socle : registre, Administration › Fonctionnalités optionnelles, `GET /api/features`, garde des routes, origine au journal d'audit | OPT-01 à OPT-08 | ✅ 2026-11-23 |
+| 2 ([#364](https://github.com/chrraj7/S-Aloha/issues/364)) | Contrat : port interne, jeton du conteneur, fil d'événements, lectures, propositions et décision ; conteneur `features` (hôte, sans fonctionnalité) | OPT-10 à OPT-17 | 🔜 |
+| 3 ([#365](https://github.com/chrraj7/S-Aloha/issues/365)) | Tri assisté des tickets dans le conteneur `features` : vote, impact, corrélation par règles et par le sens, panne probable, interface, jeu d'essai | TRI-01 à TRI-14 | 🔜 |
+| 4 ([#366](https://github.com/chrraj7/S-Aloha/issues/366)) | Modèle de langage : réglages, emplacement, pseudonymisation, validation, essai, trace | OPT-20 à OPT-28 | 🔜 |
+| 5 ([#367](https://github.com/chrraj7/S-Aloha/issues/367)) | CMDB assistée dans le conteneur `features` : analyses, propositions, fusion, aide au sas, convention de nommage, jeu d'essai | CMA-01 à CMA-12 | 🔜 |
+| 6 ([#368](https://github.com/chrraj7/S-Aloha/issues/368)) | Conteneur `mcp` : jetons personnels, outils de lecture, limites | MCP-01 à MCP-09 | 🔜 |
 
 **Mode démonstration** (décidé le 2026-11-23, [ADR-0009](decisions/adr-0009-mode-demonstration-public.md)) :
 il démarre le conteneur `features` avec le **seul tri assisté** activé, qui ne demande pas
