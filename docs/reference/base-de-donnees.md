@@ -61,6 +61,7 @@ l'historique est dans la table `__EFMigrationsHistory`
 | `OptionalFeatures` | Table `OptionalFeatures` (clé de la fonctionnalité, activée ou non, date et auteur du dernier changement, OPT-01) ; colonne `AuditEntries.Origin` (30 caractères, « Saisie » pour les lignes existantes, OPT-08) |
 | `FeatureEvents` | Table `FeatureEvents` du fil des fonctionnalités optionnelles (numéro croissant, type, type et identifiant de l'enregistrement, périmètre, date), index sur la date pour la purge (OPT-12) |
 | `Proposals` | Tables `Proposals` (fonctionnalité, cible, périmètre, champ, valeurs avant et proposée, motifs, enregistrements cités en JSON, confiance, statut, valeur retenue, décision ; index sur la cible et le statut) et `ProposalCounts` (comptes mensuels par fonctionnalité et par champ, clé composée) (OPT-14, OPT-15, OPT-17) |
+| `ProbableOutages` | Tables `ProbableOutages` (panne probable signalée par le tri assisté : fonctionnalité, périmètre, lien, service, motif, dates de formation, de mise à jour et de fermeture ; index sur la fermeture) et `ProbableOutageMembers` (incidents du groupe, clé composée, supprimés avec leur incident ou leur groupe) (TRI-07) |
 | `ItilModules` | Les dix tables des autres processus et des liens (`ItemLinks`, `Incidents`, `ServiceRequests`, `Changes`, `ConfigurationItems`, `CiRelationships`, `Services`, `Agreements`, `KnowledgeArticles`, `Improvements`) ; aucune modification des tables existantes |
 
 **Reprise d'une base créée par `EnsureCreated`** (installations antérieures, sans
