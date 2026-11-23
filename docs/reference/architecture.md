@@ -71,8 +71,8 @@ backend/                              # projet SAloha.Api (namespace SAloha.Api.
         # lectures internes d'une pratique pour le conteneur features : Controllers/Internal*Controller.cs (OPT-13)
 
 features/SAloha.Features/             # conteneur features, hors de l'API (ADR-0023), sans accès à la base
-├── Host/                             # ContainerHost (jeton, /health), ApiClient (port interne de l'API), EventLoop (fil, une file par fonctionnalité)
-└── TicketTriage/                     # tri assisté des tickets : TicketTriage (fil → propositions), TriageRules (vote, impact, motifs)
+├── Host/                             # ContainerHost (jeton, /health), ApiClient (port interne de l'API), EventLoop (fil, une file par fonctionnalité), EmbeddingClient
+└── TicketTriage/                     # tri assisté des tickets : TicketTriage (fil → propositions, pannes), TriageRules (vote, impact, motifs), OpenIncidents (index des ouverts, corrélation)
 ```
 
 ### Socle commun des processus (`Core/Records`)

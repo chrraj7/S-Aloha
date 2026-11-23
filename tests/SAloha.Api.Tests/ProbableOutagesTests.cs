@@ -129,7 +129,10 @@ public class ProbableOutagesTests(ApiFixture api) : IAsyncLifetime
         Assert.Equal(201, status);
         Assert.Equal(1, await NotificationsAsync(siege));
         await using (var db = api.Database())
-            Assert.Equal(Id(a), (await db.Notifications.AsNoTracking().SingleAsync(n => n.PerimeterId == siege && n.Event.StartsWith("Panne probable"))).TargetId);
+        {
+            var note = await db.Notifications.AsNoTracking().SingleAsync(n => n.PerimeterId == siege && n.Event.StartsWith("Panne probable"));
+            Assert.Equal((Id(a), "Panne probable : 3 incidents ouverts sur le même service"), (note.TargetId, note.Event));
+        }
 
         // Un quatrième incident rejoint le groupe : même panne, aucune notification de plus.
         var d = await IncidentAsync(admin, "Outlook muet 4 (TRI-07)", siege, service);
