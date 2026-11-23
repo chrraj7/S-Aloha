@@ -23,6 +23,9 @@ public record CategoryData(string Name, bool Active);
 public record FeatureEvent(long Id, string Type, string EntityType, int EntityId, int? PerimeterId, DateTime At);
 public record EventsPage(List<FeatureEvent> Events, long Next, bool Gap);
 public record CitedRef(string Type, int Id);
+/// <summary>TRI-13 : réglages du tri, tels que l'Admin les a fixés.</summary>
+public record TriageSettingsData(int Neighbours, int MinVoters, int MinSharePercent, int CorrelationWindowMinutes, int OutageThreshold,
+    double CorrelationMinSimilarity, bool SuggestCategory, bool SuggestService, bool SuggestGroup, bool SuggestImpact, bool SuggestOutage);
 public record ProposalInput(string Feature, string TargetType, int TargetId, string Field, string After, string Reasons,
     IReadOnlyList<CitedRef> Cited, double? Confidence);
 
@@ -82,6 +85,14 @@ public class ApiClient
 
     public async Task<List<CategoryData>> CategoriesAsync(string practice, CancellationToken ct) =>
         (await http.GetFromJsonAsync<List<CategoryData>>($"internal/categories?practice={practice}", Json, ct))!;
+
+    /// <summary>TRI-13 : réglages d'une fonctionnalité ; null si l'API n'en sert pas (ancienne version, 403, 404).</summary>
+    public async Task<TriageSettingsData?> TriageSettingsAsync(CancellationToken ct)
+    {
+        using var res = await http.GetAsync("internal/features/assisted-ticket-triage/settings", ct);
+        if (!res.IsSuccessStatusCode) return null;
+        return await res.Content.ReadFromJsonAsync<TriageSettingsData>(Json, ct);
+    }
 
     /// <summary>TRI-06 : une page des incidents ouverts, avec leurs CI reliés.</summary>
     public async Task<OpenPage> OpenIncidentsAsync(int after, CancellationToken ct) =>
