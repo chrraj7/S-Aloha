@@ -14,7 +14,8 @@ function NewRecord({ config, onCreated }) {
   const [error, setError] = useState('')
   const perimeters = usePerimeters()
   const merge = patch => setF(prev => ({ ...prev, ...patch }))
-  const submit = () => config.api.create({ ...toPayload(config.fields, f), status: f.status || null, perimeterId })
+  // `createOptions(form)` : en-têtes propres à la pratique (suggestions du tri appliquées, TRI-09).
+  const submit = () => config.api.create({ ...toPayload(config.fields, f), status: f.status || null, perimeterId }, config.createOptions?.(f))
     .then(onCreated).catch(e => setError(e.message))
   // PER-04 : avec plusieurs périmètres, le choix est obligatoire.
   const missing = config.fields.some(fd => fd.required && fd.create !== false && fd.type !== 'checkbox' && applies(fd, f) && !f[fd.key])

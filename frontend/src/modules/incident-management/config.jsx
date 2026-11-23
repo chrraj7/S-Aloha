@@ -75,5 +75,8 @@ export const incidentConfig = {
   suggestOnTyping: true,
   // TRI-02 : suggestions du tri assisté à la saisie, s'il est activé.
   createExtras: ({ form, merge }) => <TriageSuggestions form={form} merge={merge} />,
+  // TRI-09 : les suggestions appliquées à la saisie partent avec la création, pour l'origine et la mesure.
+  createOptions: form => (form._triage?.length
+    ? { headers: { 'X-S-Aloha-Suggestions': encodeURIComponent(JSON.stringify(form._triage)) } } : undefined),
   linkHint: 'Problème sous-jacent, CI touchés, article de connaissance appliqué…',
 }

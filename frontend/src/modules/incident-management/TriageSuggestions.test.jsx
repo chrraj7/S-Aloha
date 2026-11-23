@@ -3,13 +3,14 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import TriageSuggestions from './TriageSuggestions'
+import { incidentConfig } from './config'
 import { resetFeatures } from '../../core/features'
 
 let enabled = ['assisted-ticket-triage']
 let answer = { suggestions: [], related: [] }
 const suggest = vi.fn(() => Promise.resolve(answer))
 vi.mock('../../api', () => ({
-  api: { features: () => Promise.resolve(enabled), triage: { suggest: (...a) => suggest(...a) } },
+  api: { features: () => Promise.resolve(enabled), triage: { suggest: (...a) => suggest(...a) }, incidents: {} },
 }))
 beforeEach(() => resetFeatures())
 afterEach(() => { cleanup(); vi.clearAllMocks(); enabled = ['assisted-ticket-triage']; answer = { suggestions: [], related: [] } })
@@ -55,6 +56,14 @@ it('TRI-02 : dès 4 caractères, une ligne par champ avec son motif ; appliquer 
   // Un groupe s'applique en responsable de type groupe.
   fireEvent.click(screen.getAllByText('Appliquer').at(-1))
   await waitFor(() => expect(form()).toMatchObject({ ownerId: 'GRP-MESSAGERIE', ownerType: 'Group', ownerDisplayName: 'GRP-MESSAGERIE' }))
+  // TRI-09 : les suggestions appliquées sont retenues, et partent avec la création dans l'en-tête X-S-Aloha-Suggestions.
+  expect(form()._triage).toEqual([
+    { feature: 'assisted-ticket-triage', field: 'category', value: 'Messagerie' },
+    { feature: 'assisted-ticket-triage', field: 'owner', value: 'GRP-MESSAGERIE' },
+  ])
+  const header = incidentConfig.createOptions(form()).headers['X-S-Aloha-Suggestions']
+  expect(JSON.parse(decodeURIComponent(header))).toEqual(form()._triage)
+  expect(incidentConfig.createOptions({ title: 'Sans suggestion' })).toBeUndefined()
 })
 
 it('OPT-04, OPT-16 : tri coupé, ou réponse vide ou en échec, l’encadré ne s’affiche pas', async () => {
