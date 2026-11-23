@@ -72,6 +72,8 @@ export const api = {
   audit: { list: (type, id) => request(`/audit?type=${type}&id=${id}`) },
   // OPT-04 : clés des fonctionnalités optionnelles activées.
   features: () => request('/features'),
+  // TRI-02 : suggestions du tri assisté à la saisie d'un incident.
+  triage: { suggest: draft => request('/triage/suggest', { method: 'POST', body: JSON.stringify(draft) }) },
   // Administration (ADM, Admin) : santé, journal d'audit global.
   // SOC-25 : pièces jointes d'un enregistrement (le téléchargement est un simple lien).
   attachments: {
