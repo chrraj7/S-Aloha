@@ -51,6 +51,7 @@ issue publique : voir [SECURITY.md](SECURITY.md).
 
    ```bash
    TESTCONTAINERS_RYUK_DISABLED=true dotnet test tests/SAloha.Api.Tests   # API, Docker requis
+   dotnet test tests/SAloha.Features.Tests                                # conteneur des fonctionnalités optionnelles
    cd frontend && npm test && npm run build                               # interface
    python3 scripts/check-docs.py                                          # documentation
    ```

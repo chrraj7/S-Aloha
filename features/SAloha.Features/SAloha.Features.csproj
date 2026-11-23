@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <!-- Conteneur « features » (ADR-0023) : le tri assisté des tickets, la CMDB assistée et les
+       fonctionnalités optionnelles à venir, hors de l'API. Une fonctionnalité de plus = un dossier
+       de plus ici, sans image ni profil du compose de plus. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>SAloha.Features</RootNamespace>
+    <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
+  </PropertyGroup>
+</Project>

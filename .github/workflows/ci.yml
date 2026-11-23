@@ -1,6 +1,6 @@
 # Contrôles de chaque push sur main et de chaque pull request : tests de l'API
 # (PostgreSQL réel via Testcontainers), tests et build de l'interface, santé
-# de la documentation, build des deux images, signature DCO de chaque commit
+# de la documentation, build des images (API, interface, conteneur features), signature DCO de chaque commit
 # (ADR-0010), recette de la pile de démonstration sur une base vierge. Sur une pull request,
 # en plus : preuve que ses tests échouent sans son changement, dépendances ajoutées
 # (vulnérabilités, licences), analyse des workflows. Sur main, une fois tout vert, images de
@@ -39,6 +39,10 @@ jobs:
         run: dotnet test tests/SAloha.Api.Tests --collect:"XPlat Code Coverage" --results-directory couverture
         env:
           TESTCONTAINERS_RYUK_DISABLED: "true"
+      # Conteneur des fonctionnalités optionnelles (ADR-0023) : son hôte seul, sans base ni API.
+      - name: Tests du conteneur features
+        if: ${{ !cancelled() }}
+        run: dotnet test tests/SAloha.Features.Tests --collect:"XPlat Code Coverage" --results-directory couverture
       # Q5 : la couverture se mesure et se montre, sans seuil qui bloque une PR. Les
       # migrations, générées, sont exclues : elles portaient le taux de lignes à 99 %.
       - name: Couverture (résumé et rapport)
@@ -56,7 +60,9 @@ jobs:
           retention-days: 14
       - name: Dépendances vulnérables
         run: |
-          dotnet list backend/SAloha.Api.csproj package --vulnerable --include-transitive | tee vuln.txt
+          for projet in backend/SAloha.Api.csproj features/SAloha.Features/SAloha.Features.csproj; do
+            dotnet list "$projet" package --vulnerable --include-transitive | tee -a vuln.txt
+          done
           ! grep -q "has the following vulnerable packages" vuln.txt
 
   web:
@@ -101,6 +107,7 @@ jobs:
           persist-credentials: false
       - run: docker build -t s-aloha-api backend
       - run: docker build -t s-aloha-web frontend
+      - run: docker build -t s-aloha-features features/SAloha.Features
 
   recette:
     # Recette sur une pile neuve, à chaque PR et sur main : pile de démonstration construite

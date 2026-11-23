@@ -244,9 +244,10 @@ Détails (registre des modules, thème, design) : [frontend.md](frontend.md).
 | Suite | Commande | Outillage |
 |---|---|---|
 | API (intégration) | `TESTCONTAINERS_RYUK_DISABLED=true dotnet test tests/SAloha.Api.Tests` | xUnit + `WebApplicationFactory` sur un PostgreSQL jetable (Testcontainers 4.16, image `postgres:18-alpine`) ; **Docker requis** |
+| Conteneur `features` | `dotnet test tests/SAloha.Features.Tests` | xUnit + `WebApplicationFactory` sur l'hôte seul (jeton du conteneur, contrôle de santé), sans base ni API |
 | Frontend | `cd frontend && npm test` | Vitest + Testing Library (jsdom) |
 
-- L'API et le projet de tests ciblent **net10.0** (LTS) ; un seul SDK suffit, en local comme
+- L'API, le conteneur `features` et leurs projets de tests ciblent **net10.0** (LTS) ; un seul SDK suffit, en local comme
   en CI.
 - Les jetons sont signés par la fixture (`ApiFixture`) avec la clé de configuration :
   l'Active Directory n'est pas sollicité.
