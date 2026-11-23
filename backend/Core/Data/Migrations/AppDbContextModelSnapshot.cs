@@ -18,7 +18,7 @@ namespace SAloha.Api.Core.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.14")
+                .HasAnnotation("ProductVersion", "10.0.15")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "vector");
@@ -1720,6 +1720,68 @@ namespace SAloha.Api.Core.Data.Migrations
                     b.HasIndex("ServiceId");
 
                     b.ToTable("Incidents");
+                });
+
+            modelBuilder.Entity("SAloha.Api.Modules.IncidentManagement.ProbableOutage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Basis")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Feature")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<int>("PerimeterId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Reasons")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int?>("ServiceId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClosedAt");
+
+                    b.HasIndex("PerimeterId");
+
+                    b.ToTable("ProbableOutages");
+                });
+
+            modelBuilder.Entity("SAloha.Api.Modules.IncidentManagement.ProbableOutageMember", b =>
+                {
+                    b.Property<int>("OutageId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("IncidentId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("OutageId", "IncidentId");
+
+                    b.HasIndex("IncidentId");
+
+                    b.ToTable("ProbableOutageMembers", (string)null);
                 });
 
             modelBuilder.Entity("SAloha.Api.Modules.KnowledgeManagement.KnowledgeArticle", b =>
@@ -4215,6 +4277,30 @@ namespace SAloha.Api.Core.Data.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
                 });
 
+            modelBuilder.Entity("SAloha.Api.Modules.IncidentManagement.ProbableOutage", b =>
+                {
+                    b.HasOne("SAloha.Api.Core.Perimeters.Perimeter", null)
+                        .WithMany()
+                        .HasForeignKey("PerimeterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("SAloha.Api.Modules.IncidentManagement.ProbableOutageMember", b =>
+                {
+                    b.HasOne("SAloha.Api.Modules.IncidentManagement.Incident", null)
+                        .WithMany()
+                        .HasForeignKey("IncidentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SAloha.Api.Modules.IncidentManagement.ProbableOutage", null)
+                        .WithMany("Members")
+                        .HasForeignKey("OutageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("SAloha.Api.Modules.KnowledgeManagement.KnowledgeArticle", b =>
                 {
                     b.HasOne("SAloha.Api.Core.Perimeters.Perimeter", null)
@@ -4599,6 +4685,11 @@ namespace SAloha.Api.Core.Data.Migrations
             modelBuilder.Entity("SAloha.Api.Modules.ComplianceAssessment.SecurityObjective", b =>
                 {
                     b.Navigation("Requirements");
+                });
+
+            modelBuilder.Entity("SAloha.Api.Modules.IncidentManagement.ProbableOutage", b =>
+                {
+                    b.Navigation("Members");
                 });
 
             modelBuilder.Entity("SAloha.Api.Modules.ProblemManagement.CorrectiveAction", b =>
