@@ -97,7 +97,8 @@ tous les commits de la branche : `git rebase --signoff main`.
 
 ## Preuve et garde-fous
 
-Une pull request qui modifie le code de l'API ou de l'interface ajoute ou modifie un test
+Une pull request qui modifie le code de l'API, du conteneur des fonctionnalités optionnelles
+(`features/`) ou de l'interface ajoute ou modifie un test
 qui **échoue sans son changement** : le job **Preuve** rejoue ses tests sur le code de
 `main` et le vérifie ([`scripts/preuve.py`](scripts/preuve.py)). Le job **Garde-fous**
 refuse qu'une PR supprime, réduise ou désactive des tests, ou modifie l'outillage de
