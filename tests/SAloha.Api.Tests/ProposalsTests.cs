@@ -252,6 +252,11 @@ public class ProposalsTests(ApiFixture api, FakeFeaturesContainer container) : I
         var only = Assert.Single((await Json(await admin.GetAsync($"/api/incidents/{id}/proposals"))).EnumerateArray());
         Assert.Equal(("Élevé", "Panne probable : 3 incidents ouverts sur le service Impression"),
             (only.GetProperty("after").GetString(), only.GetProperty("reasons").GetString()));
+        // La panne grossit : même valeur, motif à jour.
+        await Propose(factory, new { feature = FeatureCatalog.AssistedTriage, targetType = "incident", targetId = id,
+            field = "impact", after = "Élevé", reasons = "Panne probable : 5 incidents ouverts sur le service Impression" });
+        Assert.Equal("Panne probable : 5 incidents ouverts sur le service Impression",
+            Assert.Single((await Json(await admin.GetAsync($"/api/incidents/{id}/proposals"))).EnumerateArray()).GetProperty("reasons").GetString());
         // Un autre champ a sa propre ligne.
         Assert.Equal(201, (await Propose(factory, Triage(id, "owner", "GRP-IMPRESSION"))).Status);
         await using var db = api.Database();

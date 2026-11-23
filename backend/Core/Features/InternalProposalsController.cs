@@ -51,8 +51,9 @@ public class InternalProposalsController(AppDbContext db, IFeatureGate gate) : C
         if (existing is not null)
         {
             // OPT-15 : périmée (enregistrement modifié depuis), elle est recalculée à l'identique : valeur avant,
-            // motifs, sources et confiance repris, et datée de ce calcul ; elle redevient acceptable.
-            if (record.UpdatedAt > existing.CreatedAt || existing.After != after)
+            // motifs, sources et confiance repris, et datée de ce calcul ; elle redevient acceptable. Une valeur ou un
+            // motif qui changent (panne probable qui grossit) la rafraîchissent de même.
+            if (record.UpdatedAt > existing.CreatedAt || existing.After != after || existing.Reasons != reasons)
             {
                 existing.After = after;
                 existing.Before = before;
