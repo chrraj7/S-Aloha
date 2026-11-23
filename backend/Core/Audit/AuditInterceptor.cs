@@ -291,7 +291,7 @@ public class AuditInterceptor(IHttpContextAccessor http, ILogger<AuditIntercepto
                     Reference = d.Reference ?? refs.GetValueOrDefault((d.Type, d.Id.Value), ""),
                     Action = d.Action, Field = d.Field,
                     OldValue = removed ? other : d.Old, NewValue = removed ? d.New : other ?? d.New,
-                    Reason = d.Reason, Author = author, AuthorDisplayName = authorDisplay
+                    Reason = d.Reason, Author = author, AuthorDisplayName = authorDisplay, Origin = AuditOrigin.Current
                 };
             }));
             await db.SaveChangesAsync(ct);

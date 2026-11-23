@@ -18,6 +18,7 @@ Ce qui est vrai en permanence, mis à jour avec le code.
 | ⚙️ | [Exploitation](reference/exploitation.md) | Installer, brancher l'Active Directory, mettre à jour |
 | 📊 | [Reporting](reference/reporting.md) | Lire le tableau de bord : score de santé, indicateurs par onglet, filtres, exports |
 | 🔎 | [Recherche](reference/recherche.md) | Comprendre la recherche hybride : contenu indexé, cas similaires, service d'embeddings |
+| 🎛️ | [Fonctionnalités optionnelles](reference/fonctionnalites-optionnelles.md) | Activer ou couper le [tri assisté des tickets](reference/tri-assiste-des-tickets.md), la [CMDB assistée](reference/cmdb-assistee.md) et le [serveur MCP](reference/serveur-mcp.md), exécutés hors de l'API ; régler le modèle de langage |
 | 🧭 | [Périmètres](reference/perimetres.md) | Droits scopés par direction, site ou entité (droits, visibilité, écran d'administration) |
 | 🛠️ | [Administration et référentiels](reference/administration.md) | Utilisateurs et rôles, santé, journal d'audit global, doublons, catégories (ADM) |
 | 🛡️ | [Sécurité](reference/securite.md) | Préparer une mise en production |

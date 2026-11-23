@@ -19,7 +19,7 @@ namespace SAloha.Api.Core.Administration;
 [Route("api/admin")]
 [Authorize(Policy = "Admin")]
 public class AdminController(AppDbContext db, LdapService directory, IDirectoryRoster roster, IEmbeddingClient embeddings, CredentialVault vault,
-    Heartbeats heartbeats, IConfiguration config, IHostEnvironment env) : ControllerBase
+    Heartbeats heartbeats, IConfiguration config, IHostEnvironment env, Features.FeatureStatus features, Features.IFeatureGate gate) : ControllerBase
 {
     public const string Healthy = "OK", Degraded = "Dégradé", Down = "Hors service";
     public record Component(string Name, string State, string Message, double DurationMs);
@@ -100,6 +100,7 @@ public class AdminController(AppDbContext db, LdapService directory, IDirectoryR
                     : (Degraded, $"En échec : {string.Join(", ", failed.Select(n => $"« {n} »"))}.");
             }),
         };
+        components.AddRange(await FeatureComponentsAsync());
         var assembly = Assembly.GetExecutingAssembly();
         var informational = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "";
         var (version, commit) = informational.Split('+') is var parts ? (parts[0], parts.Length > 1 ? parts[1] : null) : ("", null);
@@ -110,6 +111,39 @@ public class AdminController(AppDbContext db, LdapService directory, IDirectoryR
             Version = version, Commit = commit is { Length: > 12 } ? commit[..12] : commit,
             StartedAt, Environment = env.EnvironmentName, CheckedAt = DateTime.UtcNow,
         });
+    }
+
+    /// <summary>
+    /// OPT-05, OPT-07 : chaque conteneur configuré ou porteur d'une fonctionnalité activée, puis chaque
+    /// fonctionnalité activée. Un conteneur perdu rend ses fonctionnalités « Dégradé », sans les couper.
+    /// </summary>
+    private async Task<List<Component>> FeatureComponentsAsync()
+    {
+        var enabled = await gate.EnabledAsync();
+        var containers = await features.ContainersAsync();
+        var list = new List<Component>();
+        foreach (var (name, state) in containers)
+        {
+            var onIt = Features.FeatureCatalog.All.Where(f => f.Container == name && enabled.Contains(f.Key)).Select(f => f.Name).ToList();
+            if (!state.Configured && onIt.Count == 0) continue;
+            var label = $"Conteneur « {name} »";
+            list.Add(state.Reachable && state.TokenAccepted
+                ? new Component(label, Healthy, $"{state.Message} Propose : {(state.Features.Length == 0 ? "aucune fonctionnalité" : string.Join(", ", state.Features))}.", 0)
+                : new Component(label, Degraded, onIt.Count == 0 ? state.Message : $"{state.Message} Suspendues : {string.Join(", ", onIt)}.", 0));
+        }
+        foreach (var feature in Features.FeatureCatalog.All.Where(f => enabled.Contains(f.Key)))
+        {
+            var label = $"Fonctionnalité : {feature.Name}";
+            var container = containers[feature.Container];
+            var dependencies = await features.DependenciesAsync(feature);
+            var missing = dependencies.Where(d => d.Required && !d.Ok).Select(d => $"{d.Name} — {d.Message}").ToList();
+            var optional = dependencies.Where(d => !d.Required && !d.Ok).Select(d => $"{d.Name} — {d.Message}").ToList();
+            list.Add(!container.Declares(feature.Key)
+                    ? new Component(label, Degraded, $"Activée, conteneur « {feature.Container} » indisponible : {container.Message}", 0)
+                : missing.Count > 0 ? new Component(label, Degraded, $"Activée, dépendance manquante : {string.Join(" ; ", missing)}.", 0)
+                : new Component(label, Healthy, optional.Count == 0 ? "Activée." : $"Activée ; {string.Join(" ; ", optional)}", 0));
+        }
+        return list;
     }
 
     /// <summary>Tâche de fond : dernier passage récent, ou désactivée par la configuration.</summary>
@@ -218,7 +252,7 @@ public class AdminController(AppDbContext db, LdapService directory, IDirectoryR
         return NoContent();
     }
 
-    public record AuditQuery(string? Author, string? Type, string? Action, string? Reference, DateTime? From, DateTime? To);
+    public record AuditQuery(string? Author, string? Type, string? Action, string? Reference, DateTime? From, DateTime? To, string? Origin = null);
 
     private IQueryable<AuditEntry> Filter(AuditQuery f)
     {
@@ -232,6 +266,7 @@ public class AdminController(AppDbContext db, LdapService directory, IDirectoryR
         }
         if (!string.IsNullOrWhiteSpace(f.Type)) q = q.Where(a => a.EntityType == f.Type);
         if (!string.IsNullOrWhiteSpace(f.Action)) q = q.Where(a => a.Action == f.Action);
+        if (!string.IsNullOrWhiteSpace(f.Origin)) q = q.Where(a => a.Origin == f.Origin);   // OPT-08
         if (!string.IsNullOrWhiteSpace(f.Reference))
         {
             var key = f.Reference.Trim().ToUpper();
@@ -268,12 +303,12 @@ public class AdminController(AppDbContext db, LdapService directory, IDirectoryR
             if (v.Length > 0 && "=+-@\t\r".Contains(v[0]) && !Regex.IsMatch(v, @"^[+-]?\d+([.,]\d+)?$")) v = "'" + v;
             return v.IndexOfAny([';', '"', '\n', '\r']) >= 0 ? $"\"{v.Replace("\"", "\"\"")}\"" : v;
         }
-        var csv = new StringBuilder("Date;Auteur;Type;Référence;Action;Champ;Ancienne valeur;Nouvelle valeur;Motif\r\n");
+        var csv = new StringBuilder("Date;Auteur;Type;Référence;Action;Champ;Ancienne valeur;Nouvelle valeur;Motif;Origine\r\n");
         foreach (var a in rows)
             csv.Append(string.Join(';', new[]
             {
                 a.At.ToString("dd/MM/yyyy HH:mm:ss"), Cell(a.AuthorDisplayName), a.EntityType, Cell(a.Reference), Cell(a.Action),
-                Cell(a.Field), Cell(a.OldValue), Cell(a.NewValue), Cell(a.Reason)
+                Cell(a.Field), Cell(a.OldValue), Cell(a.NewValue), Cell(a.Reason), Cell(a.Origin)
             })).Append("\r\n");
         return File(Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(csv.ToString())).ToArray(),
             "text/csv; charset=utf-8", $"s-aloha-journal-{DateTime.UtcNow:yyyy-MM-dd}.csv");

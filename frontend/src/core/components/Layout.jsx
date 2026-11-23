@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { api, clearSession, getUser } from '../../api'
 import { GROUPS, MODULES, SECTIONS, groupOf, visibleFor } from '../../modules/registry'
+import { useFeatures } from '../features'
 import ThemeToggle from './ThemeToggle'
 import NotificationBell from './NotificationBell'
 import ErrorBoundary from './ErrorBoundary'
@@ -133,7 +134,7 @@ function NavItem({ href, label, description, icon: Icon, end, active, rail, onCl
 /** Chemin d'une sous-entrée, sans son filtre (`/problems?status=…` → `/problems`). */
 const pathOf = (href) => href.split('?')[0]
 
-function ModuleItem({ module, location, role, rail, onClick }) {
+function ModuleItem({ module, location, role, rail, onClick, features }) {
   const Icon = MODULE_ICONS[module.id]
   const { pathname, search } = location
 
@@ -150,7 +151,7 @@ function ModuleItem({ module, location, role, rail, onClick }) {
   }
 
   const open = module.routes.some((r) => pathname === r || pathname.startsWith(r + '/'))
-  const pages = (module.pages ?? []).filter((p) => visibleFor(p, role))
+  const pages = (module.pages ?? []).filter((p) => visibleFor(p, role, features))
   // Une seule sous-entrée active : l'URL complète d'abord (« Erreurs connues »
   // est le registre filtré), puis le chemin seul (registre avec un autre
   // filtre), puis le préfixe le plus long (fiche /problems/12 ; fiche d'actif
@@ -192,6 +193,8 @@ function ModuleItem({ module, location, role, rail, onClick }) {
 
 function SidebarContent({ user, location, collapsed, onToggle, rail, onRail, onClose, onLogout }) {
   const role = user?.role
+  // OPT-04 : les entrées d'une fonctionnalité optionnelle n'apparaissent qu'activée.
+  const features = useFeatures()
   // PER-13 : Paramétrage suit le rôle de gestionnaire d'un périmètre, pas le rôle AD ; ses
   // entrées réservées à l'Admin (Référentiel NIS 2) le restent.
   const manages = useManagesPerimeter()
@@ -215,23 +218,23 @@ function SidebarContent({ user, location, collapsed, onToggle, rail, onRail, onC
 
       <nav className="nav" aria-label="Navigation principale">
         <SectionLabel>Pilotage</SectionLabel>
-        {PILOTAGE.filter((item) => visibleFor(item, role))
+        {PILOTAGE.filter((item) => visibleFor(item, role, features))
           .map((item) => <NavItem key={item.href} {...item} rail={rail} onClick={onClose} />)}
 
         {GROUPS.map((g) => {
           // Pas de section vide : sans module visible pour ce rôle, ni titre ni filet.
-          const modules = MODULES.filter((m) => groupOf(m) === g.id && visibleFor(m, role))
+          const modules = MODULES.filter((m) => groupOf(m) === g.id && visibleFor(m, role, features))
           if (modules.length === 0) return null
           const current = modules.some((m) => m.routes?.some((r) => within(location.pathname, r)))
           return group(g.id, g.label, g.tone, current,
-            modules.map((m) => <ModuleItem key={m.id} module={m} location={location} role={role} rail={rail} onClick={onClose} />))
+            modules.map((m) => <ModuleItem key={m.id} module={m} location={location} role={role} features={features} rail={rail} onClick={onClose} />))
         })}
 
         {/* Paramétrage et Administration au pied de la navigation, à l'écart
             du travail quotidien. */}
         <div className="nav-bottom">
-          {SECTIONS.filter((s) => visibleFor(s, sectionRole(s))).map((s) => {
-            const entries = s.entries.filter((e) => visibleFor(e, sectionRole(s)))
+          {SECTIONS.filter((s) => visibleFor(s, sectionRole(s), features)).map((s) => {
+            const entries = s.entries.filter((e) => visibleFor(e, sectionRole(s), features))
             if (entries.length === 0) return null
             const current = entries.some((e) => within(location.pathname, e.href))
             const tone = s.id === 'administration' ? 'admin' : undefined
