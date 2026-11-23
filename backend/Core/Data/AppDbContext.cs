@@ -38,6 +38,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Features.OptionalFeature> OptionalFeatures => Set<Features.OptionalFeature>();
     public DbSet<Features.FeatureEvent> FeatureEvents => Set<Features.FeatureEvent>();
     public DbSet<Features.Proposal> Proposals => Set<Features.Proposal>();
+    public DbSet<Modules.IncidentManagement.ProbableOutage> ProbableOutages => Set<Modules.IncidentManagement.ProbableOutage>();
     public DbSet<Features.ProposalCount> ProposalCounts => Set<Features.ProposalCount>();
     public DbSet<Itil.Category> Categories => Set<Itil.Category>();
     // Gestion des problèmes
@@ -238,6 +239,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         b.Entity<Features.FeatureEvent>().HasIndex(e => e.At);   // OPT-12 : purge par date
         b.Entity<Features.Proposal>().HasIndex(p => new { p.TargetType, p.TargetId, p.Status });
         b.Entity<Features.ProposalCount>().HasKey(c => new { c.Month, c.Feature, c.Field });
+        // TRI-07 : membres d'une panne probable ; supprimés avec leur incident ou leur groupe.
+        b.Entity<Modules.IncidentManagement.ProbableOutageMember>().ToTable("ProbableOutageMembers").HasKey(m => new { m.OutageId, m.IncidentId });
+        b.Entity<Modules.IncidentManagement.ProbableOutageMember>().HasIndex(m => m.IncidentId);
+        b.Entity<Modules.IncidentManagement.ProbableOutage>().HasMany(o => o.Members).WithOne().HasForeignKey(m => m.OutageId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<Modules.IncidentManagement.ProbableOutageMember>().HasOne<Modules.IncidentManagement.Incident>().WithMany()
+            .HasForeignKey(m => m.IncidentId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<Modules.IncidentManagement.ProbableOutage>().HasIndex(o => o.ClosedAt);
         b.Entity<Itil.Category>().HasIndex(c => new { c.Practice, c.Name }).IsUnique();
         b.Entity<ItemLink>().HasIndex(l => new { l.FromType, l.FromId });
         b.Entity<ItemLink>().HasIndex(l => new { l.ToType, l.ToId });

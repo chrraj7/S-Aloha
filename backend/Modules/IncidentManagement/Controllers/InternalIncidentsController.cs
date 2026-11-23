@@ -27,16 +27,43 @@ public class InternalIncidentsController(AppDbContext db, HybridSearch search) :
 {
     public const int MaxLimit = 20, MaxText = 2000;
 
+    public const int MaxPage = 500;
+
+    /// <summary>Identifiants des CI reliés à chaque incident, dans un sens ou dans l'autre.</summary>
+    private async Task<Dictionary<int, List<int>>> CisOfAsync(IReadOnlyCollection<int> incidents) =>
+        (await db.ItemLinks.AsNoTracking()
+            .Where(l => (l.FromType == "incident" && incidents.Contains(l.FromId) && l.ToType == "ci")
+                     || (l.ToType == "incident" && incidents.Contains(l.ToId) && l.FromType == "ci"))
+            .Select(l => l.FromType == "ci" ? new { Incident = l.ToId, Ci = l.FromId } : new { Incident = l.FromId, Ci = l.ToId })
+            .ToListAsync())
+        .GroupBy(x => x.Incident).ToDictionary(g => g.Key, g => g.Select(x => x.Ci).Distinct().Order().ToList());
+
+    /// <summary>
+    /// TRI-05, TRI-06 : les incidents ouverts (Nouveau, En cours, En attente), page après page par identifiant
+    /// croissant, avec leurs CI reliés : de quoi reconstruire l'index propre du conteneur à son démarrage.
+    /// </summary>
+    [HttpGet("incidents/open")]
+    public async Task<IActionResult> Open([FromQuery] int after = 0, [FromQuery] int limit = MaxPage)
+    {
+        limit = Math.Clamp(limit, 1, MaxPage);
+        var page = await db.Incidents.AsNoTracking().Where(i => i.Id > after && InternalOutagesController.Open.Contains(i.Status))
+            .OrderBy(i => i.Id).Take(limit).ToListAsync();
+        var cis = await CisOfAsync(page.Select(i => i.Id).ToList());
+        return Ok(new
+        {
+            Items = page.Select(i => new { Incident = IncidentView.From(i), ConfigurationItemIds = cis.GetValueOrDefault(i.Id) ?? [] }).ToList(),
+            Next = page.Count == limit ? page[^1].Id : (int?)null,
+        });
+    }
+
     /// <summary>L'incident et les identifiants des CI qui lui sont reliés, dans un sens ou dans l'autre (TRI-04).</summary>
     [HttpGet("incidents/{id:int}")]
     public async Task<IActionResult> Get(int id)
     {
         var e = await db.Incidents.AsNoTracking().FirstOrDefaultAsync(i => i.Id == id);
         if (e is null) return NotFound();
-        var ciIds = await db.ItemLinks.AsNoTracking()
-            .Where(l => (l.FromType == "incident" && l.FromId == id && l.ToType == "ci") || (l.ToType == "incident" && l.ToId == id && l.FromType == "ci"))
-            .Select(l => l.FromType == "ci" ? l.FromId : l.ToId).Distinct().OrderBy(x => x).ToListAsync();
-        return Ok(new { Incident = IncidentView.From(e), ConfigurationItemIds = ciIds });
+        var cis = await CisOfAsync([id]);
+        return Ok(new { Incident = IncidentView.From(e), ConfigurationItemIds = cis.GetValueOrDefault(id) ?? [] });
     }
 
     /// <summary>
