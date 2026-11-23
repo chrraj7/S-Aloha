@@ -35,6 +35,8 @@ builder.Services.AddSingleton<SAloha.Api.Core.Administration.Heartbeats>();
 builder.Services.AddSingleton<SAloha.Api.Core.Features.IFeatureGate, SAloha.Api.Core.Features.FeatureGate>();
 builder.Services.AddHttpClient<SAloha.Api.Core.Features.ContainerProbe>();
 builder.Services.AddScoped<SAloha.Api.Core.Features.FeatureStatus>();
+builder.Services.AddSingleton<SAloha.Api.Core.Features.FeatureEventsInterceptor>();
+builder.Services.AddHostedService<SAloha.Api.Core.Features.FeatureEventsRetention>();
 builder.Services.AddScoped<SAloha.Api.Core.Administration.Duplicates>();
 builder.Services.AddSingleton<CredentialVault>();
 builder.Services.AddScoped<SAloha.Api.Core.Platform.MailSender>();
@@ -65,7 +67,8 @@ if (!(builder.Configuration.GetConnectionString("Default") ?? "").Contains("GSS 
     connection.GssEncryptionMode = Npgsql.GssEncryptionMode.Disable;
 builder.Services.AddDbContext<AppDbContext>((sp, o) => o
     .UseNpgsql(connection.ConnectionString)
-    .AddInterceptors(sp.GetRequiredService<SearchIndexInterceptor>(), sp.GetRequiredService<AuditInterceptor>()));
+    .AddInterceptors(sp.GetRequiredService<SearchIndexInterceptor>(), sp.GetRequiredService<AuditInterceptor>(),
+        sp.GetRequiredService<SAloha.Api.Core.Features.FeatureEventsInterceptor>()));
 
 builder.Services.AddSingleton<LdapService>();
 builder.Services.AddSingleton<IUserDirectory>(sp => sp.GetRequiredService<LdapService>());
@@ -90,7 +93,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
         // S5 (ADR-0018) : le navigateur présente le jeton par le cookie HttpOnly de session.
         o.Events = new JwtBearerEvents { OnMessageReceived = SessionCookie.ReadToken };
-    });
+    })
+    // OPT-10 : le conteneur des fonctionnalités optionnelles, sur le port interne seulement (OPT-11).
+    .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, SAloha.Api.Core.Features.ContainerTokenHandler>(
+        SAloha.Api.Core.Features.ContainerTokenHandler.SchemeName, null);
 // Derrière nginx : HTTPS se lit dans X-Forwarded-Proto (cookie Secure) ; seul ce schéma est repris.
 builder.Services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>(o =>
 {
@@ -109,7 +115,10 @@ builder.Services.AddAuthorizationBuilder()
         var scope = await http.RequestServices.GetRequiredService<SAloha.Api.Core.Perimeters.PerimeterAccess>().GetAsync();
         return scope.Global || scope.ManagedIds.Count > 0;
     }))
-    .AddPolicy("User", p => p.RequireRole("Admin", "Manager", "User"));
+    .AddPolicy("User", p => p.RequireRole("Admin", "Manager", "User"))
+    .AddPolicy(SAloha.Api.Core.Features.ContainerTokenHandler.Policy, p => p
+        .AddAuthenticationSchemes(SAloha.Api.Core.Features.ContainerTokenHandler.SchemeName)
+        .RequireRole(SAloha.Api.Core.Features.ContainerTokenHandler.Role));
 
 // Les entités EF portent leurs navigations dans les deux sens (Problem ↔
 // Analyses/Actions, Action ↔ RACI). Sans IgnoreCycles, renvoyer une entité
@@ -154,6 +163,8 @@ if (migrateOnly)
 app.UseSwagger();
 app.UseSwaggerUI();
 app.Use(Telemetry.TraceparentHeader);
+// OPT-11 : routes internes sur le port interne seulement, et rien d'autre sur ce port.
+app.Use(SAloha.Api.Core.Features.InternalPort.Guard(app.Configuration));
 app.UseForwardedHeaders();
 app.UseCors();
 app.UseAuthentication();

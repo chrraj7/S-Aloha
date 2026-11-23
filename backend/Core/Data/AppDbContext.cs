@@ -36,6 +36,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Attachments.Attachment> Attachments => Set<Attachments.Attachment>();
     public DbSet<Platform.StorageSettings> StorageSettings => Set<Platform.StorageSettings>();
     public DbSet<Features.OptionalFeature> OptionalFeatures => Set<Features.OptionalFeature>();
+    public DbSet<Features.FeatureEvent> FeatureEvents => Set<Features.FeatureEvent>();
     public DbSet<Itil.Category> Categories => Set<Itil.Category>();
     // Gestion des problèmes
     public DbSet<Problem> Problems => Set<Problem>();
@@ -232,6 +233,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         // ADM-60, ADM-61 : une seule ligne de réglages chacun, saisie par l'Admin.
         b.Entity<Platform.MailSettings>().Property(s => s.Id).ValueGeneratedNever();
         b.Entity<Platform.StorageSettings>().Property(s => s.Id).ValueGeneratedNever();
+        b.Entity<Features.FeatureEvent>().HasIndex(e => e.At);   // OPT-12 : purge par date
         b.Entity<Itil.Category>().HasIndex(c => new { c.Practice, c.Name }).IsUnique();
         b.Entity<ItemLink>().HasIndex(l => new { l.FromType, l.FromId });
         b.Entity<ItemLink>().HasIndex(l => new { l.ToType, l.ToId });
