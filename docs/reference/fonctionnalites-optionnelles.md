@@ -119,6 +119,9 @@ aujourd'hui, la seule [CMDB assistée](cmdb-assistee.md). Le tri assisté des ti
   réseau de l'organisation. La mémoire et le temps de réponse nécessaires dépendent du
   modèle ; le jeu d'essai de la CMDB assistée ([CMA-11](cmdb-assistee.md)) les mesure et les
   consigne.
+- **Mode démonstration** : le conteneur `features` démarre avec le seul tri assisté des
+  tickets activé ; la CMDB assistée et le serveur MCP restent coupés (aucun modèle de
+  langage dans la démonstration).
 - **Sauvegarde** : rien à sauvegarder dans les conteneurs ; propositions, réglages et
   traces sont dans la base.
 

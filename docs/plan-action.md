@@ -241,9 +241,19 @@ mainteneur. Les étapes 2 et 6 ajoutent un projet et une image à la CI : étiqu
 | 5 | CMDB assistée dans le conteneur `features` : analyses, propositions, fusion, aide au sas, convention de nommage, jeu d'essai | CMA-01 à CMA-12 | 🔜 |
 | 6 | Conteneur `mcp` : jetons personnels, outils de lecture, limites | MCP-01 à MCP-09 | 🔜 |
 
-**À trancher en chemin** : ce que démarre le mode démonstration
-([ADR-0009](decisions/adr-0009-mode-demonstration-public.md)) ; proposition : le conteneur
-`features` avec le seul tri assisté activé, qui ne demande pas de modèle de langage.
+**Mode démonstration** (décidé le 2026-11-23, [ADR-0009](decisions/adr-0009-mode-demonstration-public.md)) :
+il démarre le conteneur `features` avec le **seul tri assisté** activé, qui ne demande pas
+de modèle de langage ; la CMDB assistée et le serveur MCP y restent coupés. À faire avec
+l'étape 3.
+
+**Mise en avant** (décision du 2026-11-23) : le tri assisté des tickets, la CMDB assistée
+et le serveur MCP sont les trois fonctionnalités que S-Aloha met en avant dans toutes ses
+présentations et pages ; la connexion à l'Active Directory n'y est plus qu'un prérequis
+d'intégration en entreprise. README, produit et page Soutenir le disent depuis le
+2026-11-23, en annonçant les trois fonctionnalités pour la première version stable. À la
+livraison de chacune (étapes 3, 5 et 6) : retirer cette annonce, ajouter son bloc à la page de
+connexion (qui ne présente que des fonctionnalités existantes), ses captures en tête de
+l'aperçu du README, et refaire l'image de partage du dépôt.
 
 ### Sortie du MVP
 
