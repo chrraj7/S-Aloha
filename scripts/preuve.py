@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Preuve d'une pull request : ses tests échouent-ils sans son changement ?
 
-Pour chaque côté dont la PR modifie le code (API : `backend/**/*.cs` ; interface :
-`frontend/src/**/*.js(x)` hors tests), les tests ajoutés ou modifiés par la PR sont
-rejoués sur le code de la base (copie de travail jetable, tests de la PR posés dessus).
-Au moins un doit échouer (ou ne pas compiler : il dépend du code ajouté) ; qu'ils passent
-à la tête de la PR, les jobs « API » et « Interface » le prouvent déjà.
+Pour chaque côté dont la PR modifie le code (API : `backend/**/*.cs`, tests dans
+`tests/SAloha.Api.Tests` ; conteneur des fonctionnalités optionnelles : `features/**/*.cs`,
+tests dans `tests/SAloha.Features.Tests` ; interface : `frontend/src/**/*.js(x)` hors tests),
+les tests ajoutés ou modifiés par la PR sont rejoués sur le code de la base (copie de travail
+jetable, tests de la PR posés dessus). Au moins un doit échouer (ou ne pas compiler : il
+dépend du code ajouté) ; qu'ils passent à la tête de la PR, les jobs « API » et
+« Interface » le prouvent déjà.
 
   - aucun code modifié               → rien à prouver ;
   - code modifié sans test modifié   → échec ;
@@ -29,7 +31,11 @@ import sys
 import tempfile
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
-PROJET = 'tests/SAloha.Api.Tests'
+# Projets de tests .NET, par côté : l'API et le conteneur des fonctionnalités optionnelles (ADR-0023).
+PROJETS = {'api': 'tests/SAloha.Api.Tests', 'features': 'tests/SAloha.Features.Tests'}
+COTES = ('api', 'features', 'web')
+NOMS = {'api': 'API', 'features': 'Conteneur features', 'web': 'Interface'}
+DE = {'api': 'de l API', 'features': 'du conteneur features', 'web': 'de l interface'}
 
 
 def git(*args, cwd=REPO):
@@ -46,13 +52,17 @@ def est_test_front(p):
 
 
 def cote(p):
-    """'api', 'web' ou None pour un fichier de code ; ('test', côté) pour un test."""
+    """('code', côté) pour un fichier de code, ('test', côté) pour un test, (None, None) sinon."""
+    if p.startswith(PROJETS['features'] + '/') and p.endswith('.cs'):
+        return 'test', 'features'
     if p.startswith('tests/') and p.endswith('.cs'):
         return 'test', 'api'
     if est_test_front(p):
         return 'test', 'web'
     if p.startswith('backend/') and p.endswith('.cs'):
         return 'code', 'api'
+    if p.startswith('features/') and p.endswith('.cs'):
+        return 'code', 'features'
     if p.startswith('frontend/src/') and p.endswith(('.js', '.jsx')):
         return 'code', 'web'
     return None, None
@@ -81,7 +91,7 @@ def main(argv):
         return 0
 
     base = git('merge-base', a.base, a.head).strip()
-    code, tests = {'api': [], 'web': []}, {'api': [], 'web': []}
+    code, tests = {c: [] for c in COTES}, {c: [] for c in COTES}
     for ligne in git('diff', '--name-status', '--no-renames', f'{base}...{a.head}').splitlines():
         statut, p = ligne.split('\t', 1)
         genre, c = cote(p)
@@ -90,15 +100,14 @@ def main(argv):
         elif genre == 'test' and statut != 'D':
             tests[c].append(p)
 
-    a_prouver = [c for c in ('api', 'web') if code[c]]
+    a_prouver = [c for c in COTES if code[c]]
     if not a_prouver:
-        print('Aucun code de l\'API ni de l\'interface modifié : rien à prouver.')
+        print('Aucun code de l\'API, du conteneur features ni de l\'interface modifié : rien à prouver.')
         return 0
 
     manque = [c for c in a_prouver if not tests[c]]
     for c in manque:
-        print(f'::error::Code {"de l API" if c == "api" else "de l interface"} modifié '
-              f'({", ".join(code[c][:3])}…) sans test ajouté ni modifié.')
+        print(f'::error::Code {DE[c]} modifié ({", ".join(code[c][:3])}…) sans test ajouté ni modifié.')
     if manque:
         return 1
 
@@ -111,13 +120,14 @@ def main(argv):
                 cible = copie / p
                 cible.parent.mkdir(parents=True, exist_ok=True)
                 cible.write_text(git('show', f'{a.head}:{p}'), encoding='utf-8')
-            if c == 'api':
-                classes = [p for p in tests['api'] if p.endswith('Tests.cs')]
+            if c in PROJETS:
+                classes = [p for p in tests[c] if p.endswith('Tests.cs')]
                 if not classes:
-                    print('::error::API : aucun fichier *Tests.cs touché, seulement des aides de test.')
+                    print(f'::error::{NOMS[c]} : aucun fichier *Tests.cs touché, seulement des aides de test.')
                     echecs.append(c)
                     continue
-                code_retour = lancer(['dotnet', 'test', PROJET, '--filter', filtre_dotnet(a.head, classes)], copie)
+                # Projet de tests absent de la base (il arrive avec la PR) : dotnet test échoue, ce qui prouve.
+                code_retour = lancer(['dotnet', 'test', PROJETS[c], '--filter', filtre_dotnet(a.head, classes)], copie)
             else:
                 if lancer(['npm', 'ci', '--no-audit', '--no-fund'], copie / 'frontend'):
                     print('::error::Interface : npm ci a échoué sur la base.')
@@ -126,11 +136,11 @@ def main(argv):
                 fichiers = [p.removeprefix('frontend/') for p in tests['web']]
                 code_retour = lancer(['npx', 'vitest', 'run', *fichiers], copie / 'frontend')
             if code_retour == 0:
-                print(f'::error::{"API" if c == "api" else "Interface"} : les tests de la PR passent '
+                print(f'::error::{NOMS[c]} : les tests de la PR passent '
                       f'déjà sans son changement ({", ".join(tests[c])}) ; ils ne le prouvent pas.')
                 echecs.append(c)
             else:
-                print(f'✔ {"API" if c == "api" else "Interface"} : les tests de la PR échouent sans '
+                print(f'✔ {NOMS[c]} : les tests de la PR échouent sans '
                       'son changement (échec ou compilation impossible sur la base).')
     finally:
         git('worktree', 'remove', '--force', str(copie))
