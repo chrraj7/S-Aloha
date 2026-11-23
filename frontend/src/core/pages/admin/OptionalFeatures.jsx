@@ -36,6 +36,10 @@ function FeatureCard({ f, onSwitched }) {
       <p className="small"><b>Conteneur « {f.container} »</b> : {c.message}
         {c.reachable && c.tokenAccepted && <> Propose : {c.features.length ? c.features.join(', ') : 'aucune fonctionnalité'}.</>}
         <span className="muted"> Contrôlé le {dateTimeFr(c.checkedAt)}.</span></p>
+      {/* TRI-06 : index des incidents ouverts du tri, tenu dans la mémoire du conteneur. */}
+      {f.key === 'assisted-ticket-triage' && c.status?.[f.key] && <p className="small"><b>Index des incidents ouverts</b> : {c.status[f.key].indexBuilt
+        ? `${c.status[f.key].openIncidents} incident(s), reconstruit le ${dateTimeFr(c.status[f.key].rebuiltAt)}`
+        : 'pas encore construit (au premier enregistrement d’un incident)'}.</p>}
       {f.dependencies.length > 0 && (
         <ul className="small">
           {f.dependencies.map(d => (

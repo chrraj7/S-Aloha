@@ -45,6 +45,9 @@ public record FeatureSwitchDto(bool Enabled);
 public record ContainerState(string Container, bool Configured, bool Reachable, bool TokenAccepted, string? Version,
     string[] Features, string Message, DateTime CheckedAt)
 {
+    /// <summary>État propre à chaque fonctionnalité, tel que le conteneur le rend (index du tri, TRI-06) ; vide sinon.</summary>
+    public Dictionary<string, System.Text.Json.JsonElement> Status { get; init; } = [];
+
     public bool Declares(string key) => Configured && Reachable && TokenAccepted && Features.Contains(key);
 }
 

@@ -13,6 +13,12 @@ public interface IContainerFeature
     string Key { get; }
 }
 
+/// <summary>Une fonctionnalité qui rend son état au contrôle de santé (page d'administration : index du tri, TRI-06).</summary>
+public interface IStatusFeature
+{
+    object Status();
+}
+
 /// <summary>Une fonctionnalité qui sert des routes à l'API (OPT-16 : réponses attendues par un écran), derrière le jeton.</summary>
 public interface IEndpointFeature
 {
@@ -63,7 +69,14 @@ public static class ContainerHost
         });
         // OPT-01 : version et fonctionnalités déclarées ; l'API attend la réponse 3 s au plus.
         app.MapGet("/health", (IEnumerable<IContainerFeature> features) =>
-            Results.Json(new { version = Version, features = features.Select(f => f.Key).Distinct().ToArray() }));
+        {
+            var all = features.DistinctBy(f => f.Key).ToList();
+            return Results.Json(new
+            {
+                version = Version, features = all.Select(f => f.Key).ToArray(),
+                status = all.OfType<IStatusFeature>().ToDictionary(f => ((IContainerFeature)f).Key, f => f.Status()),
+            });
+        });
         // OPT-16 : routes appelées par l'API pour un écran (suggestions à la saisie, TRI-02).
         foreach (var feature in app.Services.GetServices<IContainerFeature>().OfType<IEndpointFeature>().Distinct())
             feature.MapEndpoints(app);

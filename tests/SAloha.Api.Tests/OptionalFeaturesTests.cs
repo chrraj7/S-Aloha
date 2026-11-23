@@ -35,7 +35,8 @@ public sealed class FakeFeaturesContainer : IAsyncLifetime
         _app.MapGet("/health", (HttpContext c) =>
             !Up ? Results.StatusCode(503)
             : c.Request.Headers.Authorization.ToString() != $"Bearer {Token}" ? Results.StatusCode(401)
-            : Results.Json(new { version = "essai", features = Features }));
+            : Results.Json(new { version = "essai", features = Features,
+                status = new Dictionary<string, object> { ["assisted-ticket-triage"] = new { indexBuilt = true, openIncidents = 42 }, ["inconnue"] = new { x = 1 } } }));
         await _app.StartAsync();
         Url = _app.Urls.Single();
     }
@@ -107,6 +108,17 @@ public class OptionalFeaturesTests(ApiFixture api, FakeFeaturesContainer contain
             Assert.False(f.GetProperty("containerState").GetProperty("configured").GetBoolean());
         }
         Assert.Equal("mcp", Feature(list, FeatureCatalog.McpServer).GetProperty("container").GetString());
+    }
+
+    [Fact]
+    public async Task TRI_06_l_etat_de_l_index_du_tri_rendu_par_le_conteneur_parvient_a_la_page_d_administration()
+    {
+        container.Features = [FeatureCatalog.AssistedTriage];
+        using var factory = Factory(container.Url);
+        var list = await Json(await Client(factory).GetAsync("/api/admin/features"));
+        var status = Feature(list, FeatureCatalog.AssistedTriage).GetProperty("containerState").GetProperty("status");
+        Assert.Equal(42, status.GetProperty("assisted-ticket-triage").GetProperty("openIncidents").GetInt32());
+        Assert.False(status.TryGetProperty("inconnue", out _));   // seulement les fonctionnalités qu'il déclare
     }
 
     [Fact]
