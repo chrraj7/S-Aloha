@@ -37,6 +37,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Platform.StorageSettings> StorageSettings => Set<Platform.StorageSettings>();
     public DbSet<Features.OptionalFeature> OptionalFeatures => Set<Features.OptionalFeature>();
     public DbSet<Features.FeatureEvent> FeatureEvents => Set<Features.FeatureEvent>();
+    public DbSet<Features.Proposal> Proposals => Set<Features.Proposal>();
+    public DbSet<Features.ProposalCount> ProposalCounts => Set<Features.ProposalCount>();
     public DbSet<Itil.Category> Categories => Set<Itil.Category>();
     // Gestion des problèmes
     public DbSet<Problem> Problems => Set<Problem>();
@@ -234,6 +236,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         b.Entity<Platform.MailSettings>().Property(s => s.Id).ValueGeneratedNever();
         b.Entity<Platform.StorageSettings>().Property(s => s.Id).ValueGeneratedNever();
         b.Entity<Features.FeatureEvent>().HasIndex(e => e.At);   // OPT-12 : purge par date
+        b.Entity<Features.Proposal>().HasIndex(p => new { p.TargetType, p.TargetId, p.Status });
+        b.Entity<Features.ProposalCount>().HasKey(c => new { c.Month, c.Feature, c.Field });
         b.Entity<Itil.Category>().HasIndex(c => new { c.Practice, c.Name }).IsUnique();
         b.Entity<ItemLink>().HasIndex(l => new { l.FromType, l.FromId });
         b.Entity<ItemLink>().HasIndex(l => new { l.ToType, l.ToId });

@@ -299,6 +299,111 @@ namespace SAloha.Api.Core.Data.Migrations
                     b.ToTable("OptionalFeatures");
                 });
 
+            modelBuilder.Entity("SAloha.Api.Core.Features.Proposal", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("After")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("Before")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CitedJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<double?>("Confidence")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DecidedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DecidedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Feature")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<string>("Field")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<string>("FinalValue")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PerimeterId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Reasons")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<int>("TargetId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TargetType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TargetType", "TargetId", "Status");
+
+                    b.ToTable("Proposals");
+                });
+
+            modelBuilder.Entity("SAloha.Api.Core.Features.ProposalCount", b =>
+                {
+                    b.Property<string>("Month")
+                        .HasMaxLength(7)
+                        .HasColumnType("character varying(7)");
+
+                    b.Property<string>("Feature")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<string>("Field")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<int>("Accepted")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Corrected")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Expired")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Rejected")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Month", "Feature", "Field");
+
+                    b.ToTable("ProposalCounts");
+                });
+
             modelBuilder.Entity("SAloha.Api.Core.Itil.Category", b =>
                 {
                     b.Property<int>("Id")

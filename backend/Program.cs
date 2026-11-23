@@ -37,6 +37,7 @@ builder.Services.AddHttpClient<SAloha.Api.Core.Features.ContainerProbe>();
 builder.Services.AddScoped<SAloha.Api.Core.Features.FeatureStatus>();
 builder.Services.AddSingleton<SAloha.Api.Core.Features.FeatureEventsInterceptor>();
 builder.Services.AddHostedService<SAloha.Api.Core.Features.FeatureEventsRetention>();
+builder.Services.AddHostedService<SAloha.Api.Core.Features.ProposalsRetention>();
 builder.Services.AddScoped<SAloha.Api.Core.Administration.Duplicates>();
 builder.Services.AddSingleton<CredentialVault>();
 builder.Services.AddScoped<SAloha.Api.Core.Platform.MailSender>();
