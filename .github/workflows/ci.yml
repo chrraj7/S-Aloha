@@ -111,24 +111,26 @@ jobs:
 
   recette:
     # Recette sur une pile neuve, à chaque PR et sur main : pile de démonstration construite
-    # depuis les sources (base vierge, annuaire Samba AD, API, interface ; sans le service
-    # d'embeddings), données d'exemple chargées par l'API, puis scripts/recette.py par
-    # l'interface. Remplace la recette manuelle avant fusion.
+    # depuis les sources (base vierge, annuaire Samba AD, API, interface, conteneur des
+    # fonctionnalités optionnelles ; sans le service d'embeddings), données d'exemple chargées
+    # par l'API, puis scripts/recette.py par l'interface. Remplace la recette manuelle avant fusion.
     name: Recette
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      COMPOSE: docker compose -p s-aloha-recette -f docker-compose.yml -f docker-compose.demo.yml
+      COMPOSE: docker compose -p s-aloha-recette -f docker-compose.yml -f docker-compose.demo.yml --profile fonctionnalites
+      # L'API cherche le conteneur « features » du profil (jeton d'exemple de la démonstration).
+      FEATURES_URL: http://features:8080
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Pile de démonstration
-        run: $COMPOSE up -d --build --quiet-pull db annuaire api web
+        run: $COMPOSE up -d --build --quiet-pull db annuaire api web features
       - name: Données d'exemple
         run: python3 demo/donnees/charger.py http://localhost:8080
       - name: Contrôles
-        run: python3 scripts/recette.py http://localhost
+        run: python3 scripts/recette.py http://localhost --fonctionnalites
       - name: Journaux de la pile
         if: failure()
         run: $COMPOSE logs --no-color --tail 200

@@ -48,6 +48,13 @@ services:
       # Vide : recherche par les mots seulement. L'API n'attend pas ce service.
       Embeddings__Url: "http://embeddings:11434"
       Embeddings__Model: "bge-m3"
+      # --- Fonctionnalités optionnelles (ADR-0023) : conteneur « features », profil « fonctionnalites » ---
+      # Vides : tri assisté et CMDB assistée indisponibles. Avec le profil : FEATURES_URL=http://features:8080
+      # et FEATURES_TOKEN, le même secret qu'au conteneur (32 caractères au moins : openssl rand -hex 32).
+      Features__Url: "${FEATURES_URL:-}"
+      Features__Token: "${FEATURES_TOKEN:-}"
+    # 8081 (port interne des fonctionnalités, OPT-11) n'est jamais publié : le conteneur « features »
+    # l'atteint sur le réseau du compose.
     ports:
       - "8080:8080"
     # O1 : disponibilité (base comprise) ; l'image aspnet n'a ni curl ni wget, bash suffit.
@@ -81,6 +88,28 @@ services:
       - ./garage/garage.toml:/etc/garage.toml:ro
       - garage-meta:/var/lib/garage/meta
       - garage-data:/var/lib/garage/data
+
+  features:
+    # Fonctionnalités optionnelles hors de l'API (tri assisté des tickets, CMDB assistée), démarrées
+    # seulement avec le profil « fonctionnalites », puis activées par l'Admin (Administration ›
+    # Fonctionnalités optionnelles). Aucune ligne « ports: » : seule l'API l'appelle. Arrêté, ses
+    # fonctionnalités sont indisponibles, rien d'autre (OPT-05).
+    image: ghcr.io/chrraj7/s-aloha-features:${S_ALOHA_VERSION:-edge}
+    build: ./features/SAloha.Features
+    profiles: ["fonctionnalites"]
+    environment:
+      # Même secret qu'à l'API (OPT-10) ; vide ou trop court : le conteneur refuse tout appel.
+      Features__Token: "${FEATURES_TOKEN:-}"
+      # Port interne de l'API (OPT-11), jamais le port public.
+      Api__Url: "http://api:8081"
+      Embeddings__Url: "http://embeddings:11434"
+    healthcheck:
+      # Le contrôle de santé exige le jeton, comme pour l'API ; l'image aspnet n'a ni curl ni wget.
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /health HTTP/1.0\\r\\nAuthorization: Bearer %s\\r\\n\\r\\n' \"$$Features__Token\" >&3 && head -1 <&3 | grep -q ' 200 '"]
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
 
   web:
     image: ghcr.io/chrraj7/s-aloha-web:${S_ALOHA_VERSION:-edge}
