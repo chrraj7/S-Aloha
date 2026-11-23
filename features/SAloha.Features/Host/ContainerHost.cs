@@ -13,6 +13,12 @@ public interface IContainerFeature
     string Key { get; }
 }
 
+/// <summary>Une fonctionnalité qui sert des routes à l'API (OPT-16 : réponses attendues par un écran), derrière le jeton.</summary>
+public interface IEndpointFeature
+{
+    void MapEndpoints(IEndpointRouteBuilder app);
+}
+
 /// <summary>
 /// Hôte du conteneur <c>features</c> : jeton du conteneur (OPT-10), contrôle de santé (OPT-01), client du
 /// port interne de l'API et fil d'événements (OPT-12). Chaque fonctionnalité s'inscrit ici comme
@@ -58,6 +64,9 @@ public static class ContainerHost
         // OPT-01 : version et fonctionnalités déclarées ; l'API attend la réponse 3 s au plus.
         app.MapGet("/health", (IEnumerable<IContainerFeature> features) =>
             Results.Json(new { version = Version, features = features.Select(f => f.Key).Distinct().ToArray() }));
+        // OPT-16 : routes appelées par l'API pour un écran (suggestions à la saisie, TRI-02).
+        foreach (var feature in app.Services.GetServices<IContainerFeature>().OfType<IEndpointFeature>().Distinct())
+            feature.MapEndpoints(app);
     }
 
     /// <summary>Version de l'image (ADM-21), sans le commit que le SDK ajoute après « + ».</summary>
