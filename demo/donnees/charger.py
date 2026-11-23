@@ -12,6 +12,7 @@ Lancé par le service `donnees` de docker-compose.demo.yml ; utilisable seul :
 Idempotent : ne fait rien si des problèmes existent déjà.
 """
 import json
+import os
 import sys
 import time
 import urllib.error
@@ -232,6 +233,7 @@ def main():
         'outcome': None, 'dueDate': jour(45), 'value': 3, 'effort': 2}, 'Validée')
 
     complements(m, u, a, messagerie, erp, mail, bdd, parefeu)
+    tri_assiste(m, a)
     print('✔ Données de démonstration chargées.')
 
 
@@ -362,6 +364,54 @@ def complements(m, u, a, messagerie, erp, mail, bdd, parefeu):
         creer(m, '/api/improvements', {**MARC, 'title': titre, 'description': '', 'step': etape,
             'priority': priorite, 'benefit': 'Moins d’incidents escaladés', 'baseline': 'À mesurer',
             'target': 'À définir', 'outcome': None, 'dueDate': jour(60), 'value': 3, 'effort': 2}, statut)
+
+
+
+def activer_tri(admin):
+    """Active le tri assisté (OPT-03) dès que le conteneur « features » répond : il peut démarrer après l'API."""
+    for _ in range(36):
+        req = urllib.request.Request(BASE + '/api/admin/features/assisted-ticket-triage', method='PUT',
+                                     data=json.dumps({'enabled': True}).encode())
+        req.add_header('Content-Type', 'application/json')
+        req.add_header('Authorization', f'Bearer {admin}')
+        try:
+            with urllib.request.urlopen(req, timeout=30):
+                return True
+        except urllib.error.HTTPError as e:
+            if e.code != 400:
+                return False
+        except (urllib.error.URLError, OSError):
+            pass
+        time.sleep(5)
+    return False
+
+
+def tri_assiste(m, a):
+    """Mode démonstration du tri assisté (ADR-0023) : ses voisins (incidents résolus du jeu d'essai de TRI-12), le
+    tri activé, puis une panne probable de quatre incidents ouverts. Sans conteneur « features » joignable, le tri
+    reste coupé et seule la première partie est chargée."""
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tri-assiste.json'), encoding='utf-8') as f:
+        jeu = json.load(f)
+    services = {s['title']: s['id'] for s in appel('GET', '/api/services', m)}
+    def corps(titre, desc, theme, groupe=True):
+        t = jeu['themes'][theme] if theme else {}
+        return {'title': titre, 'description': desc, 'impact': 'Moyen', 'urgency': 'Moyenne', 'isMajor': False,
+                'category': t.get('categorie', ''), 'serviceId': services.get(t.get('service')),
+                **({'ownerType': 'Group', 'ownerId': t['groupe'], 'ownerDisplayName': t['groupe']} if groupe and t else {})}
+    for r in jeu['resolus']:
+        creer(m, '/api/incidents', {**corps(r['titre'], r['description'], r['theme']), 'resolution': r['resolution'],
+                                    'resolutionCode': 'Correctif appliqué'}, 'Résolu')
+    if not activer_tri(a):
+        print('Tri assisté non activé : conteneur « features » injoignable (profil « fonctionnalites »).')
+        return
+    # Après l'activation seulement : un événement n'est inscrit au fil que si une fonctionnalité le lit (OPT-12).
+    # La panne porte son service ; les incidents isolés n'en ont pas, pour ne rien relier par les règles.
+    for o in jeu['ouverts']:
+        c = corps(o['titre'], o['description'], o['theme'] if o['panne'] else None, groupe=False)
+        if o['panne'] is None:
+            c['category'] = ''
+        creer(m, '/api/incidents', c)
+    print('Tri assisté activé : voisins chargés, panne probable en formation.')
 
 
 if __name__ == '__main__':
