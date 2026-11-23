@@ -23,6 +23,7 @@ public sealed class FakeInternalApi : IAsyncLifetime
     public object Similar = new { semantic = true, neighbours = Array.Empty<object>() };
     public readonly ConcurrentQueue<JsonElement> SimilarQueries = new();
     public readonly ConcurrentQueue<JsonElement> Proposals = new();
+    public readonly ConcurrentQueue<JsonElement> Outages = new();
     public readonly ConcurrentQueue<string> Authorizations = new();
 
     public async Task InitializeAsync()
@@ -30,7 +31,12 @@ public sealed class FakeInternalApi : IAsyncLifetime
         var builder = WebApplication.CreateSlimBuilder();
         builder.WebHost.ConfigureKestrel(k => k.Listen(IPAddress.Loopback, 0));
         app = builder.Build();
-        app.Use(async (c, next) => { Authorizations.Enqueue(c.Request.Headers.Authorization.ToString()); await next(); });
+        // Le jeton du conteneur ne vaut que pour le port interne de l'API, pas pour le service d'embeddings.
+        app.Use(async (c, next) =>
+        {
+            if (c.Request.Path.StartsWithSegments("/internal")) Authorizations.Enqueue(c.Request.Headers.Authorization.ToString());
+            await next();
+        });
         app.MapGet("/internal/events", (long after) =>
         {
             if (EventsForbidden) return Results.StatusCode(403);
@@ -39,6 +45,28 @@ public sealed class FakeInternalApi : IAsyncLifetime
             return Results.Json(new { events = list, next = list.Count > 0 ? list[^1].GetProperty("id").GetInt64() : after, gap = false });
         });
         app.MapGet("/internal/incidents/{id:int}", (int id) => Incidents.TryGetValue(id, out var i) ? Results.Json(i) : Results.NotFound());
+        app.MapGet("/internal/incidents/open", (int after) => Results.Json(new
+        {
+            items = Incidents.OrderBy(i => i.Key).Where(i => i.Key > after).Select(i => JsonSerializer.SerializeToElement(i.Value, JsonSerializerOptions.Web))
+                .Where(i => i.GetProperty("incident").GetProperty("status").GetString() is "Nouveau" or "En cours" or "En attente").ToList(),
+            next = (int?)null,
+        }));
+        app.MapPost("/internal/outages", async (HttpContext c) =>
+        {
+            Outages.Enqueue(await JsonSerializer.DeserializeAsync<JsonElement>(c.Request.Body));
+            return Results.Json(new { id = Outages.Count, created = true }, statusCode: 201);
+        });
+        // Service d'embeddings factice : une dimension par mot clé, les autres textes à part.
+        app.MapPost("/api/embed", async (HttpContext c) =>
+        {
+            var body = await JsonSerializer.DeserializeAsync<JsonElement>(c.Request.Body);
+            var vectors = body.GetProperty("input").EnumerateArray().Select(t =>
+            {
+                var text = t.GetString()!.ToLowerInvariant();
+                return new[] { text.Contains("vpn") ? 1f : 0f, text.Contains("courriel") ? 1f : 0f, text.Contains("vpn") || text.Contains("courriel") ? 0f : 1f };
+            }).ToArray();
+            return Results.Json(new { embeddings = vectors });
+        });
         app.MapPost("/internal/search/similar", async (HttpContext c) =>
         {
             SimilarQueries.Enqueue(await JsonSerializer.DeserializeAsync<JsonElement>(c.Request.Body));
@@ -71,19 +99,39 @@ public class TicketTriageTests(FakeInternalApi api) : IClassFixture<FakeInternal
         {
             b.UseSetting("Features:Token", FakeInternalApi.Token);
             b.UseSetting("Api:Url", api.Url);
+            b.UseSetting("Embeddings:Url", api.Url);
             b.UseSetting("Events:PollMilliseconds", "50");
             b.UseSetting("Events:IdleMilliseconds", "100");
         });
 
-    private static object Incident(int id, string status, int perimeter = 7) => new
+    private static object Incident(int id, string status, int perimeter = 7, int? service = 1, int minutesAgo = 0, string title = "Outlook ne reçoit plus les courriels",
+        int[]? cis = null) => new
     {
         incident = new
         {
-            id, perimeterId = perimeter, reference = $"INC-{id}", title = "Outlook ne reçoit plus les courriels", description = "Depuis ce matin",
-            status, category = "", serviceId = 1, impact = "Moyen", ownerType = "User", ownerId = "hery.rakoto", ownerDisplayName = "Hery Rakoto",
+            id, perimeterId = perimeter, reference = $"INC-{id}", title, description = "Depuis ce matin",
+            status, category = "", serviceId = service, impact = "Moyen", ownerType = "User", ownerId = "hery.rakoto", ownerDisplayName = "Hery Rakoto",
+            createdAt = DateTime.UtcNow.AddMinutes(-minutesAgo),
         },
-        configurationItemIds = new[] { 5 },
+        configurationItemIds = cis ?? [5],
     };
+
+    private static long eventId = 1000;
+    private static void Event(FakeInternalApi api, string type, int incident, int perimeter) =>
+        api.Events.Enqueue(new { id = Interlocked.Increment(ref eventId), type, entityType = "incident", entityId = incident, perimeterId = perimeter, at = DateTime.UtcNow });
+
+    private static async Task<List<JsonElement>> OutagesWith(FakeInternalApi api, int member, Func<JsonElement, bool> match)
+    {
+        for (var i = 0; i < 100; i++)
+        {
+            var found = api.Outages.Where(o => o.GetProperty("members").EnumerateArray().Any(m => m.GetInt32() == member) && match(o)).ToList();
+            if (found.Count > 0) return found;
+            await Task.Delay(50);
+        }
+        return [];
+    }
+
+    private static bool Closed(JsonElement o) => o.TryGetProperty("closed", out var c) && c.GetBoolean();
 
     private static object Resolved(int id, string category) => new
     {
@@ -151,5 +199,57 @@ public class TicketTriageTests(FakeInternalApi api) : IClassFixture<FakeInternal
         api.EventsForbidden = false;
         var proposals = await WaitFor(api, 21, 1);
         Assert.Equal("impact", Assert.Single(proposals).GetProperty("field").GetString());
+    }
+
+    [Fact]
+    public async Task TRI_05_trois_incidents_d_un_service_forment_une_panne_signalee_une_fois_avec_l_impact_eleve()
+    {
+        // Scénario de TRI-05 : trois incidents ouverts sur Messagerie en 20 minutes au Siège ; un quatrième à l'Usine.
+        api.Incidents[31] = Incident(31, "Nouveau", perimeter: 9, minutesAgo: 20, cis: []);
+        api.Incidents[32] = Incident(32, "En cours", perimeter: 9, minutesAgo: 10, cis: []);
+        api.Incidents[33] = Incident(33, "Nouveau", perimeter: 9, minutesAgo: 0, cis: []);
+        api.Incidents[34] = Incident(34, "Nouveau", perimeter: 10, minutesAgo: 5, cis: []);
+        foreach (var (id, p) in new[] { (31, 9), (32, 9), (33, 9), (34, 10) }) Event(api, "incident.created", id, p);
+
+        using var container = Container();
+        _ = container.Services;
+        var signal = Assert.Single(await OutagesWith(api, 31, o => !Closed(o)));
+        Assert.Equal([31, 32, 33], signal.GetProperty("members").EnumerateArray().Select(m => m.GetInt32()));
+        Assert.Equal(("service", 1, "3 incidents ouverts sur le service Messagerie"),
+            (signal.GetProperty("basis").GetString(), signal.GetProperty("serviceId").GetInt32(), signal.GetProperty("reasons").GetString()));
+        Assert.DoesNotContain(api.Outages, o => o.GetProperty("members").EnumerateArray().Any(m => m.GetInt32() == 34));   // TRI-11
+
+        // TRI-04 : chaque incident de la panne reçoit l'impact Élevé proposé, motivé par elle.
+        foreach (var id in new[] { 31, 32, 33 })
+        {
+            var impact = (await WaitFor(api, id, 1)).First(p => p.GetProperty("field").GetString() == "impact");
+            Assert.Equal(("Élevé", "Panne probable : 3 incidents ouverts sur le service Messagerie"),
+                (impact.GetProperty("after").GetString(), impact.GetProperty("reasons").GetString()));
+        }
+        await Task.Delay(300);
+        Assert.Single(api.Outages, o => o.GetProperty("members").EnumerateArray().Any(m => m.GetInt32() == 31));   // une seule fois
+    }
+
+    [Fact]
+    public async Task TRI_06_par_le_sens_puis_un_incident_resolu_sort_de_l_index_et_la_panne_se_ferme()
+    {
+        // Sans service commun ni CI : seul le sens les lie.
+        api.Incidents[41] = Incident(41, "Nouveau", perimeter: 11, service: null, minutesAgo: 30, title: "VPN injoignable depuis le site de Lyon", cis: []);
+        api.Incidents[42] = Incident(42, "Nouveau", perimeter: 11, service: null, minutesAgo: 20, title: "Impossible de me connecter au VPN", cis: []);
+        api.Incidents[43] = Incident(43, "Nouveau", perimeter: 11, service: null, minutesAgo: 10, title: "Le VPN coupe sans cesse", cis: []);
+        api.Incidents[44] = Incident(44, "Nouveau", perimeter: 11, service: null, minutesAgo: 5, title: "Imprimante bloquée", cis: []);
+        foreach (var id in new[] { 41, 42, 43, 44 }) Event(api, "incident.created", id, 11);
+
+        using var container = Container();
+        _ = container.Services;
+        var formed = Assert.Single(await OutagesWith(api, 41, o => !Closed(o)));
+        Assert.Equal([41, 42, 43], formed.GetProperty("members").EnumerateArray().Select(m => m.GetInt32()));
+        Assert.Equal(("sens", "3 incidents ouverts aux descriptions proches"), (formed.GetProperty("basis").GetString(), formed.GetProperty("reasons").GetString()));
+
+        // L'un est résolu : il sort de l'index, il n'en reste que deux, la panne est signalée fermée.
+        api.Incidents[42] = Incident(42, "Résolu", perimeter: 11, service: null, minutesAgo: 20, title: "Impossible de me connecter au VPN", cis: []);
+        Event(api, "incident.resolved", 42, 11);
+        var closed = Assert.Single(await OutagesWith(api, 41, Closed));
+        Assert.Equal([41, 42, 43], closed.GetProperty("members").EnumerateArray().Select(m => m.GetInt32()));
     }
 }

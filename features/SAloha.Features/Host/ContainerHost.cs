@@ -29,6 +29,8 @@ public static class ContainerHost
     {
         // Port interne de l'API (Api:Url), avec le jeton du conteneur ; puis le fil d'événements (OPT-12).
         builder.Services.AddHttpClient<ApiClient>(c => c.Timeout = TimeSpan.FromSeconds(30));
+        // Service d'embeddings du compose (Embeddings:Url) : le sens de la corrélation du tri (TRI-06).
+        builder.Services.AddHttpClient<EmbeddingClient>();
         builder.Services.AddSingleton<EventLoop>();
         builder.Services.AddHostedService(sp => sp.GetRequiredService<EventLoop>());
         // Une fonctionnalité s'inscrit comme IContainerFeature (déclarée par /health) et, si elle lit le fil,
