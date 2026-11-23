@@ -5,12 +5,14 @@ import { dateTimeFr } from '../../fields'
 import { ITEM_TYPES, hrefOf } from '../../itemTypes'
 
 const ACTIONS = ['Création', 'Modification', 'Transition', 'Transition forcée', 'Suppression', 'Lien ajouté', 'Lien retiré']
+// OPT-08 : origine d'une modification (saisie, ou proposition appliquée d'une fonctionnalité optionnelle).
+const ORIGINS = ['Saisie', 'Tri assisté des tickets', 'CMDB assistée']
 const iso = d => d.toISOString().slice(0, 10)
 
 /** Administration → Journal d'audit (ADM-30, ADM-31) : toutes pratiques, filtres, export CSV. */
 export default function AuditLog() {
   const today = new Date()
-  const [f, setF] = useState({ author: '', type: '', action: '', reference: '',
+  const [f, setF] = useState({ author: '', type: '', action: '', reference: '', origin: '',
     from: iso(new Date(today.getTime() - 29 * 864e5)), to: iso(today) })
   const [page, setPage] = useState(1)
   const [data, setData] = useState(null)
@@ -38,6 +40,10 @@ export default function AuditLog() {
           <option value="">Toutes les actions</option>
           {ACTIONS.map(a => <option key={a}>{a}</option>)}
         </select>
+        <select style={{ maxWidth: 200 }} value={f.origin} onChange={set('origin')} aria-label="Origine">
+          <option value="">Toutes les origines</option>
+          {ORIGINS.map(o => <option key={o}>{o}</option>)}
+        </select>
         <label className="check">Du <input type="date" value={f.from} max={f.to} onChange={set('from')} /></label>
         <label className="check">au <input type="date" value={f.to} min={f.from} onChange={set('to')} /></label>
         <button className="btn" onClick={search}>Filtrer</button>
@@ -56,7 +62,7 @@ export default function AuditLog() {
                 <td>{a.action === 'Suppression' || !ITEM_TYPES[a.entityType] ? <b>{a.reference}</b>
                   : <Link to={hrefOf(a.entityType, a.entityId)}><b>{a.reference}</b></Link>}
                   <div className="muted small">{ITEM_TYPES[a.entityType]?.label ?? a.entityType}</div></td>
-                <td>{a.action}</td>
+                <td>{a.action}{a.origin && a.origin !== 'Saisie' && <div><span className="badge t-progress">{a.origin}</span></div>}</td>
                 <td className="small">{a.field && <><b>{a.field}</b> : </>}{a.oldValue != null && <span className="muted">{a.oldValue} → </span>}{a.newValue}
                   {a.reason && <div className="muted">Motif : {a.reason}</div>}</td>
               </tr>))}

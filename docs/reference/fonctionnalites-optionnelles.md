@@ -47,14 +47,14 @@ Une fonctionnalité future rejoint le conteneur `features`, sans image ni profil
 
 | ID | Règle | Statut | Lot |
 |---|---|---|---|
-| OPT-01 | **Disponible, activée, coupée** : une fonctionnalité est **disponible** quand l'adresse de son conteneur est configurée (`Features:Url` pour le conteneur `features`, `Mcp:Url` pour `mcp`) et que le conteneur répond à son contrôle de santé, reconnaît son jeton (OPT-10) et déclare la fonctionnalité parmi les siennes ; elle est **activée** par l'Admin. À l'installation, toutes sont coupées | 🔜 | 3 |
-| OPT-02 | **Administration › Fonctionnalités optionnelles** (Admin) : pour chacune, état (indisponible, coupée, activée), état du conteneur (joignable, version, dernier contrôle), dépendances et leur état, réglages propres, date et auteur du dernier changement ; boutons « Activer » et « Couper », avec confirmation | 🔜 | 3 |
-| OPT-03 | **Activation refusée** (400, motif affiché) si le conteneur est injoignable, si son jeton est refusé, ou si une dépendance obligatoire manque (CMDB assistée sans modèle de langage réglé). Une dépendance facultative absente (service d'embeddings du tri) n'empêche pas l'activation : la page dit ce qui manque et ce que la fonctionnalité fait sans | 🔜 | 3 |
-| OPT-04 | **Coupée = absente** : l'API répond 404 sur les routes de la fonctionnalité, refuse au conteneur ses routes internes (403) et ne lui sert plus ses événements ; le conteneur n'exécute pas une fonctionnalité coupée ; l'interface ne montre ni entrée de menu, ni encadré, ni réglage. `GET /api/features` (tout utilisateur connecté) renvoie la seule liste des clés activées, que le registre de l'interface lit à la connexion et à l'ouverture de la console. Une coupure prend effet en moins de 30 secondes | 🔜 | 3 |
-| OPT-05 | **Conteneur perdu** : une fonctionnalité activée dont le conteneur ne répond plus reste activée (toutes celles du conteneur `features` à la fois) ; la page Santé la signale « Dégradé », ses suggestions et propositions déjà produites restent visibles, et rien n'est bloqué dans les pratiques | 🔜 | 3 |
-| OPT-06 | **Données conservées** : couper une fonctionnalité ne supprime rien ; ses propositions restent en base et reparaissent à la réactivation. Ce qu'un conteneur tient en mémoire (index des incidents ouverts du tri) se reconstruit à son démarrage | 🔜 | 3 |
-| OPT-07 | **Traçabilité** : chaque activation, coupure ou réglage modifié est tracé au journal d'audit (type `parametre`, référence « Fonctionnalités · <nom> ») ; la page **Santé** ([ADM-20](administration.md#3-santé)) liste chaque fonctionnalité activée, son conteneur et ses dépendances | 🔜 | 3 |
-| OPT-08 | **Origine des modifications** : chaque ligne du journal d'audit porte une origine (`Origin`) : « Saisie » par défaut, « Tri assisté des tickets » ou « CMDB assistée » quand la modification applique une proposition (OPT-14). L'onglet Historique des fiches et le journal global l'affichent et la filtrent. Les lignes antérieures valent « Saisie » | 🔜 | 3 |
+| OPT-01 | **Disponible, activée, coupée** : une fonctionnalité est **disponible** quand l'adresse de son conteneur est configurée (`Features:Url` pour le conteneur `features`, `Mcp:Url` pour `mcp`) et que le conteneur répond à son contrôle de santé, reconnaît son jeton (OPT-10) et déclare la fonctionnalité parmi les siennes ; elle est **activée** par l'Admin. À l'installation, toutes sont coupées | ✅ | |
+| OPT-02 | **Administration › Fonctionnalités optionnelles** (Admin) : pour chacune, état (indisponible, coupée, activée), état du conteneur (joignable, version, dernier contrôle), dépendances et leur état, réglages propres, date et auteur du dernier changement ; boutons « Activer » et « Couper », avec confirmation | ✅ | |
+| OPT-03 | **Activation refusée** (400, motif affiché) si le conteneur est injoignable, si son jeton est refusé, ou si une dépendance obligatoire manque (CMDB assistée sans modèle de langage réglé). Une dépendance facultative absente (service d'embeddings du tri) n'empêche pas l'activation : la page dit ce qui manque et ce que la fonctionnalité fait sans | ✅ | |
+| OPT-04 | **Coupée = absente** : l'API répond 404 sur les routes de la fonctionnalité, refuse au conteneur ses routes internes (403) et ne lui sert plus ses événements ; le conteneur n'exécute pas une fonctionnalité coupée ; l'interface ne montre ni entrée de menu, ni encadré, ni réglage. `GET /api/features` (tout utilisateur connecté) renvoie la seule liste des clés activées, que le registre de l'interface lit à la connexion et à l'ouverture de la console. Une coupure prend effet en moins de 30 secondes | ✅ | |
+| OPT-05 | **Conteneur perdu** : une fonctionnalité activée dont le conteneur ne répond plus reste activée (toutes celles du conteneur `features` à la fois) ; la page Santé la signale « Dégradé », ses suggestions et propositions déjà produites restent visibles, et rien n'est bloqué dans les pratiques | ✅ | |
+| OPT-06 | **Données conservées** : couper une fonctionnalité ne supprime rien ; ses propositions restent en base et reparaissent à la réactivation. Ce qu'un conteneur tient en mémoire (index des incidents ouverts du tri) se reconstruit à son démarrage | ✅ (activation et coupure ne suppriment rien ; propositions : OPT-14, index du tri : TRI-06) | |
+| OPT-07 | **Traçabilité** : chaque activation, coupure ou réglage modifié est tracé au journal d'audit (type `parametre`, référence « Fonctionnalités », champ : le nom de la fonctionnalité, valeurs « coupée » et « activée ») ; une demande qui ne change rien n'écrit rien ; la page **Santé** ([ADM-20](administration.md#3-santé)) liste chaque fonctionnalité activée, son conteneur et ses dépendances | ✅ | |
+| OPT-08 | **Origine des modifications** : chaque ligne du journal d'audit porte une origine (`Origin`) : « Saisie » par défaut, « Tri assisté des tickets » ou « CMDB assistée » quand la modification applique une proposition (OPT-14). Le journal global l'affiche, la filtre et l'exporte (colonne « Origine ») ; l'onglet Historique des fiches la marque sur les lignes qui ne viennent pas d'une saisie, et se filtre par origine quand il en compte plusieurs. Les lignes antérieures valent « Saisie » | ✅ | |
 
 ## 3. Contrat entre l'API et le conteneur des fonctionnalités
 
@@ -94,9 +94,10 @@ aujourd'hui, la seule [CMDB assistée](cmdb-assistee.md). Le tri assisté des ti
 
 | Endroit | Contenu | Statut |
 |---|---|---|
-| Administration › Fonctionnalités optionnelles | État des trois fonctionnalités, conteneurs, dépendances, activation (OPT-01 à OPT-03), réglages propres ; sous-page **Modèle de langage** (OPT-20 à OPT-26) | 🔜 |
-| Administration › Santé | Une ligne par conteneur (`features`, `mcp`) et par fonctionnalité activée (OPT-05, OPT-07) | 🔜 |
-| Onglet Historique, journal global | Colonne et filtre « Origine » (OPT-08) | 🔜 |
+| Administration › Fonctionnalités optionnelles | État des trois fonctionnalités, conteneurs, dépendances, activation et coupure avec confirmation (OPT-01 à OPT-03) | ✅ |
+| Administration › Fonctionnalités optionnelles | Réglages propres de chaque fonctionnalité ; sous-page **Modèle de langage** (OPT-20 à OPT-26) | 🔜 |
+| Administration › Santé | Une ligne par conteneur (`features`, `mcp`) configuré ou porteur d'une fonctionnalité activée, et par fonctionnalité activée (OPT-05, OPT-07) | ✅ |
+| Onglet Historique, journal global | Origine marquée et filtrée ; colonne « Origine » de l'export (OPT-08) | ✅ |
 | Pratiques concernées | Encadrés de propositions, propres à chaque fonctionnalité ([tri](tri-assiste-des-tickets.md#4-interface), [CMDB](cmdb-assistee.md#4-interface)) | 🔜 |
 
 ## 6. API
@@ -107,6 +108,7 @@ aujourd'hui, la seule [CMDB assistée](cmdb-assistee.md). Le tri assisté des ti
 | `GET /api/admin/features`, `PUT /api/admin/features/{key}` | Admin | État, activation, coupure, réglages propres (OPT-01 à OPT-03) |
 | `GET/PUT /api/admin/settings/language-model`, `POST …/language-model/test` | Admin | Modèle de langage (OPT-20 à OPT-26) |
 | `GET /api/proposals?target=&feature=&status=`, `POST /api/proposals/{id}/accept` (valeur corrigée facultative), `POST /api/proposals/{id}/reject` | User, droit de modifier la cible | Propositions et décision (OPT-15) |
+| `GET {Features:Url}/health`, `GET {Mcp:Url}/health` (conteneurs) | Jeton du conteneur `features` ; aucun pour `mcp` | Contrôle de santé (OPT-01) : `200` et `{ "version": "…", "features": ["<clé>", …] }` ; `401` ou `403` : jeton refusé ; 3 s au plus |
 | `GET /internal/events`, `POST /internal/proposals`, `GET /internal/language-model`, lectures propres à chaque fonctionnalité | Jeton du conteneur `features`, port interne | Contrat (OPT-10 à OPT-14, OPT-23) |
 
 ## 7. Exploitation

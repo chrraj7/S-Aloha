@@ -58,6 +58,7 @@ l'historique est dans la table `__EFMigrationsHistory`
 | `ProblemOwner` | `Problems` passe sur le socle `Record` : colonnes `OwnerType`, `OwnerId`, `OwnerDisplayName` (gestionnaire du problème, PRB-21) |
 | `Perimeters` | Tables `Perimeters` (nom unique, description, suppression douce) et `PerimeterAssignments` (principal AD utilisateur ou groupe, rôle Manager ou User ; unique par périmètre, principal et rôle) ; périmètre « Organisation » (Id 1) créé ; colonne `PerimeterId` (FK, index, défaut 1) sur `Problems` et chaque table de pratique : l'existant est rattaché à « Organisation » ([périmètres](perimetres.md), PER-10) |
 | `AuditJournal` | Table `AuditEntries` du journal d'audit (SOC-20) : type et identifiant de l'enregistrement, référence recopiée, action, champ, ancienne et nouvelle valeur, motif, auteur, date ; index sur (type, identifiant) et sur la date |
+| `OptionalFeatures` | Table `OptionalFeatures` (clé de la fonctionnalité, activée ou non, date et auteur du dernier changement, OPT-01) ; colonne `AuditEntries.Origin` (30 caractères, « Saisie » pour les lignes existantes, OPT-08) |
 | `ItilModules` | Les dix tables des autres processus et des liens (`ItemLinks`, `Incidents`, `ServiceRequests`, `Changes`, `ConfigurationItems`, `CiRelationships`, `Services`, `Agreements`, `KnowledgeArticles`, `Improvements`) ; aucune modification des tables existantes |
 
 **Reprise d'une base créée par `EnsureCreated`** (installations antérieures, sans

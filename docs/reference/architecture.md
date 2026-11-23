@@ -49,6 +49,7 @@ backend/                              # projet SAloha.Api (namespace SAloha.Api.
 │   ├── Data/                         # AppDbContext, References (XXX-AAAA-NNNN), DatabaseSchema + Migrations/
 │   ├── Comments/                     # Comment, CommentsController (fil de commentaires, SOC-24)
 │   ├── Directory/                    # DirectoryController, DirectoryEntry (recherche AD)
+│   ├── Features/                     # fonctionnalités optionnelles (ADR-0023) : FeatureCatalog, FeatureGate et [RequiresFeature], ContainerProbe, FeatureStatus, FeaturesController
 │   ├── Itil/                         # Priority (matrice impact × urgence → P1–P4)
 │   ├── Links/                        # ItemLink, registre ItemLinks, LinksController (liens inter-processus)
 │   ├── Notifications/                # Notification, NotificationRead, Notifier (émission), DatedEvents (événements datés), NotificationsController (SOC-21)
@@ -151,6 +152,8 @@ les entités EF sont renvoyées avec leurs navigations (`Analysis → Problem �
 | Méthode / Route | Policy | Rôle métier | Emplacement |
 |---|---|---|---|
 | GET `/api/admin/users`, GET `/api/admin/health`, GET `/api/admin/audit`, GET `/api/admin/audit/export`, GET `/api/admin/duplicates`, POST `…/duplicates/merge`, POST `…/duplicates/dismiss` | Admin | Utilisateurs et rôles (annuaire, ADM-10 à ADM-13), doublons (détection, fusion, ADM-40 à ADM-42), santé de la plateforme, journal d'audit global et export CSV (ADM-20 à ADM-31) | Core/Administration |
+| GET `/api/features` | User | Clés des fonctionnalités optionnelles activées, lues par le registre de l'interface (OPT-04) | Core/Features |
+| GET `/api/admin/features`, PUT `/api/admin/features/{key}` | Admin | Fonctionnalités optionnelles : conteneur contrôlé, dépendances, activation et coupure tracées (OPT-01 à OPT-07, [ADR-0023](../decisions/adr-0023-fonctionnalites-optionnelles-et-modele-de-langage.md)) | Core/Features |
 | GET/PUT `/api/admin/settings/mail`, POST `…/mail/test`, GET/PUT `/api/admin/settings/storage`, POST `…/storage/test` | Admin | Messagerie (SMTP) et stockage S3 des pièces jointes, réglés et essayés depuis la console (ADM-60 à ADM-63, [ADR-0020](../decisions/adr-0020-pieces-jointes-s3-et-smtp-configurables.md)) | Core/Platform |
 | GET `/api/categories?practice=`, POST, PUT `/{id}`, DELETE `/{id}` | User (lecture), Manager (écriture) | Catégories d'incident et de problème (ADM-50 à ADM-52, SOC-27) | Core/Itil |
 | GET `/health/live`, GET `/health/ready` | — (anonyme) | Sondes de l'orchestrateur (O1) : vie du processus ; disponibilité, base comprise (503 sinon). Réponse réduite à l'état (`Healthy`, `Unhealthy`) | Program.cs, Core/Observability |

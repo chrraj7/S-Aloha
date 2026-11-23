@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, setUser } from '../../api'
+import { refreshFeatures } from '../features'
 import { BrandMark, IconConsole, IconProblem, IconChange, IconReport } from '../components/icons'
 import { SOURCE_URL, LICENSE_LABEL } from '../about'
 
@@ -29,6 +30,7 @@ export default function Login() {
     setError(''); setBusy(true)
     try {
       setUser(await api.login(username, password))
+      refreshFeatures(true)   // OPT-04 : fonctionnalités activées, lues à la connexion
       nav('/')
     } catch (e) { setError(e.message) }
     finally { setBusy(false) }

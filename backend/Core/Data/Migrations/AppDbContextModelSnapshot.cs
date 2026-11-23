@@ -176,6 +176,11 @@ namespace SAloha.Api.Core.Data.Migrations
                     b.Property<string>("OldValue")
                         .HasColumnType("text");
 
+                    b.Property<string>("Origin")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
                     b.Property<string>("Reason")
                         .HasColumnType("text");
 
@@ -237,6 +242,27 @@ namespace SAloha.Api.Core.Data.Migrations
                     b.HasIndex("TargetType", "TargetId");
 
                     b.ToTable("Comments");
+                });
+
+            modelBuilder.Entity("SAloha.Api.Core.Features.OptionalFeature", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("OptionalFeatures");
                 });
 
             modelBuilder.Entity("SAloha.Api.Core.Itil.Category", b =>

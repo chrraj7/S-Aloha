@@ -20,6 +20,7 @@ frontend/
     ├── core/                     # socle UI, transverse aux processus
     │   ├── about.js              # URL du code source et licence (AGPLv3, VITE_SOURCE_URL)
     │   ├── fields.js             # champs communs (titre, description, responsable AD), formats de date
+    │   ├── features.js           # fonctionnalités optionnelles activées (GET /api/features), useFeatures, OPT-04
     │   ├── itemTypes.js          # types reliables → libellé et page (miroir de ItemLinks côté API)
     │   ├── components/
     │   │   ├── Layout.jsx        # sidebar (desktop) / tiroir (mobile), construite depuis le registre
@@ -122,7 +123,7 @@ sauf le registre `modules/registry.js` (lu par `Layout`).
 | `/admin/perimeters`, `/admin/perimeters/:id` | `core/pages/admin/Perimeters`, `PerimeterDetail` | Administration › Périmètres (Admin) |
 | `/preferences` | `core/pages/Preferences` | Mes préférences : notifications par courriel (SOC-22), icône sous l'utilisateur dans la barre latérale |
 | `/admin/search` | `core/pages/SearchIndexAdmin` | Administration › Index de recherche (Admin) |
-| `/admin/users`, `/admin/platform`, `/admin/health`, `/admin/audit`, `/admin/duplicates` | `core/pages/admin/Users`, `PlatformSettings`, `Health`, `AuditLog`, `Duplicates` | Administration › Utilisateurs et rôles, Messagerie et stockage, Santé, Journal d'audit, Nettoyage des doublons (Admin) |
+| `/admin/users`, `/admin/platform`, `/admin/features`, `/admin/health`, `/admin/audit`, `/admin/duplicates` | `core/pages/admin/Users`, `PlatformSettings`, `OptionalFeatures`, `Health`, `AuditLog`, `Duplicates` | Administration › Utilisateurs et rôles, Messagerie et stockage, Fonctionnalités optionnelles, Santé, Journal d'audit, Nettoyage des doublons (Admin) |
 | `/settings/categories` | `core/pages/settings/Categories` | Paramétrage › Catégories d'incident et de problème (Manager, Admin) |
 | `/settings/discovery` | `modules/service-configuration-management/pages/DiscoverySettings` | Paramétrage › Découverte du réseau (Manager, Admin) ; onglets `?tab=` : tâches, identifiants, fins de support, clés et certificats, constructeurs (OUI) |
 | `/settings/nis2` | `modules/compliance-assessment/pages/ReferentialSettings` | Paramétrage › Référentiel NIS 2 (Admin) |
@@ -150,7 +151,7 @@ Toutes les routes sauf `/login` passent par `Private` (jeton présent) et sont r
 - `SECTIONS` — les sections de menu après les groupes de modules : **Paramétrage**
   (`id: 'settings'`, `roles: ['Manager','Admin']`) et **Administration**
   (`id: 'administration'`, `roles: ['Admin']`), chacune avec ses `entries`. Une entrée :
-  `{ href, label, description, icon, roles? }`, où `icon` est une clé de `SECTION_ICONS`
+  `{ href, label, description, icon, roles?, feature? }`, où `icon` est une clé de `SECTION_ICONS`
   **propre à l'entrée** (`'categories'`, `'discovery'`, `'users'`, `'health'`…) : deux
   entrées ne partagent jamais une icône, sans quoi on ne les distingue plus dans le rail
   (vérifié par `Layout.rail.test.jsx`, modules compris). Une section n'est affichée que si au moins une de ses
@@ -158,7 +159,8 @@ Toutes les routes sauf `/login` passent par `Private` (jeton présent) et sont r
   `Layout.sections.test.jsx` sur le registre réel). Le titre de la section
   Administration porte un marqueur ambre (`.nav-section.admin`) ;
 - `roles` (section, module ou sous-entrée, facultatif) : rôles qui voient l'entrée ; absent, tous.
-  `visibleFor(entry, role)` décide ; la barre latérale masque les entrées réservées (l'API
+  `visibleFor(entry, role, features)` décide (une entrée qui porte `feature` exige en plus que cette
+  fonctionnalité optionnelle soit activée, OPT-04) ; la barre latérale masque les entrées réservées (l'API
   reste seule juge des droits) ;
 
 **Sous-entrée filtrée** : un `href` peut porter un filtre de registre
@@ -324,6 +326,7 @@ Section réservée à l'**Admin** ; elle apparaît avec sa première entrée imp
 | Entrée | Contenu | Règle | Statut |
 |---|---|---|---|
 | Utilisateurs et rôles (`/admin/users`) | Membres des groupes AD de rôle (annuaire), rôle effectif par périmètre et sa source, dernière connexion ; mapping groupes AD → rôles (lecture) ; affectations « sans accès » | [ADM-10 à ADM-13](administration.md) | ✅ |
+| Fonctionnalités optionnelles (`/admin/features`) | Tri assisté des tickets, CMDB assistée, serveur MCP : état (indisponible, coupée, activée), conteneur contrôlé, dépendances, activer ou couper avec confirmation ; une entrée de navigation qui porte `feature` n'apparaît qu'activée (`core/features.js`, lu à la connexion et à l'ouverture de la console) | [OPT-01 à OPT-04](fonctionnalites-optionnelles.md) | ✅ |
 | Messagerie et stockage (`/admin/platform`) | SMTP (serveur, chiffrement, compte, expéditeur, adresse de l'interface, courriel d'essai) ; stockage S3 (adresse, bucket, clés, taille maximale, essai de dépôt) ; secrets jamais réaffichés | [ADM-60 à ADM-63](administration.md) | ✅ |
 | Santé (`/admin/health`) | Base, annuaire, embeddings, coffre, messagerie, stockage, tâches de fond, version déployée | [ADM-20, ADM-21](administration.md) | ✅ |
 | Journal d'audit (`/admin/audit`) | Journal global, filtrable par auteur, pratique, action, référence, période ; pages de 100 ; export CSV | [ADM-30, ADM-31](administration.md) | ✅ |

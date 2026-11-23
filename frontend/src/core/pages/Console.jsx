@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import usePerimeters from '../usePerimeters'
 import { api, getUser } from '../../api'
+import { refreshFeatures } from '../features'
 import { ITEM_TYPES, hrefOf } from '../itemTypes'
 
 const badge = s => s.replace(/[ é]/g, m => (m === ' ' ? '' : 'e'))
@@ -78,6 +79,8 @@ export default function Console() {
   const nav = useNavigate()
   // PER-09 : la console couvre mes périmètres ; avec plusieurs, on peut n'en regarder qu'un.
   useEffect(() => { api.console.get(perimeter).then(setC).catch(e => setError(e.message)) }, [perimeter])
+  // OPT-04 : l'ouverture de la console relit les fonctionnalités activées.
+  useEffect(() => { refreshFeatures(true) }, [])
   if (error) return <div className="error">{error}</div>
   if (!c) return <p className="muted">Chargement…</p>
 
