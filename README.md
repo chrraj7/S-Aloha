@@ -4,21 +4,20 @@
 
 # S-Aloha
 
-La plateforme ITIL qui se branche sur votre Active Directory<br/>
+La plateforme ITIL libre qui **aide à trier les tickets** et **à tenir la CMDB à jour**,<br/>
 et montre à chacun **ce qui requiert son intervention, maintenant**.
 
-**10 pratiques ITIL 4** reliées entre elles · **plus de 250 règles de gestion** · **NIS 2** intégré · **on-prem** et libre
+**Tri assisté des tickets** · **CMDB assistée** · **10 pratiques ITIL 4** reliées entre elles · **NIS 2** intégré · **on-prem** et libre
 
 [![CI](https://github.com/chrraj7/S-Aloha/actions/workflows/ci.yml/badge.svg)](https://github.com/chrraj7/S-Aloha/actions/workflows/ci.yml)
 ![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)
 ![React 19](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![PostgreSQL 16](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
 ![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
-![Active Directory](https://img.shields.io/badge/Auth-Active%20Directory-0078D4)
 [![Licence AGPLv3](https://img.shields.io/badge/Licence-AGPLv3-A42E2B)](LICENSE)
 [![Étoiles](https://img.shields.io/github/stars/chrraj7/S-Aloha?style=flat&logo=github&label=%C3%A9toiles)](https://github.com/chrraj7/S-Aloha/stargazers)
 
-[Fonctionnalités](#fonctionnalités) · [Aperçu](#aperçu) · [Essayer](#essayer-en-5-minutes) · [Feuille de route](#feuille-de-route) · [Contribuer](#contribuer-et-soutenir) · [English](#english)
+[Fonctionnalités assistées](#-fonctionnalités-assistées) · [Fonctionnalités](#fonctionnalités) · [Aperçu](#aperçu) · [Essayer](#essayer-en-5-minutes) · [Feuille de route](#feuille-de-route) · [Contribuer](#contribuer-et-soutenir) · [English](#english)
 
 <br/>
 
@@ -30,10 +29,18 @@ et montre à chacun **ce qui requiert son intervention, maintenant**.
 
 ## Pourquoi S-Aloha
 
-**🔐 Branché sur votre annuaire, dès le premier jour**
-Vos utilisateurs se connectent avec leur compte Windows. Les droits suivent vos groupes
-Active Directory : aucun compte à créer, aucun mot de passe stocké. Décisions et visibilité
-se limitent au **périmètre** de chacun : direction, site ou entité.
+**🔀 Des tickets triés dès la saisie** — *arrive avec la première version stable*
+Pendant qu'un agent saisit un incident, S-Aloha suggère sa catégorie, son service, son
+groupe et son impact, d'après les incidents déjà résolus qui lui ressemblent, et dit
+pourquoi. Plusieurs incidents ouverts sur le même service, ou qui décrivent la même panne :
+la **panne probable** est signalée, et le rattachement à un incident parent proposé.
+L'agent décide ; rien n'est appliqué seul.
+
+**🧹 Une CMDB qui se tient à jour avec vous** — *arrive avec la première version stable*
+Un modèle de langage, dans votre SI ou hébergé selon le choix de votre organisation,
+propose de renommer, normaliser, reclasser, fusionner les doublons et relier les CI, et
+aide au rapprochement de ce que la découverte trouve. Chaque proposition s'affiche avant et
+après ; un gestionnaire la décide. Les données envoyées sont pseudonymisées.
 
 **🎯 Une console qui dit quoi faire**
 Chacun arrive sur ce qui l'attend, classé par criticité : incidents majeurs, SLA en risque,
@@ -57,17 +64,46 @@ fiche. Le modèle tourne chez vous ; sans lui, la recherche reste plein texte.
 
 **🏠 Chez vous, en une commande, et libre**
 On-prem, quatre containers (dont la recherche sémantique, facultative) : vos données restent
-dans votre SI. Logiciel libre sous AGPLv3 : pas de licence par utilisateur, pas de
+dans votre SI. Les fonctionnalités assistées tournent dans un conteneur à part, que l'Admin
+active ou coupe. Logiciel libre sous AGPLv3 : pas de licence par utilisateur, pas de
 dépendance à un éditeur.
+
+**🏢 Intégré à l'entreprise**
+Connexion par l'Active Directory de l'organisation, rôles tirés de ses groupes, aucun
+compte à créer ; décisions et visibilité limitées au **périmètre** de chacun : direction,
+site ou entité.
 
 ## Pour qui
 
-- Les **DSI d'organisations sous Active Directory** — PME, ETI, collectivités,
-  établissements publics — qui veulent des pratiques ITIL 4 sans outil propriétaire.
+- Les **DSI** — PME, ETI, collectivités, établissements publics — qui veulent des
+  pratiques ITIL 4 sans outil propriétaire, et une aide concrète pour trier les tickets
+  et tenir la CMDB.
 - Les **entités soumises à NIS 2**, qui évaluent leur conformité et suivent leurs écarts au
   même endroit que leurs incidents et leurs changements.
 - Les **équipes support et exploitation**, les **gestionnaires de processus** et les
   **chefs de projet** de la DSI : un rôle applicatif chacun, tiré des groupes AD.
+
+## ✨ Fonctionnalités assistées
+
+Activées ou coupées par l'Admin, elles tournent hors de l'API, dans un conteneur à part :
+une panne de l'une d'elles n'atteint jamais le reste. Elles **proposent** ; une personne
+décide, et le journal d'audit garde l'origine de chaque modification. Spécifiées règle par
+règle, elles arrivent avec la **première version stable**
+([fonctionnalités optionnelles](docs/reference/fonctionnalites-optionnelles.md)).
+
+- **[Tri assisté des tickets](docs/reference/tri-assiste-des-tickets.md)** — catégorie,
+  service, groupe et impact suggérés à la saisie par vote des incidents résolus les plus
+  proches, avec leurs motifs ; incidents ouverts rapprochés par leur service, leur CI ou
+  leur sens ; **panne probable** signalée aux gestionnaires, rattachement à un parent et
+  incident majeur proposés. Sans modèle de langage : il s'appuie sur la recherche hybride.
+- **[CMDB assistée](docs/reference/cmdb-assistee.md)** — un modèle de langage, dans le SI
+  ou hébergé au choix de l'organisation, propose de renommer selon votre convention,
+  normaliser systèmes et constructeurs, reclasser, fusionner les doublons, relier les CI et
+  aider au rapprochement du sas de découverte ; chaque proposition est décidée par un
+  gestionnaire, avant et après côte à côte ; données pseudonymisées.
+- **[Serveur MCP](docs/reference/serveur-mcp.md)** — les assistants de vos utilisateurs
+  interrogent S-Aloha en **lecture seule**, avec les droits de chacun, par des jetons
+  personnels révocables.
 
 ## Fonctionnalités
 
@@ -142,23 +178,23 @@ dépendance à un éditeur.
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/screenshots/01-connexion.png" alt="Connexion" /><br/><b>Connexion</b> — avec le compte Active Directory</td>
-    <td width="50%"><img src="docs/screenshots/03-problemes.png" alt="Registre des problèmes" /><br/><b>Registre des problèmes</b> — statut, priorité P1–P4 calculée</td>
+    <td width="50%"><img src="docs/screenshots/09-incidents.png" alt="Registre des incidents" /><br/><b>Registre des incidents</b> — priorité, service, état du SLA</td>
+    <td width="50%"><img src="docs/screenshots/12-configuration-relations.png" alt="CI et relations" /><br/><b>Configuration</b> — éléments de configuration et leurs dépendances</td>
   </tr>
   <tr>
+    <td><img src="docs/screenshots/03-problemes.png" alt="Registre des problèmes" /><br/><b>Registre des problèmes</b> — statut, priorité P1–P4 calculée</td>
     <td><img src="docs/screenshots/04-probleme-informations.png" alt="Fiche problème" /><br/><b>Fiche problème</b> — impact × urgence, contournement, cause racine</td>
+  </tr>
+  <tr>
     <td><img src="docs/screenshots/05-analyse-5-pourquoi.png" alt="Analyse 5 Pourquoi" /><br/><b>Analyse de cause racine</b> — 5 Pourquoi, Ishikawa, FTA</td>
-  </tr>
-  <tr>
     <td><img src="docs/screenshots/06-actions-raci.png" alt="Actions RACI" /><br/><b>Actions correctives</b> — échéance et matrice RACI</td>
+  </tr>
+  <tr>
     <td><img src="docs/screenshots/08-reporting.png" alt="Reporting" /><br/><b>Reporting</b> — tableau de bord à onglets : santé, incidents, problèmes, changements et projets, conformité</td>
-  </tr>
-  <tr>
     <td><img src="docs/screenshots/10-incident-majeur.png" alt="Incident majeur" /><br/><b>Incident majeur</b> — priorité P1–P4, état du SLA, échéance de résolution</td>
-    <td><img src="docs/screenshots/11-calendrier-changements.png" alt="Calendrier des changements" /><br/><b>Changements</b> — autorisation et calendrier des mises en production</td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/12-configuration-relations.png" alt="CI et relations" /><br/><b>Configuration</b> — éléments de configuration et leurs dépendances</td>
+    <td><img src="docs/screenshots/11-calendrier-changements.png" alt="Calendrier des changements" /><br/><b>Changements</b> — autorisation et calendrier des mises en production</td>
     <td><img src="docs/screenshots/13-niveaux-de-service.png" alt="Accords de niveau de service" /><br/><b>Niveaux de service</b> — SLA par service, disponibilité, revues</td>
   </tr>
   <tr>
@@ -171,14 +207,18 @@ dépendance à un éditeur.
   </tr>
   <tr>
     <td><img src="docs/screenshots/19-notifications.png" alt="Notifications" /><br/><b>Notifications</b> — demandes en retard, actions en retard, SLA dépassés, incidents P1</td>
-    <td><img src="docs/screenshots/09-incidents.png" alt="Registre des incidents" /><br/><b>Registre des incidents</b> — priorité, service, état du SLA</td>
+    <td><img src="docs/screenshots/01-connexion.png" alt="Connexion" /><br/><b>Connexion</b> — avec le compte de l'entreprise (Active Directory)</td>
   </tr>
 </table>
+
+Les captures du tri assisté et de la CMDB assistée prendront la tête de cet aperçu à leur
+livraison.
 
 ## Essayer en 5 minutes
 
 Pas besoin d'Active Directory : le **mode démonstration** démarre son propre annuaire et
-charge des données d'exemple fictives. Seul Docker est requis.
+charge des données d'exemple fictives. Seul Docker est requis. Dès sa livraison, le **tri
+assisté des tickets** y sera activé.
 
 ```bash
 git clone https://github.com/chrraj7/S-Aloha.git && cd S-Aloha
@@ -196,7 +236,7 @@ Ouvrez **http://localhost** et connectez-vous avec l'un des comptes de démonstr
 | `demo.manager` | `Demo-Manager-2026` | Gestionnaire |
 | `demo.user` | `Demo-User-2026` | Utilisateur |
 
-**Avec votre Active Directory** : renseignez-le dans `docker-compose.yml` (variables
+**Intégration à l'entreprise (Active Directory)** : renseignez l'annuaire dans `docker-compose.yml` (variables
 `Ldap__*` du service `api`), fournissez les secrets hors du dépôt (`POSTGRES_PASSWORD`, `JWT_KEY`,
 `DISCOVERY_VAULT_KEY` : [exploitation § Secrets](docs/reference/exploitation.md#secrets)), puis
 `docker compose --env-file <fichier> up -d --build`. Les utilisateurs doivent
@@ -213,6 +253,8 @@ appartenir à l'un des groupes `GRP-SALOHA-ADMINS`, `GRP-SALOHA-MANAGERS` ou
 La plupart des évolutions sont déjà **spécifiées règle par règle**, avec leurs scénarios
 d'acceptation ([pratiques ITIL](docs/reference/processus/readme.md)). Les prochains chantiers :
 
+- ✨ **Tri assisté des tickets et CMDB assistée**, dans un conteneur à part, activés par
+  l'Admin, et **serveur MCP** en lecture seule : **avant la première version stable**.
 - 📋 **Référentiels de conformité importés** par l'organisation (ISO 27002, CR-CMM…), à côté
   de NIS 2.
 - 🛰️ **Agent de découverte léger** pour les postes nomades, et **preuves NIS 2** nourries par
@@ -233,6 +275,7 @@ pour tous ([Soutenir S-Aloha](docs/soutenir.md)).
 | **API** | ASP.NET Core 10 (LTS) + Entity Framework Core, Swagger sur `/swagger` |
 | **Données** | PostgreSQL 16 ; migrations EF appliquées au démarrage |
 | **Recherche** | Plein texte PostgreSQL + embeddings `bge-m3` dans un service séparé, facultatif |
+| **Fonctionnalités assistées** | Conteneur `features` hors de l'API (tri assisté, CMDB assistée), conteneur `mcp` ; modèle de langage au format `/v1/chat/completions`, dans le SI ou hébergé |
 | **Identité** | Active Directory (LDAP) → JWT, rôles Admin / Manager / User |
 | **Tests** | xUnit + Testcontainers (API), Vitest + Testing Library (frontend) |
 
@@ -287,11 +330,20 @@ S-Aloha est un projet ouvert : code, documentation, retours d'usage, tout compte
 
 ## English
 
-**S-Aloha** is a free (AGPLv3), self-hosted **ITIL 4 service-management platform** for
-IT departments that run **Active Directory**. Users sign in with their Windows account;
-roles follow AD groups. Each user lands on an action-oriented console showing what needs
-their attention, ranked by severity. **10 linked ITIL 4 practices, 250+ business rules in
-place, NIS 2 built in.**
+**S-Aloha** is a free (AGPLv3), self-hosted **ITIL 4 service-management platform** that
+helps IT teams **triage tickets** and **keep their CMDB accurate**, and lands each user on
+an action-oriented console showing what needs their attention, ranked by severity.
+**Assisted ticket triage, assisted CMDB, 10 linked ITIL 4 practices, NIS 2 built in.**
+
+- **Assisted features** (coming with the first stable release, specified rule by rule;
+  switched on or off by the administrator, run outside the API in a separate container;
+  they only propose, a person decides): **assisted ticket triage** (category, service,
+  group and impact suggested while typing, from the closest resolved incidents, with the
+  reasons; open incidents grouped by service, CI or meaning into a **probable outage**);
+  **assisted CMDB** (a language model, on-premises or hosted as the organisation chooses,
+  proposes renaming, normalising, reclassifying, merging duplicates and linking CIs, each
+  decided by a manager, with pseudonymised data); a read-only **MCP server** for users'
+  assistants, with each user's own permissions.
 
 - **User support**: incidents (P1–P4, major incidents, response and resolution targets in
   service hours, SLA-at-risk warnings), service requests (catalogue, pre-approved
@@ -318,7 +370,10 @@ place, NIS 2 built in.**
   clean-up) and manager-maintained incident and problem categories.
 - **On every record**: comments (public or work notes), history, in-app notifications,
   links between records, hybrid search (keywords + semantic, local `bge-m3` model).
-- **Roadmap**: imported compliance frameworks (ISO 27002, CR-CMM…), a lightweight discovery
+- **Enterprise integration**: sign-in with the organisation's Active Directory, roles from
+  its groups, no accounts to create; perimeter-scoped permissions.
+- **Roadmap**: assisted ticket triage, assisted CMDB and the MCP server before the first
+  stable release; imported compliance frameworks (ISO 27002, CR-CMM…), a lightweight discovery
   agent for remote devices and NIS 2 evidence from discovery, attachment text search,
   production hardening.
 - **Stack**: ASP.NET Core 10 (LTS), EF Core, PostgreSQL 16, React 19 + Vite, Docker Compose.
