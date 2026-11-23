@@ -35,6 +35,8 @@ public class OptionalFeature
     public bool Enabled { get; set; }
     public DateTime? UpdatedAt { get; set; }
     [MaxLength(200)] public string? UpdatedBy { get; set; }
+    /// <summary>OPT-02, TRI-13 : réglages propres de la fonctionnalité, en JSON ; null : valeurs par défaut.</summary>
+    public string? SettingsJson { get; set; }
 }
 
 public record FeatureSwitchDto(bool Enabled);

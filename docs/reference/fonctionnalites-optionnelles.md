@@ -106,6 +106,7 @@ aujourd'hui, la seule [CMDB assistée](cmdb-assistee.md). Le tri assisté des ti
 |---|---|---|
 | `GET /api/features` | User | Clés des fonctionnalités activées (OPT-04) |
 | `GET /api/admin/features`, `PUT /api/admin/features/{key}` | Admin | État, activation, coupure, réglages propres (OPT-01 à OPT-03) |
+| `GET`, `PUT /api/admin/features/{key}/settings` ; `GET /internal/features/{key}/settings` | Admin ; jeton du conteneur `features`, port interne, fonctionnalité activée (403 sinon) | Réglages propres d'une fonctionnalité (OPT-02, OPT-07), en JSON sur sa ligne ; aujourd'hui, ceux du tri assisté ([TRI-13](tri-assiste-des-tickets.md#5-api)) ; une autre clé : 404 |
 | `GET/PUT /api/admin/settings/language-model`, `POST …/language-model/test` | Admin | Modèle de langage (OPT-20 à OPT-26) |
 | `GET /api/<pratique>/{id}/proposals` ; `PUT /api/<pratique>/{id}` avec `X-S-Aloha-Proposal` ; `POST /api/<pratique>/{id}/proposals/{proposition}/reject` | User, droit de modifier la cible | Propositions ouvertes d'un enregistrement visible, acceptation (ou correction) par la route de la pratique, rejet (OPT-15) |
 | `POST /internal/proposals` | Jeton du conteneur `features`, port interne | Dépôt d'une proposition (OPT-14) : `201` ou `200` (doublon), `{ "id", "created" }` |
@@ -136,7 +137,7 @@ aujourd'hui, la seule [CMDB assistée](cmdb-assistee.md). Le tri assisté des ti
   activée (403) ou API injoignable, il réessaie toutes les 30 secondes
   (`Events:IdleMilliseconds`). Son curseur vit en mémoire : à chaque démarrage, il relit le fil
   gardé par l'API (7 jours), et une proposition redéposée à l'identique n'est pas recréée
-  (OPT-14). Chaque fonctionnalité a sa file et son exécutant (OPT-28). Au premier événement après son démarrage, le tri reconstruit son index des incidents ouverts (`GET /internal/incidents/open`, vecteurs du service d'embeddings par lots de 32) et resignale les pannes probables du moment ; l'API ne renotifie pas un groupe qu'elle connaît.
+  (OPT-14). Chaque fonctionnalité a sa file et son exécutant (OPT-28). Au premier événement après son démarrage, le tri reconstruit son index des incidents ouverts (`GET /internal/incidents/open`, vecteurs du service d'embeddings par lots de 32) et resignale les pannes probables du moment ; l'API ne renotifie pas un groupe qu'elle connaît. Les réglages du tri (TRI-13) se relisent avec les référentiels, une fois par minute au plus ; une suggestion coupée n'est plus proposée, et la panne probable coupée, les groupes signalés se ferment.
 - **Mode démonstration** : le conteneur `features` démarre avec le seul tri assisté des
   tickets activé ; la CMDB assistée et le serveur MCP restent coupés (aucun modèle de
   langage dans la démonstration).

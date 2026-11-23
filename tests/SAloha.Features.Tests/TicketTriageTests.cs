@@ -26,6 +26,8 @@ public sealed class FakeInternalApi : IAsyncLifetime
     public readonly ConcurrentQueue<JsonElement> SimilarQueries = new();
     public readonly ConcurrentQueue<JsonElement> Proposals = new();
     public readonly ConcurrentQueue<JsonElement> Outages = new();
+    /// <summary>Réglages du tri servis par l'API (TRI-13) ; null : route absente (404), valeurs par défaut.</summary>
+    public volatile object? Settings;
     public readonly ConcurrentQueue<string> Authorizations = new();
 
     public async Task InitializeAsync()
@@ -53,6 +55,7 @@ public sealed class FakeInternalApi : IAsyncLifetime
                 .Where(i => i.GetProperty("incident").GetProperty("status").GetString() is "Nouveau" or "En cours" or "En attente").ToList(),
             next = (int?)null,
         }));
+        app.MapGet("/internal/features/assisted-ticket-triage/settings", () => Settings is { } s ? Results.Json(s) : Results.NotFound());
         app.MapPost("/internal/outages", async (HttpContext c) =>
         {
             Outages.Enqueue(await JsonSerializer.DeserializeAsync<JsonElement>(c.Request.Body));
@@ -297,5 +300,37 @@ public class TicketTriageTests(FakeInternalApi api) : IClassFixture<FakeInternal
             .Content.ReadAsStringAsync()).RootElement;
         Assert.Equal(0, empty.GetProperty("suggestions").GetArrayLength());
         Assert.Equal(HttpStatusCode.Unauthorized, (await container.CreateClient().PostAsJsonAsync("/triage/suggest", new { title = "Outlook muet" })).StatusCode);
+    }
+
+    [Fact]
+    public async Task TRI_13_les_reglages_de_l_Admin_s_appliquent_au_conteneur()
+    {
+        // Cinq voisins, catégorie et panne probable coupées.
+        api.Settings = new
+        {
+            neighbours = 5, minVoters = 3, minSharePercent = 50, correlationWindowMinutes = 60, outageThreshold = 3, correlationMinSimilarity = 0.6,
+            suggestCategory = false, suggestService = true, suggestGroup = true, suggestImpact = true, suggestOutage = false,
+        };
+        try
+        {
+            api.Incidents[71] = Incident(71, "Nouveau", perimeter: 14, minutesAgo: 20, cis: []);
+            api.Incidents[72] = Incident(72, "Nouveau", perimeter: 14, minutesAgo: 10, cis: []);
+            api.Incidents[73] = Incident(73, "Nouveau", perimeter: 14, minutesAgo: 0, cis: [5]);
+            api.Similar = new { semantic = true, neighbours = new[] { Resolved(81, "Messagerie"), Resolved(82, "Messagerie"), Resolved(83, "Messagerie") } };
+            foreach (var id in new[] { 71, 72, 73 }) Event(api, "incident.created", id, 14);
+
+            using var container = Container();
+            _ = container.Services;
+            var proposals = await WaitFor(api, 73, 1);
+            await Task.Delay(300);
+            // Le nombre de voisins réglé part dans la recherche ; la catégorie coupée n'est pas proposée.
+            Assert.Contains(api.SimilarQueries, q => q.GetProperty("excludeId").ValueKind == JsonValueKind.Number
+                && q.GetProperty("excludeId").GetInt32() == 73 && q.GetProperty("limit").GetInt32() == 5);
+            Assert.DoesNotContain(ProposalsFor(api, 73), p => p.GetProperty("field").GetString() == "category");
+            // Panne probable coupée : trois incidents d'un service, aucun signalement ; l'impact vient du CI (Vital).
+            Assert.DoesNotContain(api.Outages, o => o.GetProperty("members").EnumerateArray().Any(m => m.GetInt32() == 71));
+            Assert.Equal("CI relié de criticité Vitale", proposals.Single(p => p.GetProperty("field").GetString() == "impact").GetProperty("reasons").GetString());
+        }
+        finally { api.Settings = null; }
     }
 }
