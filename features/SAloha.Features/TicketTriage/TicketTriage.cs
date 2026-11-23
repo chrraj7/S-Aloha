@@ -36,8 +36,9 @@ public class TicketTriage(ApiClient api, EmbeddingClient embeddings, ILogger<Tic
     /// <summary>Pannes probables signalées à l'API, par périmètre : les membres de chaque groupe ouvert.</summary>
     private readonly Dictionary<int, List<IReadOnlyList<int>>> signaled = [];
 
-    public TriageSettings Settings { get; } = new();
-    public CorrelationSettings Correlation { get; } = new();
+    /// <summary>TRI-13 : réglés par l'Admin, relus avec les référentiels (une fois par minute au plus).</summary>
+    public TriageSettings Settings { get; private set; } = new();
+    public CorrelationSettings Correlation { get; private set; } = new();
     public OpenIncidents Index { get; } = new();
 
     /// <summary>OPT-06 : des événements ont été purgés depuis le curseur ; l'index repart d'un état complet.</summary>
@@ -64,9 +65,9 @@ public class TicketTriage(ApiClient api, EmbeddingClient embeddings, ILogger<Tic
         // TRI-01 : un incident supprimé entre-temps, ou qui n'est plus Nouveau ni En cours, n'est pas trié.
         if (read is null || incident is null || !TriageRules.InScope.Contains(incident.Status) || string.IsNullOrWhiteSpace(incident.Title)) return;
 
+        var (services, categories) = await ReferenceAsync(ct);   // réglages compris, avant le nombre de voisins
         var similar = await api.SimilarAsync(new SimilarQuery(incident.Title, incident.Description, [incident.PerimeterId], incident.Id,
             Settings.Neighbours), ct);
-        var (services, categories) = await ReferenceAsync(ct);
         var cis = await api.ConfigurationItemsAsync(read.ConfigurationItemIds, ct);
         var outage = groups.FirstOrDefault(g => g.Members.Contains(incident.Id));
         foreach (var s in TriageRules.Suggest(incident, similar, services, categories, cis, Settings, outage))
@@ -88,8 +89,8 @@ public class TicketTriage(ApiClient api, EmbeddingClient embeddings, ILogger<Tic
         if (title.Length < 4 || draft.Perimeters is not { Length: > 0 } perimeters) return DraftSuggestions.Empty;
         var incident = new IncidentData(0, perimeters[0], null, title, draft.Description, "Nouveau", draft.Category, draft.ServiceId,
             draft.Impact, draft.OwnerType, draft.OwnerId, null, DateTime.UtcNow);
+        var (services, categories) = await ReferenceAsync(ct);   // réglages compris, avant le nombre de voisins
         var similar = await api.SimilarAsync(new SimilarQuery(title, draft.Description, perimeters, null, Settings.Neighbours), ct);
-        var (services, categories) = await ReferenceAsync(ct);
         var cis = await api.ConfigurationItemsAsync(draft.ConfigurationItemIds ?? [], ct);
 
         // Incidents ouverts proches : liés au brouillon par le service, un CI ou le sens, dans la fenêtre.
@@ -160,7 +161,7 @@ public class TicketTriage(ApiClient api, EmbeddingClient embeddings, ILogger<Tic
     {
         var (services, _) = await ReferenceAsync(ct);
         var titles = services.Where(s => s.Title is not null).ToDictionary(s => s.Id, s => s.Title!);
-        var groups = OpenIncidents.Outages(Index.InPerimeter(perimeter), Correlation, titles);
+        var groups = Settings.Outage ? OpenIncidents.Outages(Index.InPerimeter(perimeter), Correlation, titles) : [];
         var known = signaled.GetValueOrDefault(perimeter) ?? [];
         foreach (var g in groups.Where(g => !known.Any(k => k.SequenceEqual(g.Members))))
         {
@@ -179,6 +180,12 @@ public class TicketTriage(ApiClient api, EmbeddingClient embeddings, ILogger<Tic
         if (reference is { } r && DateTime.UtcNow - r.At < ReferenceAge) return (r.Services, r.Categories);
         var services = await api.ServicesAsync(ct);
         var categories = await api.CategoriesAsync("incident", ct);
+        if (await api.TriageSettingsAsync(ct) is { } s)
+        {
+            Settings = new TriageSettings(s.Neighbours, s.MinVoters, s.MinSharePercent / 100.0, s.SuggestCategory, s.SuggestService, s.SuggestGroup,
+                s.SuggestImpact, s.SuggestOutage);
+            Correlation = new CorrelationSettings(s.CorrelationWindowMinutes, s.OutageThreshold, s.CorrelationMinSimilarity);
+        }
         reference = (DateTime.UtcNow, services, categories);
         return (services, categories);
     }

@@ -137,7 +137,7 @@ aujourd'hui, la seule [CMDB assistée](cmdb-assistee.md). Le tri assisté des ti
   activée (403) ou API injoignable, il réessaie toutes les 30 secondes
   (`Events:IdleMilliseconds`). Son curseur vit en mémoire : à chaque démarrage, il relit le fil
   gardé par l'API (7 jours), et une proposition redéposée à l'identique n'est pas recréée
-  (OPT-14). Chaque fonctionnalité a sa file et son exécutant (OPT-28). Au premier événement après son démarrage, le tri reconstruit son index des incidents ouverts (`GET /internal/incidents/open`, vecteurs du service d'embeddings par lots de 32) et resignale les pannes probables du moment ; l'API ne renotifie pas un groupe qu'elle connaît.
+  (OPT-14). Chaque fonctionnalité a sa file et son exécutant (OPT-28). Au premier événement après son démarrage, le tri reconstruit son index des incidents ouverts (`GET /internal/incidents/open`, vecteurs du service d'embeddings par lots de 32) et resignale les pannes probables du moment ; l'API ne renotifie pas un groupe qu'elle connaît. Les réglages du tri (TRI-13) se relisent avec les référentiels, une fois par minute au plus ; une suggestion coupée n'est plus proposée, et la panne probable coupée, les groupes signalés se ferment.
 - **Mode démonstration** : le conteneur `features` démarre avec le seul tri assisté des
   tickets activé ; la CMDB assistée et le serveur MCP restent coupés (aucun modèle de
   langage dans la démonstration).
