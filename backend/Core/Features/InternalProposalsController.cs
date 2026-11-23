@@ -12,7 +12,7 @@ namespace SAloha.Api.Core.Features;
 /// (elle existe), le champ (proposable par cette fonctionnalité) et la valeur (liste fermée du champ) ;
 /// une proposition identique à une proposition ouverte n'est pas recréée. La valeur « avant » est lue
 /// par l'API sur l'enregistrement, pas reprise du conteneur. Une proposition ouverte devenue périmée est
-/// recalculée en place ; une valeur rejetée ou corrigée n'est pas reproposée.
+/// recalculée en place, comme celle dont la valeur change ; une valeur rejetée ou corrigée n'est pas reproposée.
 /// </summary>
 [ApiController]
 [Route("internal/proposals")]
@@ -44,13 +44,17 @@ public class InternalProposalsController(AppDbContext db, IFeatureGate gate) : C
         // quand le conteneur recalcule après une modification de l'enregistrement.
         if (await same.AsNoTracking().FirstOrDefaultAsync(p => p.Status == Proposal.Rejected || p.Status == Proposal.Corrected) is { } declined)
             return Ok(new { declined.Id, Created = false });
-        var existing = await same.FirstOrDefaultAsync(p => p.Status == Proposal.Open);
+        // OPT-14 : une seule proposition ouverte par fonctionnalité, enregistrement et champ (une ligne par champ dans
+        // l'encadré) : une valeur nouvelle remplace la proposition ouverte du champ, sur place.
+        var existing = await db.Proposals.Where(p => p.Status == Proposal.Open && p.Feature == feature.Key && p.TargetType == field.TargetType
+            && p.TargetId == record.Id && p.Field == field.Name).OrderBy(p => p.Id).FirstOrDefaultAsync();
         if (existing is not null)
         {
             // OPT-15 : périmée (enregistrement modifié depuis), elle est recalculée à l'identique : valeur avant,
             // motifs, sources et confiance repris, et datée de ce calcul ; elle redevient acceptable.
-            if (record.UpdatedAt > existing.CreatedAt)
+            if (record.UpdatedAt > existing.CreatedAt || existing.After != after)
             {
+                existing.After = after;
                 existing.Before = before;
                 existing.Reasons = reasons;
                 existing.CitedJson = JsonSerializer.Serialize((input.Cited ?? []).Take(20).ToList(), JsonSerializerOptions.Web);

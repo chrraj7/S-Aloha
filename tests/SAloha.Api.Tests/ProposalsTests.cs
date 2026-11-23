@@ -237,16 +237,41 @@ public class ProposalsTests(ApiFixture api, FakeFeaturesContainer container) : I
     }
 
     [Fact]
+    public async Task OPT_14_une_seule_proposition_ouverte_par_champ_la_nouvelle_valeur_remplace_l_ancienne()
+    {
+        using var factory = await WithTriage(Factory);
+        var admin = Admin(factory);
+        var id = await CreateIncident(admin, "Impression (une par champ)");
+        // D'abord la criticité du service (Faible), puis une panne probable (Élevé) : une seule ligne pour l'impact.
+        var (created, first) = await Propose(factory, Triage(id, "impact", "Faible"));
+        Assert.Equal(201, created);
+        var (replaced, second) = await Propose(factory, new { feature = FeatureCatalog.AssistedTriage, targetType = "incident", targetId = id,
+            field = "impact", after = "Élevé", reasons = "Panne probable : 3 incidents ouverts sur le service Impression" });
+        Assert.Equal(200, replaced);
+        Assert.Equal(first!.Value.GetProperty("id").GetInt32(), second!.Value.GetProperty("id").GetInt32());
+        var only = Assert.Single((await Json(await admin.GetAsync($"/api/incidents/{id}/proposals"))).EnumerateArray());
+        Assert.Equal(("Élevé", "Panne probable : 3 incidents ouverts sur le service Impression"),
+            (only.GetProperty("after").GetString(), only.GetProperty("reasons").GetString()));
+        // Un autre champ a sa propre ligne.
+        Assert.Equal(201, (await Propose(factory, Triage(id, "owner", "GRP-IMPRESSION"))).Status);
+        await using var db = api.Database();
+        Assert.Equal(2, await db.Proposals.CountAsync(p => p.TargetType == "incident" && p.TargetId == id && p.Status == Proposal.Open));
+    }
+
+    [Fact]
     public async Task OPT_15_rejeter_et_OPT_04_coupee_la_proposition_disparait_sans_etre_effacee()
     {
         using var factory = await WithTriage(Factory);
         var admin = Admin(factory);
         var id = await CreateIncident(admin, "Wifi (rejet)");
         var (_, first) = await Propose(factory, Triage(id, "impact", "Faible"));
-        var (_, second) = await Propose(factory, Triage(id, "impact", "Élevé"));
 
         Assert.Equal(HttpStatusCode.NoContent, (await admin.PostAsync($"/api/incidents/{id}/proposals/{first!.Value.GetProperty("id").GetInt32()}/reject", null)).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await admin.PostAsync($"/api/incidents/{id}/proposals/{first.Value.GetProperty("id").GetInt32()}/reject", null)).StatusCode);
+        Assert.Empty((await Json(await admin.GetAsync($"/api/incidents/{id}/proposals"))).EnumerateArray());
+        // Une autre valeur du même champ reste proposable après le rejet.
+        var (status, second) = await Propose(factory, Triage(id, "impact", "Élevé"));
+        Assert.Equal(201, status);
         Assert.Single((await Json(await admin.GetAsync($"/api/incidents/{id}/proposals"))).EnumerateArray());
 
         // Coupée : la proposition restante n'apparaît plus, ne se rejette plus, et reparaît à la réactivation.
