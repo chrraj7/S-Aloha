@@ -21,7 +21,7 @@ namespace SAloha.Api.Tests;
 /// <summary>Conteneur factice des fonctionnalités : contrôle de santé, jeton, panne à la demande.</summary>
 public sealed class FakeFeaturesContainer : IAsyncLifetime
 {
-    public const string Token = "jeton-du-conteneur-de-test";
+    public const string Token = "jeton-du-conteneur-de-test-0123456789";   // 32 caractères au moins (OPT-10)
     private WebApplication _app = null!;
     public string Url { get; private set; } = "";
     public volatile bool Up = true;
