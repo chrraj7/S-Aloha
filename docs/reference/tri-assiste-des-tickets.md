@@ -86,7 +86,11 @@ sequenceDiagram
 | `GET /api/incidents/{id}/triage` | User, incident visible (404 sinon) | Propositions et panne probable d'un incident (TRI-07, TRI-08) |
 | Décision | — | Routes communes des propositions ([OPT-15](fonctionnalites-optionnelles.md#6-api)) |
 | `GET /api/admin/triage/metrics` | Admin | Mesure (TRI-10) |
-| `GET /internal/incidents/open`, `GET /internal/incidents/{id}`, `POST /internal/search/similar` (texte, périmètres) | Jeton du conteneur `features` | Lectures du conteneur pour le tri (OPT-13) |
+| `GET /internal/incidents/{id}` | Jeton du conteneur `features`, port interne, tri activé (403 sinon) | Un incident dans sa vue publique, et les identifiants des CI qui lui sont reliés, dans un sens ou dans l'autre (OPT-13, TRI-04) : `{ "incident", "configurationItemIds" }` ; 404 s'il n'existe pas |
+| `POST /internal/search/similar` (titre, description, périmètres, incident exclu, nombre : 10 par défaut, 20 au plus) | Jeton du conteneur `features`, port interne, tri activé | Voisins du vote (TRI-03) : les incidents résolus ou clos les plus proches, par la recherche des cas similaires (RAG-06, plancher de RAG-10), dans les seuls périmètres donnés, ceux de l'agent à la saisie et celui de l'incident en tâche de fond (TRI-11) ; `{ "semantic", "neighbours": [{ "score", "lexical", "semantic", "incident" }] }`, où `semantic` faux signale les mots seuls (RAG-02). Titre et périmètres requis (400) |
+| `GET /internal/configuration-items?ids=<50 au plus>`, `GET /internal/services` | Jeton du conteneur `features`, port interne, tri ou CMDB assistée activés | CI et services dans leur vue publique : criticité (TRI-04), statut d'un service voté (TRI-03) |
+| `GET /internal/categories?practice=incident` | Jeton du conteneur `features`, port interne, tri activé | Catégories dans leur vue publique : un voisin ne vote que pour une catégorie active (TRI-03, ADM-51) |
+| `GET /internal/incidents/open` | Jeton du conteneur `features`, port interne, tri activé | Incidents ouverts, pour l'index propre du conteneur (TRI-06) ; avec la corrélation (#365, 3b) |
 | `POST /triage/suggest`, `GET /health` (conteneur `features`) | Jeton du conteneur | Appelées par l'API (OPT-16, OPT-01) |
 
 ## 6. Scénarios d'acceptation
