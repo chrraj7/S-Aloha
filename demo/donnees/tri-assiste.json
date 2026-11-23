@@ -9,7 +9,7 @@
   "resolus": [
     { "theme": "messagerie", "titre": "Outlook ne reçoit plus les courriels", "description": "Depuis ce matin, aucun nouveau message n'arrive dans la boîte de réception.", "resolution": "Connecteur de réception redémarré." },
     { "theme": "messagerie", "titre": "Courriels bloqués dans la boîte d'envoi", "description": "Les messages restent dans le dossier Boîte d'envoi sans partir.", "resolution": "Profil Outlook recréé." },
-    { "theme": "messagerie", "titre": "Calendrier partagé non synchronisé", "description": "Les réunions ajoutées par la direction n'apparaissent pas dans le calendrier partagé.", "resolution": "Droits de délégation corrigés." },
+    { "theme": "messagerie", "titre": "Incident sur calendrier partagé", "description": "Les réunions ajoutées par la direction n'apparaissent pas dans le calendrier partagé.", "resolution": "Droits de délégation corrigés." },
     { "theme": "messagerie", "titre": "Message d'erreur à l'ouverture d'Outlook", "description": "Outlook affiche « Impossible de démarrer » et se ferme aussitôt.", "resolution": "Fichier de données réparé." },
     { "theme": "messagerie", "titre": "Pièce jointe refusée par la messagerie", "description": "Un fichier de 15 Mo est rejeté à l'envoi.", "resolution": "Limite de taille rappelée ; lien de partage proposé." },
     { "theme": "messagerie", "titre": "Messagerie lente à charger le matin", "description": "La boîte met plusieurs minutes à s'afficher entre 8 h et 9 h.", "resolution": "Cache local reconstruit." },
@@ -29,7 +29,7 @@
     { "theme": "erp", "titre": "Édition des bulletins de paie en erreur", "description": "L'impression des bulletins s'arrête avec une erreur de modèle.", "resolution": "Modèle d'édition corrigé." },
     { "theme": "erp", "titre": "Écritures comptables en double dans l'ERP", "description": "Les écritures de la journée sont importées deux fois.", "resolution": "Import relancé après purge." },
     { "theme": "erp", "titre": "Bon de commande impossible à valider", "description": "Le bouton de validation des achats reste grisé.", "resolution": "Droits du profil acheteur rétablis." },
-    { "theme": "erp", "titre": "Session ERP expirée en permanence", "description": "L'utilisateur est déconnecté de l'ERP toutes les deux minutes.", "resolution": "Horloge du poste resynchronisée." },
+    { "theme": "erp", "titre": "Session ERP expirée en permanence", "description": "L'utilisateur est déconnecté de l'ERP toutes les deux minutes.", "resolution": "Horloge du poste réactualisée." },
     { "theme": "erp", "titre": "Export comptable vide", "description": "Le fichier d'export vers le cabinet comptable ne contient aucune ligne.", "resolution": "Filtre de période corrigé." },
     { "theme": "impression", "titre": "Imprimante de l'étage hors ligne", "description": "Plus aucune impression ne sort depuis ce matin.", "resolution": "Imprimante redémarrée et file vidée." },
     { "theme": "impression", "titre": "Bourrage papier répété", "description": "Le copieur se bloque à chaque impression recto verso.", "resolution": "Rouleau d'entraînement remplacé." },
