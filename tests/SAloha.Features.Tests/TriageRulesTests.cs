@@ -117,4 +117,26 @@ public class TriageRulesTests
         Assert.Empty(Suggest(Draft(service: 1, impact: "Élevé"), Similar(true)));
         Assert.Empty(Suggest(Draft(), Similar(true), [new(9, "CI-9", "Serveur", null)]));
     }
+
+    [Fact]
+    public void TRI_13_une_suggestion_coupee_n_est_plus_proposee_et_les_seuils_se_reglent()
+    {
+        var neighbours = Enumerable.Range(0, 7).Select(_ => Incident("Messagerie", service: 1)).Concat(Enumerable.Range(0, 3).Select(_ => Incident("Réseau"))).ToArray();
+        IReadOnlyList<Suggestion> With(TriageSettings settings, IncidentData? draft = null, OutageGroup? outage = null) =>
+            TriageRules.Suggest(draft ?? Draft(service: 1), Similar(true, neighbours), Services, Categories, [], settings, outage);
+        Assert.Contains(With(Defaults), s => s.Field == "category");
+        Assert.DoesNotContain(With(Defaults with { Category = false }), s => s.Field == "category");
+        Assert.Contains(With(Defaults), s => s.Field == "impact");
+        Assert.DoesNotContain(With(Defaults with { Impact = false }), s => s.Field == "impact");
+        // Part minimale de 80 % : 7 voix sur 10 ne suffisent plus.
+        Assert.DoesNotContain(With(Defaults with { MinShare = 0.8 }), s => s.Field == "category");
+        // Cinq voisins : les cinq plus proches seuls votent (5 sur 5).
+        Assert.StartsWith("5 des 5 ", With(Defaults with { Neighbours = 5 }).Single(s => s.Field == "category").Reasons);
+        // Panne probable coupée : l'impact ne vient plus que de la criticité.
+        var outage = new OutageGroup(1, [2, 3], "service", 1, "3 incidents ouverts sur le service Messagerie");
+        Assert.Equal("Panne probable : 3 incidents ouverts sur le service Messagerie",
+            With(Defaults, Draft(service: 2), outage).Single(s => s.Field == "impact").Reasons);
+        Assert.Equal("service Réseau, criticité Moyenne", With(Defaults with { Outage = false }, Draft(service: 2, impact: "Faible"), outage)
+            .Single(s => s.Field == "impact").Reasons);
+    }
 }

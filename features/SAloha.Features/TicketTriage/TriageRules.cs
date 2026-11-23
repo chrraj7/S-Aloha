@@ -5,8 +5,12 @@ namespace SAloha.Features.TicketTriage;
 /// <summary>Une suggestion du tri : champ proposable (OPT-14), valeur, motif en clair et enregistrements cités (TRI-08).</summary>
 public record Suggestion(string Field, string Value, string Reasons, IReadOnlyList<CitedRef> Cited, double? Confidence);
 
-/// <summary>Réglages du vote (TRI-03) ; réglables par l'Admin avec TRI-13.</summary>
-public record TriageSettings(int Neighbours = 10, int MinVoters = 3, double MinShare = 0.5);
+/// <summary>
+/// Réglages du vote (TRI-03) et suggestions activées, réglés par l'Admin (TRI-13) : une suggestion coupée n'est plus
+/// proposée, ni à la saisie ni en tâche de fond ; la panne probable coupée, aucune n'est plus signalée.
+/// </summary>
+public record TriageSettings(int Neighbours = 10, int MinVoters = 3, double MinShare = 0.5, bool Category = true, bool Service = true,
+    bool Group = true, bool Impact = true, bool Outage = true);
 
 /// <summary>
 /// Règles du tri assisté des tickets, sans effet de bord : vote des voisins (TRI-03), impact par la
@@ -42,7 +46,7 @@ public static class TriageRules
             if (string.IsNullOrEmpty(name)) return null;
             return active.Count == 0 ? name : active.FirstOrDefault(a => string.Equals(a, name, StringComparison.OrdinalIgnoreCase));
         }
-        if (Vote(neighbours, CategoryOf, incident.Category, settings) is { } category)
+        if (settings.Category && Vote(neighbours, CategoryOf, incident.Category, settings) is { } category)
             list.Add(new("category", category.Value,
                 $"{category.Count} des {neighbours.Count} incidents résolus les plus proches portent la catégorie {category.Value}{words}",
                 category.Voters, category.Share));
@@ -50,7 +54,7 @@ public static class TriageRules
         // TRI-03 : service en service au catalogue.
         string? ServiceOf(IncidentData n) =>
             n.ServiceId is { } id && byId.TryGetValue(id, out var s) && s.Status == InService ? id.ToString() : null;
-        if (Vote(neighbours, ServiceOf, incident.ServiceId?.ToString(), settings) is { } service)
+        if (settings.Service && Vote(neighbours, ServiceOf, incident.ServiceId?.ToString(), settings) is { } service)
             list.Add(new("serviceId", service.Value,
                 $"{service.Count} des {neighbours.Count} incidents résolus les plus proches portent le service {byId[int.Parse(service.Value)].Title}{words}",
                 service.Voters, service.Share));
@@ -58,7 +62,7 @@ public static class TriageRules
         // TRI-03 : groupe responsable ; un voisin confié à une personne ne vote pas pour le groupe.
         string? GroupOf(IncidentData n) => n.OwnerType == "Group" && !string.IsNullOrWhiteSpace(n.OwnerId) ? n.OwnerId.Trim() : null;
         var currentGroup = incident.OwnerType == "Group" ? incident.OwnerId : null;
-        if (Vote(neighbours, GroupOf, currentGroup, settings) is { } group)
+        if (settings.Group && Vote(neighbours, GroupOf, currentGroup, settings) is { } group)
         {
             var name = neighbours.Where(n => string.Equals(GroupOf(n), group.Value, StringComparison.OrdinalIgnoreCase))
                 .Select(n => n.OwnerDisplayName).FirstOrDefault(d => !string.IsNullOrWhiteSpace(d)) ?? group.Value;
@@ -67,7 +71,7 @@ public static class TriageRules
                 group.Voters, group.Share));
         }
 
-        if (Impact(incident, byId, cis, outage) is { } impact) list.Add(impact);
+        if (settings.Impact && Impact(incident, byId, cis, settings.Outage ? outage : null) is { } impact) list.Add(impact);
         return list;
     }
 
