@@ -113,6 +113,65 @@ public static class ProposalDecisions
     /// <summary>En-tête d'une modification qui applique une proposition (OPT-15).</summary>
     public const string Header = "X-S-Aloha-Proposal";
 
+    /// <summary>
+    /// TRI-09 : en-tête d'une création qui porte des suggestions appliquées à la saisie : JSON encodé pour l'URL,
+    /// <c>[{ "feature", "field", "value" }]</c>, 10 au plus.
+    /// </summary>
+    public const string SuggestionsHeader = "X-S-Aloha-Suggestions";
+
+    public record AppliedSuggestion(string? Feature, string? Field, string? Value);
+
+    /// <summary>Champ du journal d'audit où une modification de ce champ s'écrit (les identifiants n'y figurent pas).</summary>
+    private static readonly Dictionary<string, string> AuditField = new() { ["serviceId"] = "affectedService", ["owner"] = "ownerDisplayName" };
+
+    /// <summary>
+    /// TRI-09, TRI-10, OPT-08 : à la création, chaque suggestion appliquée à la saisie et encore portée par
+    /// l'enregistrement devient une proposition acceptée (comptée dans le mois) et une ligne du journal d'audit
+    /// d'origine « Tri assisté des tickets ». Une fonctionnalité coupée, un champ qu'elle ne propose pas, une
+    /// valeur que l'agent a changée ensuite, ou un en-tête illisible : ignorés, sans erreur.
+    /// </summary>
+    public static async Task RecordAppliedAsync(AppDbContext db, IFeatureGate gate, string targetType, Records.Record e, string? header,
+        string by, string byDisplay)
+    {
+        if (string.IsNullOrWhiteSpace(header)) return;
+        List<AppliedSuggestion> applied;
+        try { applied = JsonSerializer.Deserialize<List<AppliedSuggestion>>(Uri.UnescapeDataString(header), JsonSerializerOptions.Web) ?? []; }
+        catch (Exception ex) when (ex is JsonException or UriFormatException) { return; }
+        var enabled = await gate.EnabledAsync();
+        var now = DateTime.UtcNow;
+        foreach (var a in applied.Where(a => a.Feature is not null && a.Field is not null && a.Value is not null)
+                     .DistinctBy(a => (a.Feature, a.Field)).Take(10))
+        {
+            var field = ProposalFields.Of(targetType, a.Field!);
+            if (field is null || field.Feature != a.Feature || !enabled.Contains(field.Feature)) continue;
+            var value = field.Read(e);
+            if (!string.Equals(value, a.Value, StringComparison.OrdinalIgnoreCase)) continue;
+            var p = new Proposal
+            {
+                Feature = field.Feature, TargetType = targetType, TargetId = e.Id, PerimeterId = e.PerimeterId, Field = field.Name,
+                Before = null, After = value!, Reasons = "Appliquée à la saisie", CitedJson = "[]", CreatedAt = now,
+                Status = Proposal.Accepted, FinalValue = value, DecidedAt = now, DecidedBy = by,
+            };
+            db.Proposals.Add(p);
+            await CountAsync(db, p, Proposal.Accepted);
+            var shown = field.Name switch
+            {
+                "serviceId" when int.TryParse(value, out var sid) => await db.Services.Where(x => x.Id == sid).Select(x => x.Title).FirstOrDefaultAsync() ?? value,
+                _ => value,
+            };
+            db.AuditEntries.Add(new Audit.AuditEntry
+            {
+                EntityType = targetType, EntityId = e.Id, Reference = e.Reference, Action = Audit.AuditEntry.Modification,
+                Field = AuditField.GetValueOrDefault(field.Name, field.Name), OldValue = null, NewValue = shown,
+                Author = by, AuthorDisplayName = byDisplay, At = now, Origin = OriginOf(field.Feature),
+            });
+        }
+        await db.SaveChangesAsync();
+    }
+
+    private static string OriginOf(string feature) =>
+        feature == FeatureCatalog.AssistedCmdb ? Audit.AuditEntry.AssistedCmdb : Audit.AuditEntry.AssistedTriage;
+
     /// <summary>OPT-15, OPT-17 : décision enregistrée, et comptée dans le mois.</summary>
     public static async Task DecideAsync(AppDbContext db, Proposal p, string status, string? finalValue, string by)
     {
@@ -162,6 +221,8 @@ public class ProposalsRetention(IServiceScopeFactory scopes, ILogger<ProposalsRe
         }
         var limit = now.AddMonths(-KeepMonths);
         var purged = await db.Proposals.Where(p => p.Status != Proposal.Open && p.DecidedAt < limit).ExecuteDeleteAsync();
+        // TRI-14 : une panne probable fermée se garde comme une proposition décidée, 13 mois ; ses membres partent avec.
+        purged += await db.ProbableOutages.Where(o => o.ClosedAt != null && o.ClosedAt < limit).ExecuteDeleteAsync();
         return (stale.Count, purged);
     }
 
