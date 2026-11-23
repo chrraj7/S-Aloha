@@ -53,6 +53,8 @@ public class OptionalFeaturesTests(ApiFixture api, FakeFeaturesContainer contain
     /// <summary>Chaque test part de fonctionnalités toutes coupées, conteneur en marche.</summary>
     private async Task ResetAsync()
     {
+        // Le démarrage de l'API applique les migrations : lancé seul, ce test arrive avant elles.
+        await api.Client().GetAsync("/health/live");
         container.Up = true;
         container.Features = [FeatureCatalog.AssistedTriage, FeatureCatalog.AssistedCmdb];
         await using var db = api.Database();
@@ -245,14 +247,17 @@ public class OptionalFeaturesTests(ApiFixture api, FakeFeaturesContainer contain
     {
         using var factory = Factory(container.Url);
         var admin = Client(factory);
-        var since = DateTime.UtcNow.AddSeconds(-1);
+        // Repère par identifiant, pas par date : un test précédent a pu tracer une activation la même seconde.
+        long last;
+        await using (var before = api.Database())
+            last = await before.AuditEntries.MaxAsync(a => (long?)a.Id) ?? 0;
         await Json(await Switch(admin, FeatureCatalog.AssistedTriage, true));
         await Json(await Switch(admin, FeatureCatalog.AssistedTriage, true));   // inchangé : rien de plus au journal
         await Json(await Switch(admin, FeatureCatalog.AssistedTriage, false));
 
         await using var db = api.Database();
         var lines = await db.AuditEntries.AsNoTracking()
-            .Where(a => a.EntityType == FeaturesController.AuditType && a.Reference == FeaturesController.AuditReference && a.At >= since)
+            .Where(a => a.EntityType == FeaturesController.AuditType && a.Reference == FeaturesController.AuditReference && a.Id > last)
             .OrderBy(a => a.Id).ToListAsync();
         Assert.Equal(2, lines.Count);
         Assert.All(lines, l => Assert.Equal("Tri assisté des tickets", l.Field));
