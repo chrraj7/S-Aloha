@@ -60,7 +60,12 @@ const records = (path) => ({
   remove: (id) => request(`${path}/${id}`, { method: 'DELETE' }),
   // SOC-14 : ce que la suppression emporterait (Admin).
   deletion: (id) => request(`${path}/${id}/deletion`),
-  transitions: () => request(`${path}/transitions`)
+  transitions: () => request(`${path}/transitions`),
+  // OPT-15 : propositions ouvertes des fonctionnalités optionnelles ; accepter passe par la modification,
+  // avec l'en-tête X-S-Aloha-Proposal (acceptée si la valeur retenue est la proposée, corrigée sinon).
+  proposals: (id) => request(`${path}/${id}/proposals`),
+  applyProposal: (id, proposal, dto) => request(`${path}/${id}`, { method: 'PUT', body: JSON.stringify(dto), headers: { 'X-S-Aloha-Proposal': String(proposal) } }),
+  rejectProposal: (id, proposal) => request(`${path}/${id}/proposals/${proposal}/reject`, { method: 'POST' })
 })
 
 export const api = {
@@ -139,7 +144,9 @@ export const api = {
     qualify: (id, dto) => request(`/incidents/${id}/qualification`, { method: 'POST', body: JSON.stringify(dto) }),
     // INC-16 : parent et enfants (même panne).
     family: id => request(`/incidents/${id}/family`),
-    setParent: (id, parentReference) => request(`/incidents/${id}/parent`, { method: 'PUT', body: JSON.stringify({ parentReference }) })
+    setParent: (id, parentReference) => request(`/incidents/${id}/parent`, { method: 'PUT', body: JSON.stringify({ parentReference }) }),
+    // TRI-07 : panne probable de l'incident (bandeau de la fiche).
+    triage: id => request(`/incidents/${id}/triage`)
   },
   regulatoryNotifications: records('/regulatory-notifications'),
   requests: {
