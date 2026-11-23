@@ -108,7 +108,7 @@ public class InternalOutagesController(AppDbContext db, Notifier notify) : Contr
             // TRI-07 : à la formation du groupe, une seule notification, sur le plus ancien incident.
             var anchor = await db.Incidents.AsNoTracking().FirstAsync(i => i.Id == open[0].Id);
             notify.AsSystem = true;
-            notify.ToManagers(anchor, "incident", $"Panne probable : {open.Count} incidents ouverts{(reasons == "" ? "" : $" ({reasons})")}");
+            notify.ToManagers(anchor, "incident", $"Panne probable : {(reasons == "" ? $"{open.Count} incidents ouverts" : reasons)}");
         }
         await db.SaveChangesAsync();
         if (created) await notify.SaveAsync();
