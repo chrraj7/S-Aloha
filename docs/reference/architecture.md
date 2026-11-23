@@ -49,7 +49,7 @@ backend/                              # projet SAloha.Api (namespace SAloha.Api.
 │   ├── Data/                         # AppDbContext, References (XXX-AAAA-NNNN), DatabaseSchema + Migrations/
 │   ├── Comments/                     # Comment, CommentsController (fil de commentaires, SOC-24)
 │   ├── Directory/                    # DirectoryController, DirectoryEntry (recherche AD)
-│   ├── Features/                     # fonctionnalités optionnelles (ADR-0023) : FeatureCatalog, FeatureGate et [RequiresFeature], ContainerProbe, FeatureStatus, FeaturesController ; port interne et jeton du conteneur (InternalContract), fil d'événements (FeatureEvents)
+│   ├── Features/                     # fonctionnalités optionnelles (ADR-0023) : FeatureCatalog, FeatureGate et [RequiresFeature], ContainerProbe, FeatureStatus, FeaturesController ; port interne et jeton du conteneur (InternalContract), fil d'événements (FeatureEvents), propositions (Proposals, InternalProposalsController)
 │   ├── Itil/                         # Priority (matrice impact × urgence → P1–P4)
 │   ├── Links/                        # ItemLink, registre ItemLinks, LinksController (liens inter-processus)
 │   ├── Notifications/                # Notification, NotificationRead, Notifier (émission), DatedEvents (événements datés), NotificationsController (SOC-21)
@@ -95,6 +95,11 @@ Les processus autres que les problèmes héritent d'un même socle :
   Les longueurs `[MaxLength]` sont contrôlées avant l'enregistrement (`Lengths`).
 - **`References.CreateAsync`** — référence annuelle `XXX-AAAA-NNNN` (plus grand numéro + 1,
   nouvelle tentative sur collision de l'index unique) ; utilisée aussi par les problèmes.
+- **Propositions des fonctionnalités optionnelles** ([OPT-15](fonctionnalites-optionnelles.md#3-contrat-entre-lapi-et-le-conteneur-des-fonctionnalités)) — chaque
+  registre sert `GET …/{id}/proposals` et `POST …/{id}/proposals/{proposition}/reject` ; un `PUT`
+  qui porte `X-S-Aloha-Proposal` applique la proposition par le chemin normal (droits, `Fill`,
+  transitions, conflits), sous l'origine de la fonctionnalité au journal d'audit
+  (`AuditOrigin.Use`), puis la marque acceptée ou corrigée. La suppression emporte les propositions.
 
 **Portée par périmètre** (`Core/Perimeters/PerimeterAccess`, [PER-03 à PER-07](perimetres.md)) :
 rôle effectif de l'utilisateur sur chaque périmètre, chargé une fois par requête. Le socle
@@ -152,6 +157,8 @@ les entités EF sont renvoyées avec leurs navigations (`Analysis → Problem �
 | Méthode / Route | Policy | Rôle métier | Emplacement |
 |---|---|---|---|
 | GET `/api/admin/users`, GET `/api/admin/health`, GET `/api/admin/audit`, GET `/api/admin/audit/export`, GET `/api/admin/duplicates`, POST `…/duplicates/merge`, POST `…/duplicates/dismiss` | Admin | Utilisateurs et rôles (annuaire, ADM-10 à ADM-13), doublons (détection, fusion, ADM-40 à ADM-42), santé de la plateforme, journal d'audit global et export CSV (ADM-20 à ADM-31) | Core/Administration |
+| POST `/internal/proposals` | Jeton du conteneur `features`, port interne | Dépôt d'une proposition, vérifiée (OPT-14) | Core/Features |
+| GET `/api/<pratique>/{id}/proposals`, POST `…/{id}/proposals/{proposition}/reject` ; PUT `/api/<pratique>/{id}` avec `X-S-Aloha-Proposal` | User, droit de modifier | Propositions d'un enregistrement, rejet, acceptation par la route de la pratique (OPT-15) | Core/Records |
 | GET `/internal/events` | Jeton du conteneur `features`, port interne 8081 seulement | Fil d'événements des fonctionnalités optionnelles, curseur, purge à 7 jours (OPT-10 à OPT-12) | Core/Features |
 | GET `/api/features` | User | Clés des fonctionnalités optionnelles activées, lues par le registre de l'interface (OPT-04) | Core/Features |
 | GET `/api/admin/features`, PUT `/api/admin/features/{key}` | Admin | Fonctionnalités optionnelles : conteneur contrôlé, dépendances, activation et coupure tracées (OPT-01 à OPT-07, [ADR-0023](../decisions/adr-0023-fonctionnalites-optionnelles-et-modele-de-langage.md)) | Core/Features |
