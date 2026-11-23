@@ -130,6 +130,12 @@ aujourd'hui, la seule [CMDB assistée](cmdb-assistee.md). Le tri assisté des ti
   réseau de l'organisation. La mémoire et le temps de réponse nécessaires dépendent du
   modèle ; le jeu d'essai de la CMDB assistée ([CMA-11](cmdb-assistee.md)) les mesure et les
   consigne.
+- **Fil d'événements, côté conteneur** : le conteneur lit le fil toutes les 5 secondes
+  (`Events:PollMilliseconds`), page après page quand il a du retard ; sans fonctionnalité
+  activée (403) ou API injoignable, il réessaie toutes les 30 secondes
+  (`Events:IdleMilliseconds`). Son curseur vit en mémoire : à chaque démarrage, il relit le fil
+  gardé par l'API (7 jours), et une proposition redéposée à l'identique n'est pas recréée
+  (OPT-14). Chaque fonctionnalité a sa file et son exécutant (OPT-28).
 - **Mode démonstration** : le conteneur `features` démarre avec le seul tri assisté des
   tickets activé ; la CMDB assistée et le serveur MCP restent coupés (aucun modèle de
   langage dans la démonstration).
