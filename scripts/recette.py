@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Recette de la pile de démonstration, une fois les données d'exemple chargées.
 
-    python3 scripts/recette.py http://localhost
+    python3 scripts/recette.py http://localhost [--fonctionnalites]
 
 Passe par l'interface (nginx, port 80) comme un navigateur : page d'accueil servie,
 connexion de chaque rôle de démonstration, jeu de données complet lu par l'API, santé
-de la plateforme vue par l'Admin. Code 1 au premier écart. Lancé par le job Recette de
+de la plateforme vue par l'Admin. Avec --fonctionnalites (pile lancée avec le profil
+« fonctionnalites ») : le conteneur « features » doit être joignable par l'API, jeton
+reconnu. Code 1 au premier écart. Lancé par le job Recette de
 la CI (docs/reference/architecture.md § Intégration continue).
 """
 import json
@@ -14,6 +16,7 @@ import urllib.error
 import urllib.request
 
 BASE = (sys.argv[1] if len(sys.argv) > 1 else 'http://localhost').rstrip('/')
+FONCTIONNALITES = '--fonctionnalites' in sys.argv[2:]
 COMPTES = {
     'admin': ('demo.admin', 'Demo-Admin-2026'),
     'manager': ('demo.manager', 'Demo-Manager-2026'),
@@ -28,6 +31,7 @@ ATTENDU = {
 # Composants qui doivent être « OK » sur une pile neuve ; les autres peuvent être dégradés
 # (pas de service d'embeddings dans la recette, tâches de fond pas encore passées).
 ESSENTIELS = ('Base de données', 'Annuaire')
+CONTENEUR = 'Conteneur « features »'
 ecarts = []
 
 
@@ -51,6 +55,12 @@ def controle(libelle, ok, detail=''):
 def main():
     accueil = appel('/')
     controle('Interface servie', '<div id="root"' in accueil)
+    # OPT-11 : les routes internes n'existent que sur le port interne de l'API, jamais par nginx.
+    try:
+        appel('/internal/events')
+        controle('Routes internes absentes de l\'interface', False, '/internal/events répond 200')
+    except urllib.error.HTTPError as e:
+        controle('Routes internes absentes de l\'interface', e.code == 404, f'/internal/events : HTTP {e.code}')
 
     jetons = {}
     for role, (nom, mdp) in COMPTES.items():
@@ -75,8 +85,11 @@ def main():
             controle(f'Lecture des incidents par {role}', False, f'HTTP {e.code}')
 
     sante = appel('/api/admin/health', jetons['admin'])
+    if FONCTIONNALITES:
+        present = any(c['name'] == CONTENEUR for c in sante['components'])
+        controle(f'Santé : {CONTENEUR} contrôlé par l\'API', present, '' if present else 'FEATURES_URL fourni à l\'API ?')
     for c in sante['components']:
-        essentiel = c['name'] in ESSENTIELS
+        essentiel = c['name'] in ESSENTIELS or (FONCTIONNALITES and c['name'] == CONTENEUR)
         controle(f"Santé : {c['name']} {c['state']}", c['state'] == 'OK' or (not essentiel and c['state'] != 'Hors service'),
                  c['message'])
 

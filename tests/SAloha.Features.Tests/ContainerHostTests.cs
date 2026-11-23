@@ -103,4 +103,16 @@ public class ContainerHostTests
         using var demo = Factory(ContainerHost.SampleToken, allowSample: true);
         Assert.Equal(HttpStatusCode.OK, (await Health(demo, ContainerHost.SampleToken)).StatusCode);
     }
+
+    [Fact]
+    public void OPT_10_le_jeton_d_exemple_est_celui_que_la_demonstration_donne_au_conteneur()
+    {
+        // Les tests s'exécutent depuis bin/… : on remonte jusqu'à la racine du dépôt.
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "docker-compose.demo.yml"))) dir = dir.Parent;
+        Assert.NotNull(dir);
+        var demo = File.ReadAllText(Path.Combine(dir.FullName, "docker-compose.demo.yml"));
+        Assert.Contains($"Features__Token: \"{ContainerHost.SampleToken}\"", demo);
+        Assert.Contains("Security__AllowSampleSecrets: \"true\"", demo[demo.IndexOf("\n  features:", StringComparison.Ordinal)..]);
+    }
 }

@@ -237,7 +237,7 @@ mainteneur. Les étapes 2 et 6 ajoutent un projet et une image à la CI : étiqu
 | Étape | Contenu | Règles | Statut |
 |---|---|---|---|
 | 1 ([#363](https://github.com/chrraj7/S-Aloha/issues/363)) | Socle : registre, Administration › Fonctionnalités optionnelles, `GET /api/features`, garde des routes, origine au journal d'audit | OPT-01 à OPT-08 | ✅ 2026-11-23 |
-| 2 ([#364](https://github.com/chrraj7/S-Aloha/issues/364)) | Contrat : port interne, jeton du conteneur, fil d'événements, lectures, propositions et décision ; conteneur `features` (hôte, sans fonctionnalité) | OPT-10 à OPT-17 | 🔜 (2a : OPT-10 à OPT-12, 2b : OPT-14, OPT-15, OPT-17, 2c : OPT-16 ✅ 2026-11-23 ; reste 2c : conteneur `features`, compose ; OPT-13 avec les étapes 3 et 5) |
+| 2 ([#364](https://github.com/chrraj7/S-Aloha/issues/364)) | Contrat : port interne, jeton du conteneur, fil d'événements, lectures, propositions et décision ; conteneur `features` (hôte, sans fonctionnalité) | OPT-10 à OPT-17 | ✅ 2026-11-23 (2a à 2c ; conteneur `features` et profil `fonctionnalites` du compose ; OPT-13, lectures internes, avec les étapes 3 et 5) |
 | 3 ([#365](https://github.com/chrraj7/S-Aloha/issues/365)) | Tri assisté des tickets dans le conteneur `features` : vote, impact, corrélation par règles et par le sens, panne probable, interface, jeu d'essai | TRI-01 à TRI-14 | 🔜 |
 | 4 ([#366](https://github.com/chrraj7/S-Aloha/issues/366)) | Modèle de langage : réglages, emplacement, pseudonymisation, validation, essai, trace | OPT-20 à OPT-28 | 🔜 |
 | 5 ([#367](https://github.com/chrraj7/S-Aloha/issues/367)) | CMDB assistée dans le conteneur `features` : analyses, propositions, fusion, aide au sas, convention de nommage, jeu d'essai | CMA-01 à CMA-12 | 🔜 |

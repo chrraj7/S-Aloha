@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 using SAloha.Api.Core.Auth;
 using SAloha.Api.Modules.ServiceConfigurationManagement.Discovery;
@@ -45,6 +46,26 @@ public class ComposeSecretsTests
         Assert.Contains(SampleSecrets.SampleVaultKey, demo);
         Assert.Contains(SampleDbPassword, demo);
         Assert.Contains("Security__AllowSampleSecrets: \"true\"", demo);
+    }
+
+    [Fact]
+    public void OPT_10_le_jeton_d_exemple_du_conteneur_ne_vit_que_dans_la_demonstration_et_S7_le_refuse()
+    {
+        var compose = Read("docker-compose.yml");
+        Assert.DoesNotContain(SampleSecrets.SampleFeaturesToken, compose);
+        Assert.Contains("Features__Token: \"${FEATURES_TOKEN:-}\"", compose);
+        Assert.Contains("profiles: [\"fonctionnalites\"]", compose);
+        // OPT-11 : le port interne de l'API ne se publie jamais.
+        Assert.DoesNotContain("8081:", compose);
+        // En démonstration, l'API et le conteneur reçoivent le même jeton d'exemple.
+        var demo = Read("docker-compose.demo.yml");
+        Assert.Equal(2, Regex.Matches(demo, Regex.Escape($"Features__Token: \"{SampleSecrets.SampleFeaturesToken}\"")).Count);
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Jwt:Key"] = new string('x', 64), ["Ldap:BindPassword"] = "vrai-secret", ["ConnectionStrings:Default"] = "Host=db;Password=autre",
+            ["Features:Token"] = SampleSecrets.SampleFeaturesToken
+        }).Build();
+        Assert.Contains("Features:Token", Assert.Single(SampleSecrets.Problems(config)));
     }
 
     [Fact]

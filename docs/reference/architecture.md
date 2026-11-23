@@ -283,10 +283,12 @@ arrivés par la fusion, pour repérer un squash dont le message a perdu la signa
 une pull request seulement, **Hygiène**
 (`scripts/check-hygiene.py` : trailers autres que `Signed-off-by` et termes réservés, lus dans
 le secret `HYGIENE_TERMES` ; bloquant et exigé pour fusionner depuis le 2026-11-03) ; **Recette** : la pile de démonstration construite depuis les sources sur une base
-vierge (annuaire Samba AD, API, interface, sans le service d'embeddings), les données
+vierge (annuaire Samba AD, API, interface, conteneur `features` du profil `fonctionnalites`,
+sans le service d'embeddings), les données
 d'exemple chargées par l'API (`demo/donnees/charger.py`), puis
 [`scripts/recette.py`](../../scripts/recette.py) par l'interface : connexion des trois rôles,
-jeu de données complet, santé de la base et de l'annuaire ; c'est la recette avant fusion ;
+jeu de données complet, santé de la base, de l'annuaire et du conteneur `features` (joignable,
+jeton reconnu) ; c'est la recette avant fusion ;
 sur une pull request seulement, **Preuve** ([`scripts/preuve.py`](../../scripts/preuve.py) :
 les tests ajoutés ou modifiés par la PR, rejoués sur le code de la base, doivent échouer — sinon
 ils ne prouvent pas le changement ; un code modifié sans test modifié échoue aussi ; exception
