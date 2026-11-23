@@ -1,6 +1,7 @@
 import React from 'react'
 import { api } from '../../api'
 import { titleField, descriptionField, ownerField, dateTimeFr } from '../../core/fields'
+import TriageSuggestions from './TriageSuggestions'
 
 // Gestion des incidents (ITIL 4) : minimiser l'impact négatif des incidents
 // en rétablissant le service normal au plus vite.
@@ -72,5 +73,7 @@ export const incidentConfig = {
     r.heldMinutes > 0 && `Attente cumulée : ${Math.round(r.heldMinutes / 6) / 10} h de service`],
   help: 'Prise en charge (En cours) : un responsable. Attente : un motif ; l\'horloge SLA s\'arrête et reprend au retour En cours. Résolution : description et code ; un doublon est relié à l\'incident conservé (onglet Liens). Réouverture : un motif, dans les 10 jours ouvrés. Même panne : rattacher l\'incident à un parent ; résoudre le parent résout ses enfants. Une attente de plus de 5 jours ouvrés remonte au responsable. Incident majeur : déclaré par un gestionnaire ; il se résout relié à un problème. Confier l\'incident à un autre groupe se motive.',
   suggestOnTyping: true,
+  // TRI-02 : suggestions du tri assisté à la saisie, s'il est activé.
+  createExtras: ({ form, merge }) => <TriageSuggestions form={form} merge={merge} />,
   linkHint: 'Problème sous-jacent, CI touchés, article de connaissance appliqué…',
 }

@@ -34,6 +34,8 @@ function NewRecord({ config, onCreated }) {
       <RecordForm fields={config.fields} form={f} onChange={merge} creating />
       {/* RAG-11 : cas similaires dès la saisie du titre (incidents, demandes). */}
       {config.suggestOnTyping && <TypingSuggestions text={f.title} />}
+      {/* Complément propre à la pratique, sous les cas similaires (suggestions du tri assisté, TRI-02). */}
+      {config.createExtras?.({ form: f, merge })}
       <button className="btn" onClick={submit} disabled={missing}>Enregistrer</button>
     </div>
   )
