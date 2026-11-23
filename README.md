@@ -4,10 +4,10 @@
 
 # S-Aloha
 
-La plateforme ITIL libre qui **aide à trier les tickets** et **à tenir la CMDB à jour**,<br/>
-et montre à chacun **ce qui requiert son intervention, maintenant**.
+La plateforme ITIL libre qui **aide à trier les tickets**, **à tenir la CMDB à jour**<br/>
+et **s'ouvre à vos assistants**, et montre à chacun **ce qui requiert son intervention, maintenant**.
 
-**Tri assisté des tickets** · **CMDB assistée** · **10 pratiques ITIL 4** reliées entre elles · **NIS 2** intégré · **on-prem** et libre
+**Tri assisté des tickets** · **CMDB assistée** · **Serveur MCP** · **10 pratiques ITIL 4** reliées entre elles · **NIS 2** intégré · **on-prem** et libre
 
 [![CI](https://github.com/chrraj7/S-Aloha/actions/workflows/ci.yml/badge.svg)](https://github.com/chrraj7/S-Aloha/actions/workflows/ci.yml)
 ![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)
@@ -41,6 +41,11 @@ Un modèle de langage, dans votre SI ou hébergé selon le choix de votre organi
 propose de renommer, normaliser, reclasser, fusionner les doublons et relier les CI, et
 aide au rapprochement de ce que la découverte trouve. Chaque proposition s'affiche avant et
 après ; un gestionnaire la décide. Les données envoyées sont pseudonymisées.
+
+**🔌 S-Aloha dans vos assistants** — *arrive avec la première version stable*
+Par le serveur MCP, l'assistant que chacun emploie déjà interroge ses tickets, la
+connaissance et l'impact d'un CI, sans copier-coller : en **lecture seule**, avec les
+droits de l'utilisateur, par des jetons personnels révocables.
 
 **🎯 Une console qui dit quoi faire**
 Chacun arrive sur ce qui l'attend, classé par criticité : incidents majeurs, SLA en risque,
@@ -102,8 +107,9 @@ règle, elles arrivent avec la **première version stable**
   aider au rapprochement du sas de découverte ; chaque proposition est décidée par un
   gestionnaire, avant et après côte à côte ; données pseudonymisées.
 - **[Serveur MCP](docs/reference/serveur-mcp.md)** — les assistants de vos utilisateurs
-  interrogent S-Aloha en **lecture seule**, avec les droits de chacun, par des jetons
-  personnels révocables.
+  interrogent S-Aloha en **lecture seule** (recherche, fiches, cas similaires, « Mon
+  travail », impact d'un CI, suggestions du tri), avec les droits de chacun, par des jetons
+  personnels révocables ; rien ne s'y écrit.
 
 ## Fonctionnalités
 
@@ -211,8 +217,8 @@ règle, elles arrivent avec la **première version stable**
   </tr>
 </table>
 
-Les captures du tri assisté et de la CMDB assistée prendront la tête de cet aperçu à leur
-livraison.
+Les captures du tri assisté, de la CMDB assistée et du serveur MCP prendront la tête de
+cet aperçu à leur livraison.
 
 ## Essayer en 5 minutes
 
@@ -253,8 +259,8 @@ appartenir à l'un des groupes `GRP-SALOHA-ADMINS`, `GRP-SALOHA-MANAGERS` ou
 La plupart des évolutions sont déjà **spécifiées règle par règle**, avec leurs scénarios
 d'acceptation ([pratiques ITIL](docs/reference/processus/readme.md)). Les prochains chantiers :
 
-- ✨ **Tri assisté des tickets et CMDB assistée**, dans un conteneur à part, activés par
-  l'Admin, et **serveur MCP** en lecture seule : **avant la première version stable**.
+- ✨ **Tri assisté des tickets**, **CMDB assistée** et **serveur MCP** en lecture seule,
+  hors de l'API, activés par l'Admin : **avant la première version stable**.
 - 📋 **Référentiels de conformité importés** par l'organisation (ISO 27002, CR-CMM…), à côté
   de NIS 2.
 - 🛰️ **Agent de découverte léger** pour les postes nomades, et **preuves NIS 2** nourries par
@@ -331,9 +337,10 @@ S-Aloha est un projet ouvert : code, documentation, retours d'usage, tout compte
 ## English
 
 **S-Aloha** is a free (AGPLv3), self-hosted **ITIL 4 service-management platform** that
-helps IT teams **triage tickets** and **keep their CMDB accurate**, and lands each user on
-an action-oriented console showing what needs their attention, ranked by severity.
-**Assisted ticket triage, assisted CMDB, 10 linked ITIL 4 practices, NIS 2 built in.**
+helps IT teams **triage tickets**, **keep their CMDB accurate** and **query it from their
+own assistants**, and lands each user on an action-oriented console showing what needs
+their attention, ranked by severity. **Assisted ticket triage, assisted CMDB, MCP server,
+10 linked ITIL 4 practices, NIS 2 built in.**
 
 - **Assisted features** (coming with the first stable release, specified rule by rule;
   switched on or off by the administrator, run outside the API in a separate container;
@@ -342,8 +349,9 @@ an action-oriented console showing what needs their attention, ranked by severit
   reasons; open incidents grouped by service, CI or meaning into a **probable outage**);
   **assisted CMDB** (a language model, on-premises or hosted as the organisation chooses,
   proposes renaming, normalising, reclassifying, merging duplicates and linking CIs, each
-  decided by a manager, with pseudonymised data); a read-only **MCP server** for users'
-  assistants, with each user's own permissions.
+  decided by a manager, with pseudonymised data); a read-only **MCP server** so that
+  users' assistants can search tickets, knowledge and CI impact with each user's own
+  permissions, through revocable personal tokens.
 
 - **User support**: incidents (P1–P4, major incidents, response and resolution targets in
   service hours, SLA-at-risk warnings), service requests (catalogue, pre-approved

@@ -9,18 +9,20 @@
 ## Pourquoi S-Aloha existe
 
 S-Aloha est une plateforme d'**intégration des processus ITIL** pour une DSI d'entreprise,
-qui **aide à trier les tickets** et **à tenir la CMDB à jour** : le **tri assisté des
-tickets** suggère la qualification d'un incident dès sa saisie et signale les pannes
-probables ; la **CMDB assistée** propose de normaliser, dédoublonner et relier les CI. Ces
-deux fonctionnalités assistées, activées par l'Admin, arrivent avec la première version
-stable ([fonctionnalités optionnelles](fonctionnalites-optionnelles.md)). Autour d'elles,
+qui **aide à trier les tickets**, **à tenir la CMDB à jour** et **s'ouvre aux assistants**
+de ses utilisateurs : le **tri assisté des tickets** suggère la qualification d'un incident
+dès sa saisie et signale les pannes probables ; la **CMDB assistée** propose de normaliser,
+dédoublonner et relier les CI ; le **serveur MCP** laisse l'assistant de chacun interroger
+S-Aloha en lecture seule, avec ses droits. Ces trois fonctionnalités, activées par l'Admin,
+arrivent avec la première version stable ([fonctionnalités optionnelles](fonctionnalites-optionnelles.md)). Autour d'elles,
 un seul outil pour les pratiques du cycle de vie du service IT — incidents, demandes,
 problèmes, changements, configuration, niveaux de service, connaissances, amélioration
 continue — avec la **conformité NIS 2** et la **gestion de projet** de la DSI sur le même
 socle.
 
 Ce qu'il apporte, en bref : des tickets triés et une CMDB tenue avec l'aide de
-propositions que l'équipe décide, une console qui dit à chacun quoi faire, des pratiques
+propositions que l'équipe décide, S-Aloha interrogeable depuis les assistants de chacun,
+une console qui dit à chacun quoi faire, des pratiques
 reliées entre elles, un cycle de vie ITIL tenu avec une trace de tout, une recherche qui
 trouve la solution avant le ticket, et un déploiement on-prem en logiciel libre. L'intégration
 en entreprise passe par l'**Active Directory** de l'organisation : connexion sans compte à

@@ -246,12 +246,12 @@ il démarre le conteneur `features` avec le **seul tri assisté** activé, qui n
 de modèle de langage ; la CMDB assistée et le serveur MCP y restent coupés. À faire avec
 l'étape 3.
 
-**Mise en avant** (décision du 2026-11-23) : le tri assisté des tickets et la CMDB
-assistée sont les deux fonctionnalités que S-Aloha met en avant dans toutes ses
+**Mise en avant** (décision du 2026-11-23) : le tri assisté des tickets, la CMDB assistée
+et le serveur MCP sont les trois fonctionnalités que S-Aloha met en avant dans toutes ses
 présentations et pages ; la connexion à l'Active Directory n'y est plus qu'un prérequis
 d'intégration en entreprise. README, produit et page Soutenir le disent depuis le
-2026-11-23, en annonçant les deux fonctionnalités pour la première version stable. À la
-livraison de chacune (étapes 3 et 5) : retirer cette annonce, ajouter son bloc à la page de
+2026-11-23, en annonçant les trois fonctionnalités pour la première version stable. À la
+livraison de chacune (étapes 3, 5 et 6) : retirer cette annonce, ajouter son bloc à la page de
 connexion (qui ne présente que des fonctionnalités existantes), ses captures en tête de
 l'aperçu du README, et refaire l'image de partage du dépôt.
 
