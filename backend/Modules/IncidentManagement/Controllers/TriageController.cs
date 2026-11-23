@@ -68,4 +68,51 @@ public class TriageController(AppDbContext db, PerimeterAccess access, FeaturesC
                 .Select(id => new { Id = id, seen[("incident", id)].Reference, seen[("incident", id)].Title, seen[("incident", id)].Status }).ToList(),
         });
     }
+
+    /// <summary>Champs mesurés, dans l'ordre de la page, et leur libellé.</summary>
+    private static readonly (string Field, string Label)[] Measured =
+        [("category", "Catégorie"), ("serviceId", "Service"), ("owner", "Groupe responsable"), ("impact", "Impact")];
+
+    /// <summary>
+    /// TRI-10 : pour chaque champ, sur 30 et 90 jours, la part des suggestions acceptées, corrigées (autre valeur
+    /// retenue), rejetées et laissées (expirées, ou sans décision quand l'incident a quitté « Nouveau ») ; celles d'un
+    /// incident encore Nouveau attendent leur décision et ne comptent pas encore. Les suggestions appliquées à la
+    /// saisie comptent acceptées (TRI-09).
+    /// </summary>
+    [HttpGet("~/api/admin/triage/metrics")]
+    [Authorize(Policy = "Admin")]
+    public async Task<IActionResult> Metrics()
+    {
+        var now = DateTime.UtcNow;
+        var rows = await db.Proposals.AsNoTracking()
+            .Where(p => p.Feature == FeatureCatalog.AssistedTriage && p.TargetType == "incident" && p.CreatedAt >= now.AddDays(-90))
+            .Select(p => new { p.Field, p.Status, p.CreatedAt, p.TargetId }).ToListAsync();
+        var open = rows.Where(r => r.Status == Proposal.Open).Select(r => r.TargetId).Distinct().ToList();
+        var stillNew = (await db.Incidents.AsNoTracking().Where(i => open.Contains(i.Id) && i.Status == "Nouveau").Select(i => i.Id).ToListAsync()).ToHashSet();
+        static int Share(int n, int total) => total == 0 ? 0 : (int)Math.Round(n * 100.0 / total);
+        object Window(int days)
+        {
+            var from = now.AddDays(-days);
+            return new
+            {
+                Days = days,
+                Fields = Measured.Select(m =>
+                {
+                    var mine = rows.Where(r => r.Field == m.Field && r.CreatedAt >= from).ToList();
+                    int accepted = mine.Count(r => r.Status == Proposal.Accepted), corrected = mine.Count(r => r.Status == Proposal.Corrected),
+                        rejected = mine.Count(r => r.Status == Proposal.Rejected),
+                        left = mine.Count(r => r.Status == Proposal.Expired || (r.Status == Proposal.Open && !stillNew.Contains(r.TargetId))),
+                        pending = mine.Count(r => r.Status == Proposal.Open && stillNew.Contains(r.TargetId));
+                    var decided = accepted + corrected + rejected + left;
+                    return new
+                    {
+                        m.Field, m.Label, Decided = decided, Accepted = accepted, Corrected = corrected, Rejected = rejected, Left = left, Pending = pending,
+                        AcceptedShare = Share(accepted, decided), CorrectedShare = Share(corrected, decided),
+                        RejectedShare = Share(rejected, decided), LeftShare = Share(left, decided),
+                    };
+                }).ToList(),
+            };
+        }
+        return Ok(new { Windows = new[] { Window(30), Window(90) } });
+    }
 }

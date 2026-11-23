@@ -282,6 +282,8 @@ public abstract class RecordController<T, TDto, TView>(AppDbContext db) : Contro
         });
         await BeforeSaveAsync(e, true);
         await db.SaveChangesAsync();
+        // TRI-09 : suggestions d'une fonctionnalité optionnelle appliquées à la saisie, pour l'origine et la mesure.
+        await ProposalDecisions.RecordAppliedAsync(db, Gate, LinkType, e, Request.Headers[ProposalDecisions.SuggestionsHeader], Me, MyDisplay);
         await OnCreatedAsync(e);
         await NotifyAsync(e, "", (null, null));
         return CreatedAtAction(nameof(Get), new { id = e.Id }, View(e));
