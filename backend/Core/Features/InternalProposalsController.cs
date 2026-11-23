@@ -11,7 +11,8 @@ namespace SAloha.Api.Core.Features;
 /// OPT-14 : le conteneur dépose une proposition. L'API vérifie la fonctionnalité (activée), la cible
 /// (elle existe), le champ (proposable par cette fonctionnalité) et la valeur (liste fermée du champ) ;
 /// une proposition identique à une proposition ouverte n'est pas recréée. La valeur « avant » est lue
-/// par l'API sur l'enregistrement, pas reprise du conteneur.
+/// par l'API sur l'enregistrement, pas reprise du conteneur. Une proposition ouverte devenue périmée est
+/// recalculée en place ; une valeur rejetée ou corrigée n'est pas reproposée.
 /// </summary>
 [ApiController]
 [Route("internal/proposals")]
@@ -37,9 +38,28 @@ public class InternalProposalsController(AppDbContext db, IFeatureGate gate) : C
         var reasons = input.Reasons?.Trim() ?? "";
         if (reasons.Length > 1000) return BadRequest(new { message = "Motifs : 1 000 caractères au plus." });
 
-        var existing = await db.Proposals.AsNoTracking().FirstOrDefaultAsync(p => p.Status == Proposal.Open && p.Feature == feature.Key
-            && p.TargetType == field.TargetType && p.TargetId == record.Id && p.Field == field.Name && p.After == after);
-        if (existing is not null) return Ok(new { existing.Id, Created = false });
+        var same = db.Proposals.Where(p => p.Feature == feature.Key && p.TargetType == field.TargetType && p.TargetId == record.Id
+            && p.Field == field.Name && p.After == after);
+        // OPT-14 : une valeur que l'agent a écartée (rejetée, ou corrigée par une autre valeur) ne revient pas
+        // quand le conteneur recalcule après une modification de l'enregistrement.
+        if (await same.AsNoTracking().FirstOrDefaultAsync(p => p.Status == Proposal.Rejected || p.Status == Proposal.Corrected) is { } declined)
+            return Ok(new { declined.Id, Created = false });
+        var existing = await same.FirstOrDefaultAsync(p => p.Status == Proposal.Open);
+        if (existing is not null)
+        {
+            // OPT-15 : périmée (enregistrement modifié depuis), elle est recalculée à l'identique : valeur avant,
+            // motifs, sources et confiance repris, et datée de ce calcul ; elle redevient acceptable.
+            if (record.UpdatedAt > existing.CreatedAt)
+            {
+                existing.Before = before;
+                existing.Reasons = reasons;
+                existing.CitedJson = JsonSerializer.Serialize((input.Cited ?? []).Take(20).ToList(), JsonSerializerOptions.Web);
+                existing.Confidence = input.Confidence is { } recalculated ? Math.Clamp(recalculated, 0, 1) : null;
+                existing.CreatedAt = DateTime.UtcNow;
+                await db.SaveChangesAsync();
+            }
+            return Ok(new { existing.Id, Created = false });
+        }
 
         var proposal = new Proposal
         {
