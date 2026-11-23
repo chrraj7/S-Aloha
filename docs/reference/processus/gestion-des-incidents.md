@@ -3,6 +3,8 @@
 > Pratique ITIL 4 *Incident management*. Code : `backend/Modules/IncidentManagement`,
 > `frontend/src/modules/incident-management`. Préfixe des règles : **INC**. Socle commun et
 > conventions (✅ / 🔜, lots) : [règles métier](../regles-metier.md).
+> Fonctionnalité optionnelle qui s'y greffe : [tri assisté des tickets](../tri-assiste-des-tickets.md)
+> (suggestions de catégorie, service, groupe et impact, panne probable ; règles TRI).
 
 <sub>[← Règles métier](../regles-metier.md) · [Toutes les pratiques](readme.md)</sub>
 
