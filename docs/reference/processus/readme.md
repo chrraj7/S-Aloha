@@ -28,10 +28,10 @@
 | [Recherche](../recherche.md) | RAG | 12 | 0 | 0 | 1 |
 | [Reporting](../reporting.md) | REP | 43 | 0 | 0 | 0 |
 | [Fonctionnalités optionnelles](../fonctionnalites-optionnelles.md) | OPT | 16 | 0 | 0 | 9 |
-| [Tri assisté des tickets](../tri-assiste-des-tickets.md) | TRI | 4 | 0 | 0 | 10 |
+| [Tri assisté des tickets](../tri-assiste-des-tickets.md) | TRI | 6 | 0 | 0 | 8 |
 | [CMDB assistée](../cmdb-assistee.md) | CMA | 0 | 0 | 0 | 12 |
 | [Serveur MCP](../serveur-mcp.md) | MCP | 0 | 0 | 0 | 9 |
-| **Total** | | **372** | **0** | **0** | **41** |
+| **Total** | | **374** | **0** | **0** | **39** |
 
 *Comptes au 2026-11-16 (main `84c4070`), sur les tableaux de règles (hors indicateurs du § 8
 des pratiques ; les règles REP du [reporting](../reporting.md) qui les affichent sont comptées).
