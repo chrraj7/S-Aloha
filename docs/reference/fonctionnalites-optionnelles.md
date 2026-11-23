@@ -98,7 +98,7 @@ aujourd'hui, la seule [CMDB assistée](cmdb-assistee.md). Le tri assisté des ti
 | Administration › Fonctionnalités optionnelles | Réglages propres de chaque fonctionnalité ; sous-page **Modèle de langage** (OPT-20 à OPT-26) | 🔜 |
 | Administration › Santé | Une ligne par conteneur (`features`, `mcp`) configuré ou porteur d'une fonctionnalité activée, et par fonctionnalité activée (OPT-05, OPT-07) | ✅ |
 | Onglet Historique, journal global | Origine marquée et filtrée ; colonne « Origine » de l'export (OPT-08) | ✅ |
-| Pratiques concernées | Encadrés de propositions, propres à chaque fonctionnalité ([tri](tri-assiste-des-tickets.md#4-interface), [CMDB](cmdb-assistee.md#4-interface)) | 🔜 |
+| Pratiques concernées | Encadré commun des propositions (`core/components/Proposals.jsx`) : une ligne par champ, motif et sources visibles, accepter, corriger, rejeter ; propre à chaque fonctionnalité par ses champs ([tri](tri-assiste-des-tickets.md#4-interface), [CMDB](cmdb-assistee.md#4-interface)) | ✅ (tri assisté, fiche incident ; CMDB assistée à l'étape 5) |
 
 ## 6. API
 

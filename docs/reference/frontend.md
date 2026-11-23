@@ -348,6 +348,7 @@ un onglet sans contenu reste visible avec un état vide explicite.
 |---|---|---|---|
 | Informations | Champs du § 3, actions de transition (§ 4) en boutons nommés par l'étape (« Prendre en charge », « Autoriser »…) | § 3 et § 4 de chaque pratique | ✅ (champs) / 🔜 (boutons de transition) |
 | Suppression (Informations) | Bouton « Supprimer » (Admin ; analyse ou action d'un problème : Manager) ; boîte de dialogue `core/components/DeleteDialog.jsx` qui rappelle la référence et liste ce qui part avec, focus sur « Annuler », Échap pour fermer | SOC-14 | ✅ |
+| Propositions (Informations) | Fonctionnalité optionnelle activée seulement (OPT-04) : encadré commun des propositions ouvertes (`core/components/Proposals.jsx`), une ligne par champ, accepter (par la modification de la fiche, en-tête `X-S-Aloha-Proposal`), corriger, rejeter ; bandeau « Panne probable » de la fiche incident (`OutageBanner`, TRI-07) | OPT-15, TRI-07, TRI-09 | ✅ |
 | Propre à la pratique | Analyse de cause racine et Actions correctives (problème), Relations et impact (CI), Accords (SLA) (service), Conflits (changement) | PRB-05, CFG-04, SLM-02, CHG-09 | ✅ |
 | Liens | Enregistrements reliés, toutes pratiques ; onglet dédié ; un enregistrement d'un autre périmètre est listé masqué, sans lien ni retrait (PER-08) | SOC-12, PER-08 | ✅ |
 | Commentaires | Fil chronologique, public ou note de travail (marquée, invisible du demandeur) ; `core/components/Comments.jsx` | SOC-24 | ✅ |
