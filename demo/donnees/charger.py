@@ -386,6 +386,18 @@ def activer_tri(admin):
     return False
 
 
+def attendre_index(admin, minimum):
+    """Les voisins du vote sont les incidents résolus de l'index de recherche (RAG-03), tenu en tâche de fond :
+    on attend qu'il les contienne, vecteurs compris quand le service d'embeddings répond, 3 minutes au plus."""
+    for _ in range(36):
+        etat = appel('GET', '/api/search/status', admin)
+        incidents = next((s for s in etat['sources'] if s['type'] == 'incident'), None)
+        if incidents and incidents['records'] >= minimum and (not etat['embeddings']['reachable']
+                                                             or incidents['withVector'] >= incidents['passages']):
+            return
+        time.sleep(5)
+
+
 def tri_assiste(m, a):
     """Mode démonstration du tri assisté (ADR-0023) : ses voisins (incidents résolus du jeu d'essai de TRI-12), le
     tri activé, puis une panne probable de quatre incidents ouverts. Sans conteneur « features » joignable, le tri
@@ -404,6 +416,7 @@ def tri_assiste(m, a):
     if not activer_tri(a):
         print('Tri assisté non activé : conteneur « features » injoignable (profil « fonctionnalites »).')
         return
+    attendre_index(a, len(jeu['resolus']))
     # Après l'activation seulement : un événement n'est inscrit au fil que si une fonctionnalité le lit (OPT-12).
     # La panne porte son service ; les incidents isolés n'en ont pas, pour ne rien relier par les règles.
     for o in jeu['ouverts']:

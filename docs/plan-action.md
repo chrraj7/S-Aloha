@@ -245,8 +245,8 @@ mainteneur. Les étapes 2 et 6 ajoutent un projet et une image à la CI : étiqu
 
 **Mode démonstration** (décidé le 2026-11-23, [ADR-0009](decisions/adr-0009-mode-demonstration-public.md)) :
 il démarre le conteneur `features` avec le **seul tri assisté** activé, qui ne demande pas
-de modèle de langage ; la CMDB assistée et le serveur MCP y restent coupés. À faire avec
-l'étape 3.
+de modèle de langage ; la CMDB assistée et le serveur MCP y restent coupés. Fait le 2026-11-23
+(#365, 3e) : le chargeur active le tri et charge son jeu d'essai, dont une panne probable.
 
 **Mise en avant** (décision du 2026-11-23) : le tri assisté des tickets, la CMDB assistée
 et le serveur MCP sont les trois fonctionnalités que S-Aloha met en avant dans toutes ses
