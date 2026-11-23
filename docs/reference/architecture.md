@@ -68,6 +68,11 @@ backend/                              # projet SAloha.Api (namespace SAloha.Api.
     ├── ComplianceAssessment/         # Conformité NIS 2 : Assessments, référentiel
     └── ProjectManagement/            # Projets : Projects et ses composants (phases, sprints, éléments de travail…)
         # chaque module : Controllers/ et Models/ (Entities.cs : entités et DTO d'entrée ; Views.cs : DTO de réponse)
+        # lectures internes d'une pratique pour le conteneur features : Controllers/Internal*Controller.cs (OPT-13)
+
+features/SAloha.Features/             # conteneur features, hors de l'API (ADR-0023), sans accès à la base
+├── Host/                             # ContainerHost (jeton, /health), ApiClient (port interne de l'API), EventLoop (fil, une file par fonctionnalité)
+└── TicketTriage/                     # tri assisté des tickets : TicketTriage (fil → propositions), TriageRules (vote, impact, motifs)
 ```
 
 ### Socle commun des processus (`Core/Records`)
@@ -245,7 +250,7 @@ Détails (registre des modules, thème, design) : [frontend.md](frontend.md).
 | Suite | Commande | Outillage |
 |---|---|---|
 | API (intégration) | `TESTCONTAINERS_RYUK_DISABLED=true dotnet test tests/SAloha.Api.Tests` | xUnit + `WebApplicationFactory` sur un PostgreSQL jetable (Testcontainers 4.16, image `postgres:18-alpine`) ; **Docker requis** |
-| Conteneur `features` | `dotnet test tests/SAloha.Features.Tests` | xUnit + `WebApplicationFactory` sur l'hôte seul (jeton du conteneur, contrôle de santé), sans base ni API |
+| Conteneur `features` | `dotnet test tests/SAloha.Features.Tests` | xUnit + `WebApplicationFactory` sur l'hôte (jeton du conteneur, contrôle de santé), règles du tri assisté en fonctions pures, et tri de bout en bout contre un port interne factice de l'API (fil d'événements, lectures, propositions), sans base |
 | Frontend | `cd frontend && npm test` | Vitest + Testing Library (jsdom) |
 
 - L'API, le conteneur `features` et leurs projets de tests ciblent **net10.0** (LTS) ; un seul SDK suffit, en local comme
