@@ -35,6 +35,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Notifications.MailPreference> MailPreferences => Set<Notifications.MailPreference>();
     public DbSet<Attachments.Attachment> Attachments => Set<Attachments.Attachment>();
     public DbSet<Platform.StorageSettings> StorageSettings => Set<Platform.StorageSettings>();
+    public DbSet<Features.OptionalFeature> OptionalFeatures => Set<Features.OptionalFeature>();
     public DbSet<Itil.Category> Categories => Set<Itil.Category>();
     // Gestion des problèmes
     public DbSet<Problem> Problems => Set<Problem>();

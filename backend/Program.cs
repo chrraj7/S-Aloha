@@ -31,6 +31,10 @@ builder.Services.AddHostedService<IndexWorker>();
 
 // Découverte automatique (CFG-40 à CFG-47) : collecteurs, coffre, rapprochement, file d'exécution.
 builder.Services.AddSingleton<SAloha.Api.Core.Administration.Heartbeats>();
+// Fonctionnalités optionnelles (ADR-0023) : choix de l'Admin, contrôle de santé des conteneurs.
+builder.Services.AddSingleton<SAloha.Api.Core.Features.IFeatureGate, SAloha.Api.Core.Features.FeatureGate>();
+builder.Services.AddHttpClient<SAloha.Api.Core.Features.ContainerProbe>();
+builder.Services.AddScoped<SAloha.Api.Core.Features.FeatureStatus>();
 builder.Services.AddScoped<SAloha.Api.Core.Administration.Duplicates>();
 builder.Services.AddSingleton<CredentialVault>();
 builder.Services.AddScoped<SAloha.Api.Core.Platform.MailSender>();
