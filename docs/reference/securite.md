@@ -46,7 +46,10 @@ Trois policies imbriquées dans `backend/Program.cs` :
 | `Admin` | Admin |
 
 Toute route sauf `/api/auth/login` et les sondes `/health/live` et `/health/ready` (état seul,
-sans détail, O1) exige au minimum `User`. Au-delà des policies, le
+sans détail, O1) exige au minimum `User`. Les routes internes des fonctionnalités optionnelles
+(`/internal/…`) n'existent que sur le port interne 8081, et exigent le jeton du conteneur
+`features` (`Features:Token`, 32 caractères au moins, comparé en temps constant ; policy
+`FeatureContainer`) : un jeton d'utilisateur n'y ouvre rien ([OPT-10, OPT-11](fonctionnalites-optionnelles.md#3-contrat-entre-lapi-et-le-conteneur-des-fonctionnalités)). Au-delà des policies, le
 **rôle effectif par périmètre** (`Core/Perimeters/PerimeterAccess`, [périmètres](perimetres.md))
 décide de la visibilité (404 hors de ses périmètres) et des décisions de gestionnaire (403),
 dans le socle des pratiques et le module Problèmes. Le frontend masque des
@@ -87,6 +90,7 @@ est toujours vérifié ; « Aucun » chiffrement ne convient qu'à un relais du 
 |---|---|---|
 | 80 | `web` (nginx) | Frontend + proxy `/api/` |
 | 8080 | `api` | API **et Swagger** (`/swagger`), exposés directement |
+| 8081 | `api` (port interne) | Routes `/internal/…` du conteneur des fonctionnalités optionnelles et sondes, rien d'autre ; **jamais publié** hors du réseau compose ([OPT-11](fonctionnalites-optionnelles.md#3-contrat-entre-lapi-et-le-conteneur-des-fonctionnalités)) |
 | — | `db` | Non publié hors du réseau compose |
 | sortant | `api` (découverte) | Ping, ports TCP témoins, SNMP (UDP 161) vers les réseaux des tâches de scan, LDAP vers l'annuaire : à ouvrir par le pare-feu vers les seuls réseaux à inventorier ([CFG-46](processus/gestion-de-la-configuration.md)) |
 | — | `garage` | Stockage S3 des pièces jointes (profil `pieces-jointes`) : non publié hors du réseau compose ; l'API l'atteint sur `garage:3900` ([SOC-25](regles-metier.md#8-notifications)) |
