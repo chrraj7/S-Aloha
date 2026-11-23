@@ -9,6 +9,53 @@ import { incidentConfig } from '../config'
 import { useServiceConfig } from '../../../core/useServices'
 import { useCategoryConfig } from '../../../core/useCategories'
 import usePerimeters from '../../../core/usePerimeters'
+import { useFeatures } from '../../../core/features'
+import Proposals from '../../../core/components/Proposals'
+import { toForm, toPayload } from '../../../core/components/RecordForm'
+
+const TRIAGE = 'assisted-ticket-triage'
+/** TRI-01 : le tri suggère tant que l'incident est Nouveau ou En cours. */
+const TRIAGED = ['Nouveau', 'En cours']
+const BASIS = { ci: 'reliés à un même CI', sens: 'aux descriptions proches' }
+
+/** « depuis 09:12 » le jour même, la date et l'heure sinon. */
+const since = d => {
+  const t = new Date(d)
+  return t.toDateString() === new Date().toDateString()
+    ? t.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : dateTimeFr(d)
+}
+
+/**
+ * TRI-07 : bandeau « Panne probable » des incidents liés d'un même périmètre. Il propose de rattacher l'incident
+ * au parent proposé (le plus ancien, ou son parent, INC-16) et, à un gestionnaire, de déclarer ce parent majeur
+ * (INC-13). Les deux suivent leurs propres règles.
+ */
+export function OutageBanner({ incident, config, reload }) {
+  const [outage, setOutage] = useState(null)
+  const [error, setError] = useState('')
+  const load = () => Promise.resolve().then(() => api.incidents.triage(incident.id)).then(t => setOutage(t?.outage ?? null)).catch(() => setOutage(null))
+  useEffect(() => { load() }, [incident.id, incident.updatedAt])
+  if (!outage) return null
+  const parent = outage.parent
+  const attach = () => api.incidents.setParent(incident.id, parent.reference).then(() => { setError(''); reload(); load() }).catch(e => setError(e.message))
+  const declare = () => api.incidents.get(parent.id)
+    .then(p => api.incidents.update(p.id, { ...(config.keep?.(p) ?? {}), ...toPayload(config.fields, { ...toForm(config.fields, p), isMajor: true }), status: p.status }))
+    .then(() => { setError(''); reload(); load() }).catch(e => setError(e.message))
+  return (
+    <section className="card notice" style={{ marginTop: 16 }} role="status" aria-label="Panne probable">
+      <h3 className="card-title">Panne probable</h3>
+      <p><b>{outage.count} incidents ouverts {outage.service ? `sur ${outage.service.title}` : BASIS[outage.basis] ?? 'liés'} depuis {since(outage.since)}</b></p>
+      {error && <div className="error" role="alert">{error}</div>}
+      <ul className="small">{outage.members.map(m => (
+        <li key={m.id}>{m.id === incident.id ? <b>{m.reference}</b> : <Link to={`/incidents/${m.id}`}><b>{m.reference}</b></Link>} {m.title} <span className="badge">{m.status}</span></li>))}
+      </ul>
+      <div className="toolbar">
+        {parent && parent.id !== incident.id && !incident.parentId && <button className="btn small" onClick={attach}>Rattacher à {parent.reference}</button>}
+        {parent && outage.canDeclareMajor && <button className="btn ghost small" onClick={declare}>Déclarer {parent.reference} incident majeur</button>}
+      </div>
+    </section>
+  )
+}
 
 /**
  * Un incident récurrent ou de cause inconnue ouvre un problème, relié à l'incident (INC-14),
@@ -147,6 +194,13 @@ export function Regulatory({ incident, reload }) {
 
 export default function IncidentDetail() {
   const config = useCategoryConfig(useServiceConfig(incidentConfig), 'incident')
+  // OPT-04 : le tri coupé, ni bandeau ni encadré.
+  const triage = useFeatures().has(TRIAGE)
   if (!config) return <p>Chargement…</p>
-  return <RecordDetail config={config}>{(r, reload) => <><Regulatory incident={r} reload={reload} /><Family incident={r} reload={reload} /><OpenProblem incident={r} /><SimilarCases type="incident" id={r.id} /></>}</RecordDetail>
+  return <RecordDetail config={config}>{(r, reload) => <>
+    {triage && <OutageBanner incident={r} config={config} reload={reload} />}
+    {triage && TRIAGED.includes(r.status) &&
+      <Proposals config={config} record={r} reload={reload} title="Suggestions du tri assisté" reasonPrefix="Tri assisté : " />}
+    <Regulatory incident={r} reload={reload} /><Family incident={r} reload={reload} /><OpenProblem incident={r} /><SimilarCases type="incident" id={r.id} />
+  </>}</RecordDetail>
 }
