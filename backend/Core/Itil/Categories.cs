@@ -45,7 +45,7 @@ public record CategoryDto(string Practice, string Name, bool Active = true);
 [Authorize(Policy = "User")]
 public class CategoriesController(AppDbContext db) : ControllerBase
 {
-    private Task<Dictionary<string, int>> UsageAsync(string practice) => practice == "incident"
+    internal static Task<Dictionary<string, int>> UsageAsync(AppDbContext db, string practice) => practice == "incident"
         ? db.Incidents.AsNoTracking().Where(i => i.Category != "").GroupBy(i => i.Category.ToLower()).ToDictionaryAsync(g => g.Key, g => g.Count())
         : db.Problems.AsNoTracking().Where(p => p.Category != "").GroupBy(p => p.Category.ToLower()).ToDictionaryAsync(g => g.Key, g => g.Count());
 
@@ -53,7 +53,7 @@ public class CategoriesController(AppDbContext db) : ControllerBase
     public async Task<IActionResult> List([FromQuery] string practice)
     {
         if (Allowed.Check("Pratique", practice, Category.Practices) is { } error) return BadRequest(new { message = error });
-        var usage = await UsageAsync(practice);
+        var usage = await UsageAsync(db, practice);
         var list = await db.Categories.AsNoTracking().Where(c => c.Practice == practice).OrderBy(c => c.Name).ToListAsync();
         return Ok(list.Select(c => new CategoryView(c.Id, c.Practice, c.Name, c.Active, usage.GetValueOrDefault(c.Name.ToLower()))));
     }
@@ -79,7 +79,7 @@ public class CategoriesController(AppDbContext db) : ControllerBase
         if (dto.Practice != c.Practice) return BadRequest(new { message = "Une catégorie ne change pas de pratique." });
         if (await ApplyAsync(c, dto) is { } error) return BadRequest(new { message = error });
         await db.SaveChangesAsync();
-        return Ok(new CategoryView(c.Id, c.Practice, c.Name, c.Active, (await UsageAsync(c.Practice)).GetValueOrDefault(c.Name.ToLower())));
+        return Ok(new CategoryView(c.Id, c.Practice, c.Name, c.Active, (await UsageAsync(db, c.Practice)).GetValueOrDefault(c.Name.ToLower())));
     }
 
     /// <summary>Une catégorie utilisée ne se supprime pas : elle se désactive (409).</summary>
@@ -89,7 +89,7 @@ public class CategoriesController(AppDbContext db) : ControllerBase
     {
         var c = await db.Categories.FirstOrDefaultAsync(x => x.Id == id);
         if (c is null) return NotFound();
-        var used = (await UsageAsync(c.Practice)).GetValueOrDefault(c.Name.ToLower());
+        var used = (await UsageAsync(db, c.Practice)).GetValueOrDefault(c.Name.ToLower());
         if (used > 0) return Conflict(new { message = $"« {c.Name} » est utilisée par {used} enregistrement(s) : la désactiver plutôt que la supprimer." });
         db.Categories.Remove(c);
         await db.SaveChangesAsync();
@@ -106,5 +106,25 @@ public class CategoriesController(AppDbContext db) : ControllerBase
             return $"La catégorie « {name} » existe déjà.";
         c.Practice = dto.Practice; c.Name = name; c.Active = dto.Active;
         return Lengths.Check(c);
+    }
+}
+
+/// <summary>
+/// OPT-13 : les catégories d'une pratique, dans la vue de l'API publique, pour le conteneur
+/// <c>features</c> : un voisin ne vote que pour une catégorie active (TRI-03, ADM-51).
+/// </summary>
+[ApiController]
+[Route("internal/categories")]
+[Authorize(Policy = SAloha.Api.Core.Features.ContainerTokenHandler.Policy)]
+[SAloha.Api.Core.Features.InternalFeature(SAloha.Api.Core.Features.FeatureCatalog.AssistedTriage)]
+public class InternalCategoriesController(AppDbContext db) : ControllerBase
+{
+    [HttpGet]
+    public async Task<IActionResult> List([FromQuery] string practice)
+    {
+        if (Allowed.Check("Pratique", practice, Category.Practices) is { } error) return BadRequest(new { message = error });
+        var usage = await CategoriesController.UsageAsync(db, practice);
+        var list = await db.Categories.AsNoTracking().Where(c => c.Practice == practice).OrderBy(c => c.Name).ToListAsync();
+        return Ok(list.Select(c => new CategoryView(c.Id, c.Practice, c.Name, c.Active, usage.GetValueOrDefault(c.Name.ToLower()))));
     }
 }
