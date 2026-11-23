@@ -31,6 +31,7 @@ qu'un sponsoring de fonctionnalité peut accélérer :
 
 | Chantier | Ce que l'organisation y gagne |
 |---|---|
+| **Tri assisté des tickets, CMDB assistée et serveur MCP** ([fonctionnalités optionnelles](reference/fonctionnalites-optionnelles.md)) | Les avoir plus tôt, mesurées sur des jeux d'essai : des incidents qualifiés dès la saisie, des pannes repérées tôt, une CMDB sans doublons ni noms hétérogènes, S-Aloha interrogeable depuis les assistants des équipes |
 | **Référentiels de conformité importés** (ISO 27002, CR-CMM…) | Évaluer d'autres référentiels que NIS 2 avec le même outillage : scores, écarts, actions |
 | **Recherche dans les pièces jointes** ([recherche](reference/recherche.md)) | Retrouver une procédure ou un rapport par le texte des documents joints aux fiches |
 | **Agent d'inventaire nomade** (découverte des postes hors réseau, [configuration](reference/processus/gestion-de-la-configuration.md)) | Une CMDB à jour pour les postes itinérants, preuves NIS 2 alimentées par la découverte |

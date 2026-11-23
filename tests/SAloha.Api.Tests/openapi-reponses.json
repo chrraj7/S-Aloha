@@ -151,6 +151,17 @@
     "status": "string",
     "title": "string"
   },
+  "FeatureView": {
+    "available": "boolean",
+    "container": "string",
+    "containerState": "ContainerState",
+    "dependencies": "array[DependencyState]",
+    "key": "string",
+    "name": "string",
+    "state": "string",
+    "updatedAt": "string:date-time",
+    "updatedBy": "string"
+  },
   "ImprovementView": {
     "abandonReason": "string",
     "baseline": "string",

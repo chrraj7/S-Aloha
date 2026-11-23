@@ -65,6 +65,8 @@ const records = (path) => ({
 
 export const api = {
   audit: { list: (type, id) => request(`/audit?type=${type}&id=${id}`) },
+  // OPT-04 : clés des fonctionnalités optionnelles activées.
+  features: () => request('/features'),
   // Administration (ADM, Admin) : santé, journal d'audit global.
   // SOC-25 : pièces jointes d'un enregistrement (le téléchargement est un simple lien).
   attachments: {
@@ -96,7 +98,10 @@ export const api = {
     testMail: (to) => request('/admin/settings/mail/test', { method: 'POST', body: JSON.stringify({ to }) }),
     storage: () => request('/admin/settings/storage'),
     saveStorage: (dto) => request('/admin/settings/storage', { method: 'PUT', body: JSON.stringify(dto) }),
-    testStorage: () => request('/admin/settings/storage/test', { method: 'POST' })
+    testStorage: () => request('/admin/settings/storage/test', { method: 'POST' }),
+    // OPT-01 à OPT-03 : fonctionnalités optionnelles, activation et coupure.
+    features: () => request('/admin/features'),
+    switchFeature: (key, enabled) => request(`/admin/features/${key}`, { method: 'PUT', body: JSON.stringify({ enabled }) })
   },
   login: (username, password) =>
     request('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }), quiet: true }),

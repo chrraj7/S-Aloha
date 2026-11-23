@@ -17,6 +17,10 @@ public class AuditEntry
     public const string LinkAdded = "Lien ajouté";
     public const string LinkRemoved = "Lien retiré";
 
+    /// <summary>OPT-08 : origine d'une modification ; « Saisie » sauf quand elle applique une proposition.</summary>
+    public const string Saisie = "Saisie", AssistedTriage = "Tri assisté des tickets", AssistedCmdb = "CMDB assistée";
+    public static readonly string[] Origins = [Saisie, AssistedTriage, AssistedCmdb];
+
     public long Id { get; set; }
     [MaxLength(20)] public string EntityType { get; set; } = "";
     public int EntityId { get; set; }
@@ -31,4 +35,26 @@ public class AuditEntry
     [MaxLength(100)] public string Author { get; set; } = "";
     [MaxLength(200)] public string AuthorDisplayName { get; set; } = "";
     public DateTime At { get; set; } = DateTime.UtcNow;
+    [MaxLength(30)] public string Origin { get; set; } = Saisie;
+}
+
+/// <summary>
+/// OPT-08 : origine des lignes du journal écrites pendant un bloc <c>using (AuditOrigin.Use(…))</c>,
+/// par exemple l'application d'une proposition d'une fonctionnalité optionnelle. Portée asynchrone :
+/// elle suit les <c>await</c> du bloc, et ne fuit ni vers une autre requête ni vers une tâche de fond.
+/// </summary>
+public static class AuditOrigin
+{
+    private static readonly AsyncLocal<string?> current = new();
+    public static string Current => current.Value ?? AuditEntry.Saisie;
+
+    public static IDisposable Use(string origin)
+    {
+        if (!AuditEntry.Origins.Contains(origin)) throw new ArgumentException($"Origine inconnue : {origin}", nameof(origin));
+        var previous = current.Value;
+        current.Value = origin;
+        return new Restore(() => current.Value = previous);
+    }
+
+    private sealed class Restore(Action restore) : IDisposable { public void Dispose() => restore(); }
 }

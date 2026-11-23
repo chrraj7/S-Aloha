@@ -8,16 +8,25 @@
 
 ## Pourquoi S-Aloha existe
 
-S-Aloha est une plateforme d'**intégration des processus ITIL** pour une DSI d'entreprise :
-un seul outil, adossé à l'**Active Directory** de l'organisation, pour gérer les pratiques
-du cycle de vie du service IT — incidents, demandes, problèmes, changements, configuration,
-niveaux de service, connaissances, amélioration continue — avec la **conformité NIS 2** et la
-**gestion de projet** de la DSI sur le même socle.
+S-Aloha est une plateforme d'**intégration des processus ITIL** pour une DSI d'entreprise,
+qui **aide à trier les tickets**, **à tenir la CMDB à jour** et **s'ouvre aux assistants**
+de ses utilisateurs : le **tri assisté des tickets** suggère la qualification d'un incident
+dès sa saisie et signale les pannes probables ; la **CMDB assistée** propose de normaliser,
+dédoublonner et relier les CI ; le **serveur MCP** laisse l'assistant de chacun interroger
+S-Aloha en lecture seule, avec ses droits. Ces trois fonctionnalités, activées par l'Admin,
+arrivent avec la première version stable ([fonctionnalités optionnelles](fonctionnalites-optionnelles.md)). Autour d'elles,
+un seul outil pour les pratiques du cycle de vie du service IT — incidents, demandes,
+problèmes, changements, configuration, niveaux de service, connaissances, amélioration
+continue — avec la **conformité NIS 2** et la **gestion de projet** de la DSI sur le même
+socle.
 
-Ce qu'il apporte, en bref : une connexion par l'annuaire sans compte à créer, une console
-qui dit à chacun quoi faire, des pratiques reliées entre elles, un cycle de vie ITIL tenu
-avec une trace de tout, une recherche qui trouve la solution avant le ticket, et un
-déploiement on-prem en logiciel libre. La présentation publique est dans le
+Ce qu'il apporte, en bref : des tickets triés et une CMDB tenue avec l'aide de
+propositions que l'équipe décide, S-Aloha interrogeable depuis les assistants de chacun,
+une console qui dit à chacun quoi faire, des pratiques
+reliées entre elles, un cycle de vie ITIL tenu avec une trace de tout, une recherche qui
+trouve la solution avant le ticket, et un déploiement on-prem en logiciel libre. L'intégration
+en entreprise passe par l'**Active Directory** de l'organisation : connexion sans compte à
+créer, rôles tirés de ses groupes. La présentation publique est dans le
 [README](../../README.md#fonctionnalités).
 
 Le nom vient du malgache *aloha*, « d'abord, avant tout » : le service passe avant tout
@@ -25,10 +34,11 @@ Le nom vient du malgache *aloha*, « d'abord, avant tout » : le service passe a
 
 ## Pour qui
 
-**Organisations visées** : les DSI d'organisations sous Active Directory — PME, ETI,
-collectivités, établissements publics — qui veulent des pratiques ITIL 4 sans outil
-propriétaire ni licence par utilisateur, et les entités soumises à **NIS 2** qui veulent
-suivre leur conformité au même endroit que leurs incidents et leurs changements.
+**Organisations visées** : les DSI — PME, ETI, collectivités, établissements publics —
+qui veulent des pratiques ITIL 4 sans outil propriétaire ni licence par utilisateur, et une
+aide concrète pour trier les tickets et tenir la CMDB ; les entités soumises à **NIS 2** qui
+veulent suivre leur conformité au même endroit que leurs incidents et leurs changements.
+L'Active Directory de l'organisation est le prérequis de l'intégration.
 
 **Utilisateurs** :
 
@@ -88,6 +98,12 @@ Indépendants des processus, accessibles à tous les rôles :
   l'annuaire, santé de la plateforme, journal d'audit global et export, nettoyage des
   doublons ; pour les gestionnaires et l'Admin : catégories d'incident et de problème,
   découverte du réseau ([administration](administration.md)) ;
+- **Fonctionnalités optionnelles** (à venir, chantier F14) — activées ou coupées par
+  l'Admin, exécutées hors de l'API, dans un conteneur à part des fonctions de base :
+  **tri assisté des tickets** (suggestions et
+  panne probable sur les incidents), **CMDB assistée** (propositions d'un modèle de langage,
+  dans le SI ou hébergé, au choix de l'organisation), **serveur MCP** (S-Aloha en lecture
+  pour les assistants des utilisateurs) ([fonctionnalités optionnelles](fonctionnalites-optionnelles.md)) ;
 - **Reporting** — tableau de bord à onglets : score de santé des services, incidents
   (MTTR, MTTD, résolution au premier contact, SLA), problèmes, changements et projets,
   conformité ; filtres période et service, exports CSV et PDF ([reporting](reporting.md)).
@@ -134,3 +150,6 @@ Règles détaillées : [gestion des problèmes](processus/gestion-des-problemes.
   l'identité et les rôles viennent de l'AD.
 - **Une collection d'applications** : les processus partagent un socle (identité,
   annuaire, console, reporting) et une navigation uniques.
+- **Un outil qui décide à la place des équipes** : les fonctionnalités optionnelles
+  suggèrent et proposent ; une personne décide, et le journal d'audit garde l'origine de
+  chaque modification.
