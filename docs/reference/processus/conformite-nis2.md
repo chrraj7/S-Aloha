@@ -128,6 +128,7 @@ stateDiagram-v2
 | NIS-16 | **Revue périodique** : une évaluation validée porte la date de la prochaine évaluation (12 mois par défaut) ; à l'échéance, relance au responsable (console, Relances) | ✅ (notification au pilote, relevé périodique ; console des gestionnaires, Revues échues « À renouveler ») | |
 | NIS-17 | **Export** de la synthèse (CSV : exigence, score, justification, écart, action liée) pour les auditeurs | ✅ (bouton « Exporter la synthèse (CSV) » ; une ligne par exigence évaluée, objectif, pilier, thématique, non-applicabilité et statut de l'action compris ; « ; » et BOM UTF-8) | |
 | NIS-18 | Une évaluation enregistre la **version du référentiel** évaluée ; une nouvelle version embarquée ne modifie pas une évaluation validée : à la validation, ses exigences applicables (code, objectif, pilier, thématique) sont figées, et son questionnaire, son score et la synthèse du reporting (REP-40) s'en servent ; la rouvrir la réaligne sur la version en vigueur. Les évaluations validées avant la règle sont figées au démarrage, avant l'alignement de la structure embarquée | ✅ | |
+| NIS-25 | **Preuve calculée de la découverte** : sur une exigence des thématiques « Recensement des SI », « Cartographie des systèmes d'information » ou « Maintien en condition opérationnelle et de sécurité » (objectifs 1 et 5), « Joindre l'état de la découverte » ajoute à la réponse une preuve **figée à sa date**, calculée dans le périmètre de l'évaluation : CI par type, actifs du sas rapprochés, à rapprocher et en conflit, actifs inconnus ([CFG-42](gestion-de-la-configuration.md#5-règles-de-gestion)), actifs en fin de support dépassée ou proche (CFG-47), dernier scan réussi par type de scan, agents nomades actifs et silencieux (CFG-62). Une seule par réponse : la joindre de nouveau la remplace. Comme les autres preuves (NIS-08), tant que l'évaluation n'est pas validée ; dans le questionnaire et l'export (NIS-17). Exigence d'une autre thématique : 400 | 🔜 | 3 |
 
 ### Référentiel
 
@@ -156,6 +157,7 @@ stateDiagram-v2
 |---|---|---|---|
 | Évaluation → Amélioration | Traitement d'un écart | NIS-15, [CSI-10](amelioration-continue.md) | ✅ |
 | Évaluation → Changement, Article, CI | Preuves de mise en œuvre | NIS-08 | ✅ (preuve d'une réponse, ou lien manuel de l'évaluation) |
+| Découverte → Évaluation | État de la découverte joint en preuve (recensement, cartographie, maintien en condition) | NIS-25, [CFG-42, CFG-47, CFG-62](gestion-de-la-configuration.md#5-règles-de-gestion) | 🔜 |
 | Évaluation → Évaluation | Évaluation précédente du même périmètre | NIS-09 | ✅ (comparaison, sans lien à créer) |
 | Incident cyber → Déclaration réglementaire | Obligation de notification NIS 2 (art. 23) | [DRG-01](declarations-reglementaires.md), [INC-41](gestion-des-incidents.md) | ✅ (la qualification ouvre une déclaration reliée à l'incident) |
 
@@ -200,6 +202,7 @@ Brouillon ou En cours) ✅. Texte du référentiel incomplet (Relances, Admin, N
 | `PUT /api/assessments/{id}/responses/{requirementId}` | User | Réponse à une exigence |
 | `GET /api/assessments/{id}/score` | User | Scores, maturité, écarts et leur action d'amélioration (`action` : id, référence, statut — NIS-14 ; `hidden` sans référence pour une action d'un autre périmètre, PER-08) |
 | `POST /api/assessments/{id}/responses/{requirementId}/evidence` (`{ reference }`), `DELETE /api/assessments/{id}/evidence/{evidenceId}` | User | Preuves d'une réponse (NIS-08) ; 400 si l'évaluation est validée ; 404 pour retirer une preuve masquée (PER-08) |
+| `POST /api/assessments/{id}/responses/{requirementId}/discovery-evidence` | User | Preuve calculée de la découverte, figée à sa date (NIS-25) ; 400 hors des thématiques visées ou si l'évaluation est validée |
 | `GET /api/assessments/{id}/compare/{otherId}` | User | Comparaison avec une évaluation du même périmètre (NIS-09) : global, piliers, objectifs, thématiques (actuel, autre, évolution) et exigences dont la réponse diffère |
 | `GET /api/assessments/{id}/export` | User | Lignes de l'export pour les auditeurs : une par exigence évaluée (NIS-17) ; l'interface en fait le CSV |
 | `POST /api/assessments/{id}/improvements` (`{ code }`) | Manager | Action d'amélioration depuis un écart |
@@ -218,3 +221,4 @@ Type de lien inter-processus : `assessment` (préfixe `EVA`).
 - **NIS-10** — *Étant donné* trois réponses notées 3, 2 et 0 et une « non applicable », *alors* le score vaut 55,6 % (5 / 9) et la maturité 3 *Défini*.
 - **NIS-15** — *Étant donné* une exigence notée 1, *quand* un Manager crée l'action d'amélioration, *alors* un AMI à l'étape 2, priorité Élevée, est créé et relié ; une seconde demande pour la même exigence renvoie 409 avec la référence existante.
 - **NIS-21** — *Étant donné* un CSV avec les colonnes « Code » et « Texte », une ligne au code inconnu et un texte sur deux lignes, *quand* l'Admin l'importe, *alors* le compte rendu cite le code inconnu et le texte multiligne est conservé.
+- **NIS-25** — *Étant donné* une évaluation En cours du périmètre « Siège » et l'exigence `5.B.2-EI/EE`, *quand* un User joint l'état de la découverte, *alors* une preuve datée du jour donne le nombre d'actifs inconnus et d'actifs en fin de support du seul périmètre « Siège » ; jointe de nouveau le lendemain, elle remplace la première ; sur l'exigence `10.A.1-EI/EE`, 400.
