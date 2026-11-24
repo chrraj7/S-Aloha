@@ -63,6 +63,64 @@ public class CmdbTasksTests
     }
 }
 
+/// <summary>CMA-06, CMA-09 : présélection des doublons candidats et lecture des fusions, en fonctions pures.</summary>
+public class DuplicatesTests
+{
+    private static CiRecord Ci(int id, string title, string type = "Serveur", string environment = "Production") =>
+        new(id, 7, $"CI-{id}", title, null, "En service", type, environment, null, null, null, null, null, null, null, [], []);
+
+    [Fact]
+    public void CMA_06_noms_proches_une_fois_normalises_mais_pas_deux_numeros_differents()
+    {
+        Assert.True(Duplicates.Closeness("srvpaie1", "SRV-PAIE-01") >= Duplicates.MinSimilarity);   // casse, tirets, zéro de tête
+        Assert.Equal(0.6, Duplicates.Closeness("Serveur paie prod", "SRV-PAIE-01"));                // mot distinctif partagé
+        Assert.Equal(0, Duplicates.Closeness("SRV-PAIE-01", "SRV-PAIE-02"));                        // deux serveurs numérotés
+        Assert.Equal(0, Duplicates.Closeness("SRV-MAIL-01", "SRV-PAIE-01"));                        // seul le gabarit se ressemble
+        Assert.Equal(0, Duplicates.Closeness("Serveur prod", "Serveur recette"));                   // mots communs seulement
+        Assert.Equal("serveur paie prod", Duplicates.Normalize("  Serveur PAIE — prod !"));
+    }
+
+    [Fact]
+    public void CMA_06_paires_du_meme_environnement_aux_types_compatibles_sans_les_paires_rejetees()
+    {
+        var items = new[]
+        {
+            Ci(1, "srvpaie1"), Ci(2, "SRV-PAIE-01"), Ci(3, "Serveur paie prod", "Autre"), Ci(4, "SRV-PAIE-01", environment: "Recette"),
+            Ci(5, "SRV-PAIE-01", "Base de données"), Ci(6, "Gestion RH", "Application"), Ci(7, "gestion-rh", "Logiciel"),
+        };
+        var pairs = Duplicates.Candidates(items, new HashSet<(int, int)> { (2, 3) });
+        // 6-7 (même nom, Application et Logiciel), 1-2 (proches), 1-3 et 3-5 (« paie », Autre compatible avec tout type) ; 2-3 rejetée ;
+        // 4 en Recette, 5 d'un type incompatible avec les serveurs.
+        Assert.Equal([(6, 7), (1, 2), (1, 3), (3, 5)], pairs.Select(p => (p.A, p.B)));
+        Assert.True(pairs[0].Score > pairs[^1].Score);
+    }
+
+    [Fact]
+    public void CMA_07_CMA_09_les_paires_partent_pseudonymisees_et_une_fusion_hors_des_paires_soumises_est_ecartee()
+    {
+        var a = Ci(1, "srvpaie1") with { IpAddress = "10.1.2.3", SerialNumber = "SN-7781-AX", Description = "Paie, en 10.1.2.3, série SN-7781-AX." };
+        var b = Ci(2, "SRV-PAIE-01");
+        var pseudo = new Pseudonymizer();
+        var input = pseudo.Apply(Duplicates.Input([new CandidatePair(1, 2, 0.9)], new[] { a, b }.ToDictionary(c => c.Id),
+            new Dictionary<int, string> { [1] = "srvpaie1", [2] = "SRV-PAIE-01" }, pseudo));
+        foreach (var secret in new[] { "10.1.2.3", "SN-7781-AX" }) Assert.DoesNotContain(secret, input);
+        var pair = JsonDocument.Parse(input).RootElement[0];
+        Assert.Equal((1, 2), (pair.GetProperty("a").GetProperty("id").GetInt32(), pair.GetProperty("b").GetProperty("id").GetInt32()));
+
+        var output = JsonDocument.Parse("""
+            { "propositions": [
+              { "conserver": 2, "doublon": 1, "motif": "Même serveur, nom selon la convention." },
+              { "conserver": 1, "doublon": 2, "motif": "Second avis sur la même paire : ignoré." },
+              { "conserver": 2, "doublon": 3, "motif": "Paire non soumise : écartée." },
+              { "conserver": 1, "doublon": 1, "motif": "Avec lui-même : écartée." } ] }
+            """).RootElement;
+        var (kept, rejected) = Duplicates.Read(output, [new CandidatePair(1, 2, 0.9)]);
+        Assert.Equal([new MergeProposal(1, 2, "Même serveur, nom selon la convention.")], kept);
+        Assert.Equal(2, rejected);
+        Assert.Null(SchemaCheck.Error(output, Duplicates.Schema));
+    }
+}
+
 /// <summary>Port interne factice de l'API et modèle factice : une analyse, ses CI, les conventions, les propositions et les comptes rendus.</summary>
 public sealed class FakeCmdbApi : IAsyncLifetime
 {
@@ -75,6 +133,8 @@ public sealed class FakeCmdbApi : IAsyncLifetime
     public readonly ConcurrentQueue<JsonElement> ModelRequests = new();
     public volatile object[] Items = [];
     public volatile object[] Naming = [];
+    /// <summary>CMA-06 : paires rejetées servies au conteneur.</summary>
+    public volatile int[][] Declined = [];
     /// <summary>Réponse du modèle selon la tâche (nom du schéma demandé) ; absente : panne (500).</summary>
     public readonly ConcurrentDictionary<string, string> Replies = new();
 
@@ -105,6 +165,7 @@ public sealed class FakeCmdbApi : IAsyncLifetime
             return Results.Json(all.Where(i => i.GetProperty("id").GetInt32() > (after ?? 0)));
         });
         app.MapGet("/internal/assisted-cmdb/naming", () => Results.Json(Naming));
+        app.MapGet("/internal/assisted-cmdb/declined-pairs", (int perimeter) => Results.Json(Declined));
         app.MapPost("/internal/proposals", async (HttpContext c) =>
         {
             Proposals.Enqueue(await JsonSerializer.DeserializeAsync<JsonElement>(c.Request.Body));
@@ -211,6 +272,40 @@ public class AssistedCmdbTests(FakeCmdbApi api) : IClassFixture<FakeCmdbApi>
             foreach (var secret in new[] { "10.1.2.3", "SN-7781-AX", "hery.rakoto", "srv-usine-07" }) Assert.DoesNotContain(secret, user);
         Assert.DoesNotContain("base-paie", requests[0].User);
         Assert.Contains("SRV-PAIE-01", api.ModelRequests.First().GetProperty("messages")[0].GetProperty("content").GetString());   // la convention
+    }
+
+    [Fact]
+    public async Task CMA_06_Fusionner_ne_soumet_que_les_paires_candidates_jamais_une_paire_rejetee_et_depose_la_fusion()
+    {
+        api.Items =
+        [
+            Item(21, "srvpaie1", "Serveur", ip: "10.1.2.3"),
+            Item(22, "SRV-PAIE-01", "Serveur"),
+            Item(23, "Serveur paie prod", "Serveur"),
+            Item(24, "SRV-MAIL-01", "Serveur"),   // sans paire candidate : jamais envoyé
+        ];
+        api.Declined = [[22, 23]];
+        api.Replies["merge"] = """
+            { "propositions": [ { "conserver": 22, "doublon": 21, "motif": "Même serveur de paie." },
+              { "conserver": 22, "doublon": 24, "motif": "Paire non soumise." } ] }
+            """;
+        Analysis(504, ["merge"]);
+
+        using var container = Container();
+        container.CreateClient();
+        var report = await FinalReport(504);
+        Assert.NotNull(report);
+        Assert.Equal(("Terminée", 1, 1), (report!.Value.GetProperty("status").GetString(), report.Value.GetProperty("proposalCount").GetInt32(),
+            report.Value.GetProperty("rejectedCount").GetInt32()));
+        var merge = Assert.Single(api.Proposals, p => p.GetProperty("field").GetString() == "merge");
+        Assert.Equal((21, "22"), (merge.GetProperty("targetId").GetInt32(), merge.GetProperty("after").GetString()));
+
+        // Une seule requête : les paires 21-22 et 21-23 ; ni la paire rejetée 22-23, ni SRV-MAIL-01, ni l'adresse en clair.
+        var request = Assert.Single(api.ModelRequests, r => r.GetProperty("response_format").GetProperty("json_schema").GetProperty("name").GetString() == "merge");
+        var pairs = JsonDocument.Parse(request.GetProperty("messages")[1].GetProperty("content").GetString()!).RootElement;
+        Assert.Equal([(21, 22), (21, 23)], pairs.EnumerateArray()
+            .Select(p => (p.GetProperty("a").GetProperty("id").GetInt32(), p.GetProperty("b").GetProperty("id").GetInt32())));
+        foreach (var absent in new[] { "SRV-MAIL-01", "10.1.2.3" }) Assert.DoesNotContain(absent, request.GetProperty("messages")[1].GetProperty("content").GetString());
     }
 
     [Fact]
