@@ -3,6 +3,7 @@ import { api } from '../../../api'
 import { dateTimeFr } from '../../fields'
 import { refreshFeatures } from '../../features'
 import TriageSettings from './TriageSettings'
+import LanguageModelSettings from './LanguageModelSettings'
 
 const TONE = { Activée: 't-done', Coupée: 't-wait', Indisponible: 't-bad' }
 
@@ -71,6 +72,8 @@ export default function OptionalFeatures() {
       <p className="page-sub">Elles tournent hors de l’API, dans un conteneur à part : une panne de l’une d’elles n’atteint jamais le reste.
         Elles proposent ; une personne décide, et le journal d’audit garde l’origine de chaque modification.</p>
       {list.map(f => <FeatureCard key={f.key} f={f} onSwitched={replace} />)}
+      {/* OPT-20 à OPT-27 : réglable et essayé avant d’activer la CMDB assistée, qui en dépend (OPT-03). */}
+      <LanguageModelSettings />
     </>
   )
 }

@@ -3,7 +3,7 @@ import { api } from '../../../api'
 import { dateTimeFr } from '../../fields'
 
 /** Secret saisi : absent (inchangé), vide (effacé) ou nouvelle valeur. */
-function SecretField({ id, label, stored, value, onChange }) {
+export function SecretField({ id, label, stored, value, onChange }) {
   return (
     <div className="field"><label htmlFor={id}>{label}</label>
       <input id={id} type="password" autoComplete="new-password" value={value ?? ''} onChange={e => onChange(e.target.value)}
@@ -14,7 +14,7 @@ function SecretField({ id, label, stored, value, onChange }) {
   )
 }
 
-const Result = ({ r }) => r && <div className={r.ok ? 'notice ok' : 'error'} role="status">{r.message}</div>
+export const Result = ({ r }) => r && <div className={r.ok ? 'notice ok' : 'error'} role="status">{r.message}</div>
 
 const Updated = ({ s }) => s.updatedAt ? <p className="muted small">Modifié le {dateTimeFr(s.updatedAt)} par {s.updatedBy}.</p> : null
 
