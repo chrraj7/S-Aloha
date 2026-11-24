@@ -32,7 +32,7 @@ traiter une demande prédéfinie (→ [demandes](gestion-des-demandes.md)).
 |---|---|---|---|---|
 | Créer, modifier, prendre en charge, résoudre | ✔ | ✔ | ✔ | ✅ |
 | Déclarer / retirer le caractère **majeur** | ✘ | ✔ | ✔ | ✅ INC-13 |
-| Clore | ✘ | ✔ | ✔ | ✅ INC-10 (manuelle) |
+| Clore | ✘ | ✔ | ✔ | ✅ INC-10 (manuelle ; automatique au terme de la fenêtre de réouverture) |
 | Rouvrir un incident résolu | ✔ | ✔ | ✔ | ✅ (motif et délais INC-11) |
 | Supprimer | ✘ | ✘ | ✔ | ✅ |
 
@@ -81,7 +81,7 @@ stateDiagram-v2
     EnAttente --> EnCours : reprise
     EnCours --> Resolu : résolution + code
     Resolu --> EnCours : réouverture
-    Resolu --> Clos : confirmation ou 5 jours ouvrés
+    Resolu --> Clos : gestionnaire ou 10 jours ouvrés
     EnCours : En cours
     EnAttente : En attente
     Resolu : Résolu
@@ -99,7 +99,7 @@ une résolution.
 | En attente → En cours | Tous | | `OnHoldReason` effacé, horloge reprise : l'attente, en heures de service, prolonge les échéances | ✅ INC-07, INC-22 |
 | En cours → Résolu | Tous | Résolution et `ResolutionCode` | `ResolvedAt` | ✅ |
 | Résolu → En cours | Tous | Motif ; dans les 10 jours ouvrés suivant la résolution | `ResolvedAt` effacé, `ReopenCount` + 1 | ✅ INC-11 |
-| Résolu → Clos | Manager, ou automatique après 5 jours ouvrés | | `ClosedAt` | ✅ INC-10 (Manager du périmètre) / 🔜 INC-10 (automatique) |
+| Résolu → Clos | Manager, ou automatique après 10 jours ouvrés | | `ClosedAt` | ✅ INC-10 (Manager du périmètre ; automatique) |
 | Clos → … | — | Aucune : un nouvel incident est créé et relié | | ✅ INC-11 |
 
 ## 5. Règles de gestion
@@ -115,7 +115,7 @@ une résolution.
 | INC-07 | **En attente** exige un motif fermé ; le temps passé En attente ne compte pas dans les délais SLA | ✅ (motif vérifié à l'entrée En attente : un incident déjà en attente avant la règle reste modifiable) | |
 | INC-08 | La résolution exige un **code de résolution** fermé ; *Doublon* exige un lien vers l'incident conservé | ✅ | 1 |
 | INC-09 | **Transitions contraintes** selon le § 4 (SOC-05) | ✅ | 1 |
-| INC-10 | **Clôture** par un Manager, ou **automatique** 5 jours ouvrés après la résolution sans réouverture | ✅ (manuelle : Manager du périmètre, un User est refusé en 403) / 🔜 (automatique) | 3 (auto) |
+| INC-10 | **Clôture** par un Manager, ou **automatique** 10 jours ouvrés après la résolution sans réouverture, au terme de la fenêtre de réouverture d'INC-11 (décision du 2026-11-24, #335) ; la clôture automatique suit les conditions de la clôture manuelle (résolution décrite et codée, INC-08 ; déclarations réglementaires closes ou non requises, INC-43) et prévient le déclarant et l'utilisateur affecté (« Incident clos automatiquement ») | ✅ (manuelle : Manager du périmètre, un User est refusé en 403 ; automatique : relevé des événements datés, `IncidentAutoClose`) | 3 (auto) |
 | INC-11 | **Réouverture** d'un incident Résolu dans les 10 jours ouvrés, avec motif, `ReopenCount` + 1 ; au-delà, ou une fois Clos, un **nouvel** incident est créé et relié | ✅ | 1 |
 | INC-12 | **Incident majeur** : remonte dans la console des gestionnaires tant qu'il n'est ni Résolu ni Clos | ✅ | |
 | INC-13 | Seul un **Manager** déclare ou retire le caractère majeur ; un incident majeur a toujours priorité P1 ; il peut être déclaré sans responsable, mais ne sort de « Nouveau » qu'avec un Manager pour responsable | ✅ (sortie de « Nouveau » sans responsable : 400, et la résolution d'un parent le laisse ouvert, listé dans `unresolvedChildren` (INC-16) ; la console des gestionnaires le signale « Responsable à désigner » ; responsable nominatif, désigné par un Manager ; il est gestionnaire du périmètre de l'incident — rôle par périmètre, PER-03, lu dans l'annuaire — vérifié quand il est désigné ou que l'incident devient majeur ; annuaire injoignable : désignation acceptée et tracée au journal de l'API) | 1 |
@@ -205,6 +205,7 @@ gestionnaires, INC-26). À venir : incidents non pris en charge depuis plus d'un
 - **INC-03** — *Étant donné* un incident En cours sans résolution, *quand* on le passe à Résolu, *alors* 400 « Décrire la résolution… ».
 - **INC-06** — *Étant donné* un incident Nouveau sans responsable, *quand* on le passe à En cours, *alors* 400 ; avec un responsable, `FirstResponseAt` est posé.
 - **INC-07** — *Étant donné* un incident En cours, *quand* on le passe En attente sans motif, *alors* 400.
+- **INC-10** — *Étant donné* un incident résolu depuis plus de 10 jours ouvrés, *quand* le relevé des événements datés passe, *alors* il est Clos et l'utilisateur affecté est prévenu ; résolu depuis 8 jours, il reste Résolu ; un incident cyber avec une déclaration en cours reste Résolu.
 - **INC-11** — *Étant donné* un incident Clos, *quand* on le passe à En cours, *alors* 400 « créer un nouvel incident » ; Résolu depuis 2 jours, la réouverture passe et `ReopenCount` vaut 1.
 - **INC-13** — *Étant donné* un User, *quand* il coche « incident majeur », *alors* 403. *Étant donné* un incident majeur Nouveau sans responsable, *quand* on le passe à En cours ou Résolu, *alors* 400, et la console des gestionnaires l'affiche « Responsable à désigner » ; avec un gestionnaire pour responsable, la prise en charge passe.
 - **INC-15** — *Étant donné* un incident majeur sans problème relié, *quand* on le passe à Résolu, *alors* 400 qui demande de relier ou d'ouvrir un problème.

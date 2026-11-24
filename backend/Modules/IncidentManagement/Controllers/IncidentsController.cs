@@ -143,8 +143,8 @@ public class IncidentsController(AppDbContext db) : RecordController<Incident, I
         // INC-11 : réouverture d'un incident Résolu dans les 10 jours ouvrés, avec motif.
         if (e.Status == "Résolu" && status == "En cours")
         {
-            if (e.ResolvedAt is not null && DateTime.UtcNow > Dates.AddBusinessDays(e.ResolvedAt.Value, 10))
-                return "Délai de réouverture dépassé (10 jours ouvrés). Créer un nouvel incident et le relier à celui-ci.";
+            if (e.ResolvedAt is not null && DateTime.UtcNow > Dates.AddBusinessDays(e.ResolvedAt.Value, Incident.ReopenBusinessDays))
+                return $"Délai de réouverture dépassé ({Incident.ReopenBusinessDays} jours ouvrés). Créer un nouvel incident et le relier à celui-ci.";
             if (string.IsNullOrWhiteSpace(e.ReopenReason))
                 return "Motiver la réouverture de l'incident.";
         }
@@ -469,5 +469,35 @@ public class IncidentsController(AppDbContext db) : RecordController<Incident, I
         await Db.SaveChangesAsync();
         await Notify.SaveAsync();
         return Ok(new { Incident = View(e), Created = created, ProposeMajor = dto.Nis2Important && !e.IsMajor });
+    }
+}
+
+/// <summary>
+/// INC-10 (décision du 2026-11-24, #335) : un incident résolu sans réouverture est clos automatiquement au
+/// terme de la fenêtre de réouverture d'INC-11, pour ne jamais la couper ; le déclarant et l'utilisateur
+/// affecté sont prévenus. Les conditions d'une clôture manuelle tiennent : résolution décrite et codée
+/// (INC-08), et, pour un incident cyber, aucune déclaration réglementaire en cours (INC-43).
+/// </summary>
+public static class IncidentAutoClose
+{
+    public static async Task<int> RunAsync(AppDbContext db, Notifier notify, DateTime now)
+    {
+        var due = (await db.Incidents.Where(i => i.Status == "Résolu" && i.ResolvedAt != null && i.ResolutionCode != null).ToListAsync())
+            .Where(i => !string.IsNullOrWhiteSpace(i.Resolution)
+                        && now > Dates.AddBusinessDays(i.ResolvedAt!.Value, Incident.ReopenBusinessDays)).ToList();
+        var security = due.Where(i => i.IsSecurity).Select(i => i.Id).ToList();
+        HashSet<int> declared = security.Count == 0 ? [] : (await db.RegulatoryNotifications.AsNoTracking()
+                .Where(d => security.Contains(d.IncidentId) && !RegulatoryNotifications.RegulatoryNotification.Done.Contains(d.Status))
+                .Select(d => d.IncidentId).ToListAsync()).ToHashSet();
+        var closed = 0;
+        foreach (var i in due.Where(i => !declared.Contains(i.Id)))
+        {
+            (i.Status, i.ClosedAt, i.UpdatedAt) = ("Clos", now, now);
+            notify.ToCreator(i, "incident", "Incident clos automatiquement");
+            notify.ToUser(i, "incident", i.CallerId, "Incident clos automatiquement");
+            closed++;
+        }
+        if (closed > 0) await db.SaveChangesAsync();
+        return closed;
     }
 }

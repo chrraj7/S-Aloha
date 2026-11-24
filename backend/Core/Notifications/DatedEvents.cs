@@ -189,6 +189,9 @@ public class DatedEvents(AppDbContext db, Notifier notify, MailDispatch mail)
         // REQ-11 : clôture automatique des demandes satisfaites sans contestation depuis 5 jours ouvrés.
         count += await Modules.ServiceRequestManagement.RequestAutoClose.RunAsync(db, notify, now);
 
+        // INC-10 : clôture automatique des incidents résolus au terme de la fenêtre de réouverture (INC-11).
+        count += await Modules.IncidentManagement.IncidentAutoClose.RunAsync(db, notify, now);
+
         // SLM-23, CSI-20 : mois précédent sous la cible → gestionnaires, amélioration proposée.
         count += await SAloha.Api.Core.Itil.SlaCompliance.AlertAsync(db, notify, now, (t, id, ev) => done.Add((t, id, ev)));
 
