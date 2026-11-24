@@ -72,7 +72,7 @@ backend/                              # projet SAloha.Api (namespace SAloha.Api.
 
 features/SAloha.Features/             # conteneur features, hors de l'API (ADR-0023), sans accès à la base
 ├── Host/                             # ContainerHost (jeton, /health), ApiClient (port interne de l'API), EventLoop (fil, une file par fonctionnalité), EmbeddingClient
-├── LanguageModel/                    # connecteur du modèle de langage (OPT-21 à OPT-28) : LanguageModelClient, Pseudonymizer (jetons), SchemaCheck (sortie)
+├── LanguageModel/                    # connecteur du modèle de langage (OPT-21 à OPT-28) : LanguageModelClient, Pseudonymizer (jetons), SchemaCheck (sortie), LanguageModelEssay (essai, OPT-26)
 └── TicketTriage/                     # tri assisté des tickets : TicketTriage (fil → propositions, pannes), TriageRules (vote, impact, motifs), OpenIncidents (index des ouverts, corrélation)
 ```
 
@@ -173,7 +173,7 @@ les entités EF sont renvoyées avec leurs navigations (`Analysis → Problem �
 | GET `/api/features` | User | Clés des fonctionnalités optionnelles activées, lues par le registre de l'interface (OPT-04) | Core/Features |
 | GET `/api/admin/features`, PUT `/api/admin/features/{key}` | Admin | Fonctionnalités optionnelles : conteneur contrôlé, dépendances, activation et coupure tracées (OPT-01 à OPT-07, [ADR-0023](../decisions/adr-0023-fonctionnalites-optionnelles-et-modele-de-langage.md)) | Core/Features |
 | GET, PUT `/api/admin/features/{key}/settings` ; GET `/internal/features/{key}/settings` | Admin ; jeton du conteneur, port interne, fonctionnalité activée | Réglages propres d'une fonctionnalité, bornés et tracés au journal d'audit ; lus par le conteneur (OPT-02, OPT-07, TRI-13) | Core/Features |
-| GET, PUT `/api/admin/settings/language-model` ; GET `/internal/language-model` | Admin ; jeton du conteneur, port interne, CMDB assistée activée | Modèle de langage : réglages, emplacement vérifié par résolution, clé au coffre jamais renvoyée ; lecture par le conteneur (OPT-20, OPT-22, OPT-23) | Core/Features |
+| GET, PUT `/api/admin/settings/language-model`, POST `…/test`, GET `…/usage` ; GET `/internal/language-model`, POST `/internal/language-model/calls` | Admin ; jeton du conteneur, port interne, CMDB assistée activée | Modèle de langage : réglages, emplacement vérifié par résolution, clé au coffre jamais renvoyée ; essai par le conteneur, compteurs ; lecture par le conteneur, traces des appels gardées 90 jours (OPT-20, OPT-22, OPT-23, OPT-26, OPT-27) | Core/Features |
 | GET/PUT `/api/admin/settings/mail`, POST `…/mail/test`, GET/PUT `/api/admin/settings/storage`, POST `…/storage/test` | Admin | Messagerie (SMTP) et stockage S3 des pièces jointes, réglés et essayés depuis la console (ADM-60 à ADM-63, [ADR-0020](../decisions/adr-0020-pieces-jointes-s3-et-smtp-configurables.md)) | Core/Platform |
 | GET `/api/categories?practice=`, POST, PUT `/{id}`, DELETE `/{id}` | User (lecture), Manager (écriture) | Catégories d'incident et de problème (ADM-50 à ADM-52, SOC-27) | Core/Itil |
 | GET `/health/live`, GET `/health/ready` | — (anonyme) | Sondes de l'orchestrateur (O1) : vie du processus ; disponibilité, base comprise (503 sinon). Réponse réduite à l'état (`Healthy`, `Unhealthy`) | Program.cs, Core/Observability |
