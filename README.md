@@ -185,8 +185,16 @@ règle par règle, avec ce qu'elle demande pour tourner
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/screenshots/09-incidents.png" alt="Registre des incidents" /><br/><b>Registre des incidents</b> — priorité, service, état du SLA</td>
-    <td width="50%"><img src="docs/screenshots/12-configuration-relations.png" alt="CI et relations" /><br/><b>Configuration</b> — éléments de configuration et leurs dépendances</td>
+    <td width="50%"><img src="docs/screenshots/26-tri-assiste-saisie.png" alt="Suggestions du tri assisté à la saisie" /><br/><b>Tri assisté à la saisie</b> — catégorie, service et impact suggérés avec leurs motifs, incidents ouverts proches</td>
+    <td width="50%"><img src="docs/screenshots/27-tri-assiste-panne-probable.png" alt="Panne probable" /><br/><b>Panne probable</b> — incidents ouverts rapprochés par leur sens ; rattachement et incident majeur proposés</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/28-cmdb-assistee.png" alt="CMDB assistée" /><br/><b>CMDB assistée</b> — noms remis à la convention, types corrigés : un gestionnaire décide chaque proposition</td>
+    <td><img src="docs/screenshots/29-serveur-mcp-jetons.png" alt="Jetons d'accès du serveur MCP" /><br/><b>Serveur MCP</b> — un jeton personnel et l'adresse à donner à son assistant, en lecture seule</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/09-incidents.png" alt="Registre des incidents" /><br/><b>Registre des incidents</b> — priorité, service, état du SLA</td>
+    <td><img src="docs/screenshots/12-configuration-relations.png" alt="CI et relations" /><br/><b>Configuration</b> — éléments de configuration et leurs dépendances</td>
   </tr>
   <tr>
     <td><img src="docs/screenshots/20-configuration-application.png" alt="Fiche d'une application" /><br/><b>Portefeuille applicatif</b> — code, direction, propriétaires, criticité, RTO / RPO, RGPD et NIS 2</td>
@@ -229,9 +237,6 @@ règle par règle, avec ce qu'elle demande pour tourner
     <td><img src="docs/screenshots/01-connexion.png" alt="Connexion" /><br/><b>Connexion</b> — les fonctionnalités assistées en tête, le compte de l'entreprise (Active Directory)</td>
   </tr>
 </table>
-
-Les captures du tri assisté, de la CMDB assistée et du serveur MCP prendront la tête de
-cet aperçu à leur livraison.
 
 ## Essayer en 5 minutes
 

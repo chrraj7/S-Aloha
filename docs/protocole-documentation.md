@@ -55,7 +55,8 @@ du mode démonstration, sans enregistrement de test, trou de numérotation ni ad
 visible.
 
 L'**image de partage** (`docs/screenshots/partage-1280x640.png`, 1280 × 640) reprend la
-marque et la capture de la console : elle se refait avec elles. C'est aussi l'**aperçu
+marque, les trois fonctionnalités assistées et la capture de la panne probable du tri assisté
+(`27-tri-assiste-panne-probable.png`, depuis le 2026-11-24) : elle se refait avec elles. C'est aussi l'**aperçu
 social** du dépôt, affiché quand un lien vers GitHub est partagé. GitHub n'offre aucune API
 pour le changer : le mainteneur la téléverse à nouveau dans *Settings → General → Social
 preview → Edit → Upload an image*.
