@@ -81,18 +81,19 @@ public class InternalProposalsController(AppDbContext db, IFeatureGate gate) : C
     }
 
     /// <summary>
-    /// Proposition sur une paire (fusion, CMA-05 et CMA-06) : la paire compte dans les deux sens. Rejetée ou corrigée, elle
-    /// ne revient pas ; ouverte, elle se rafraîchit sur place (motif, date) ; sinon elle se crée, l'autre enregistrement
-    /// cité. Plusieurs paires restent ouvertes sur un même enregistrement : un CI peut avoir plusieurs doublons candidats.
+    /// Proposition sur une paire (fusion, CMA-05 et CMA-06 ; relation, CMA-02) : une fusion compte dans les deux sens, une
+    /// relation dans le sien. Rejetée ou corrigée, elle ne revient pas ; ouverte, elle se rafraîchit sur place (motif, date) ;
+    /// sinon elle se crée, l'autre enregistrement cité. Plusieurs paires restent ouvertes sur un même enregistrement : un CI
+    /// peut avoir plusieurs doublons candidats, plusieurs relations à créer.
     /// </summary>
     private async Task<IActionResult> PairAsync(string feature, ProposalFields.Field field, Record record, string after, ProposalInput input)
     {
-        var other = int.Parse(after);
+        var other = field.Other!(after)!.Value;
         var reasons = input.Reasons?.Trim() ?? "";
         if (reasons.Length > 1000) return BadRequest(new { message = "Motifs : 1 000 caractères au plus." });
-        var (mine, theirs) = (record.Id.ToString(), after);
+        var mirror = field.Mirror?.Invoke(record.Id);
         var pair = await db.Proposals.Where(p => p.Feature == feature && p.TargetType == field.TargetType && p.Field == field.Name
-            && ((p.TargetId == record.Id && p.After == theirs) || (p.TargetId == other && p.After == mine))).OrderBy(p => p.Id).ToListAsync();
+            && ((p.TargetId == record.Id && p.After == after) || (mirror != null && p.TargetId == other && p.After == mirror))).OrderBy(p => p.Id).ToListAsync();
         if (pair.FirstOrDefault(p => p.Status is Proposal.Rejected or Proposal.Corrected) is { } declined)
             return Ok(new { declined.Id, Created = false });
         if (pair.FirstOrDefault(p => p.Status == Proposal.Open) is { } open)

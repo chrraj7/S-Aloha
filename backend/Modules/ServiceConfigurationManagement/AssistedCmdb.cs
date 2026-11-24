@@ -316,13 +316,13 @@ public class InternalAssistedCmdbNamingController(AppDbContext db) : ControllerB
         Ok((await AssistedCmdbNamingController.AllAsync(db)).Select(n => new { n.CiType, n.Description, Examples = n.ExampleList }));
 }
 
-/// <summary>Un CI cité par une proposition : le second d'une fusion (CMA-05).</summary>
+/// <summary>Un CI cité par une proposition : le second d'une fusion (CMA-05), la cible d'une relation (CMA-02).</summary>
 public record CmdbCiRef(int Id, string Reference, string Title);
 
 /// <summary>
 /// Une proposition ouverte de la file : son CI, sa tâche, l'avant et l'après, son motif ; périmée si le CI a changé depuis.
-/// Une fusion désigne en plus l'autre CI (<c>other</c>), que la proposition suggère de conserver ; elle est périmée si l'un
-/// des deux a changé.
+/// Une fusion désigne en plus l'autre CI (<c>other</c>), que la proposition suggère de conserver, une relation son CI cible ;
+/// elles sont périmées si l'un des deux a changé.
 /// </summary>
 public record CmdbProposalView(int Id, int CiId, string CiReference, string CiTitle, int PerimeterId, string Task, string Field, string? Before,
     string After, string Reasons, DateTime CreatedAt, bool Stale, CmdbCiRef? Other = null);
@@ -343,7 +343,7 @@ public class AssistedCmdbProposalsController(AppDbContext db, PerimeterAccess ac
     {
         ["title"] = AssistedCmdbTasks.Rename, ["operatingSystem"] = AssistedCmdbTasks.Normalize, ["vendor"] = AssistedCmdbTasks.Normalize,
         ["model"] = AssistedCmdbTasks.Normalize, ["ciType"] = AssistedCmdbTasks.Reclassify, ["criticality"] = AssistedCmdbTasks.Criticality,
-        [ProposalFields.Merge] = AssistedCmdbTasks.Merge,
+        [ProposalFields.Merge] = AssistedCmdbTasks.Merge, [ProposalFields.Relation] = AssistedCmdbTasks.Relate,
     };
 
     [HttpGet]
@@ -366,11 +366,11 @@ public class AssistedCmdbProposalsController(AppDbContext db, PerimeterAccess ac
             query = query.Where(x => fields.Contains(x.Field));
         }
         var proposals = await query.OrderBy(x => x.Id).Take(200).ToListAsync();
-        int? OtherOf(Proposal x) => x.Field == ProposalFields.Merge && int.TryParse(x.After, out var o) ? o : null;
+        int? OtherOf(Proposal x) => ProposalFields.Of("ci", x.Field)?.Other?.Invoke(x.After);
         var ids = proposals.Select(x => x.TargetId).Concat(proposals.Select(OtherOf).OfType<int>()).Distinct().ToList();
         var cis = await db.ConfigurationItems.AsNoTracking().Where(c => ids.Contains(c.Id))
             .Select(c => new { c.Id, c.Reference, c.Title, c.UpdatedAt, c.PerimeterId }).ToDictionaryAsync(c => c.Id);
-        // L'autre CI d'une fusion n'est décrit que s'il est visible (PER-08) : sinon la fusion, refusée, attend son rejet.
+        // L'autre CI d'une fusion ou d'une relation n'est décrit que s'il est visible (PER-08) : sinon, refusée, elle attend son rejet.
         var other = (Proposal x) => OtherOf(x) is { } o && cis.TryGetValue(o, out var c) && scope.Sees(c.PerimeterId) ? c : null;
         return Ok(proposals.Where(x => cis.ContainsKey(x.TargetId)).Select(x => new CmdbProposalView(x.Id, x.TargetId, cis[x.TargetId].Reference,
             cis[x.TargetId].Title, x.PerimeterId, TaskOfField.GetValueOrDefault(x.Field, ""), x.Field, x.Before, x.After, x.Reasons, x.CreatedAt,

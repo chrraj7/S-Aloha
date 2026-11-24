@@ -8,18 +8,23 @@ namespace SAloha.Features.AssistedCmdb;
 public record CmdbProposal(int Ci, string Field, string Value, string Reasons);
 
 /// <summary>
-/// CMA-02 : les tâches Renommer, Normaliser et Reclasser, en fonctions pures. Chacune a ses consignes versionnées
+/// CMA-02 : les tâches Renommer, Normaliser, Reclasser et Criticité, en fonctions pures. Chacune a ses consignes versionnées
 /// (OPT-27), son schéma de sortie (OPT-25) et son champ de CI ; l'entrée ne porte que les champs utiles (CMA-07),
 /// pseudonymisés par le connecteur ; chaque proposition de la réponse est vérifiée (CMA-09).
 /// </summary>
 public static class CmdbTasks
 {
-    public const string Rename = "rename", Normalize = "normalize", Reclassify = "reclassify";
+    public const string Rename = "rename", Normalize = "normalize", Reclassify = "reclassify", Criticality = "criticality";
     public const string PromptVersion = "1";
     public const int DescriptionMax = 1000;
 
     public static readonly string[] CiTypes = ["Application", "Serveur", "Base de données", "Réseau", "Stockage", "Poste de travail", "Logiciel", "Autre"];
     public static readonly string[] NormalizedFields = ["operatingSystem", "vendor", "model"];
+    /// <summary>CFG-43 : criticités d'une application.</summary>
+    public static readonly string[] Criticalities = ["Vitale", "Majeure", "Standard", "Mineure"];
+
+    /// <summary>CMA-02 : la tâche Criticité ne vise que les applications qui n'en ont pas.</summary>
+    public static bool NeedsCriticality(CiRecord ci) => ci.CiType == "Application" && string.IsNullOrWhiteSpace(ci.Criticality);
 
     internal static JsonElement Schema(object item) => JsonSerializer.SerializeToElement(new Dictionary<string, object>
     {
@@ -51,6 +56,11 @@ public static class CmdbTasks
         ["ci"] = CiId, ["type"] = new Dictionary<string, object> { ["type"] = "string", ["enum"] = CiTypes }, ["motif"] = Motif,
     }));
 
+    public static readonly JsonElement CriticalitySchema = Schema(Item(new()
+    {
+        ["ci"] = CiId, ["criticite"] = new Dictionary<string, object> { ["type"] = "string", ["enum"] = Criticalities }, ["motif"] = Motif,
+    }));
+
     internal const string Common =
         " Les CI sont donnés en JSON, chacun avec son identifiant « id » ; réponds par leurs identifiants. N'invente aucune information "
         + "absente des données. Le motif dit en une phrase courte, en français, ce qui justifie la proposition.";
@@ -67,19 +77,23 @@ public static class CmdbTasks
         Reclassify => $"Tu vérifies le type des CI d'une CMDB. Types permis : {string.Join(", ", CiTypes)}. Pour chaque CI dont le type est « Autre » "
             + "ou manifestement faux au vu de son nom, de son système et de sa description, propose le bon type. Ne propose rien quand le type "
             + "actuel convient." + Common,
+        Criticality => "Tu proposes la criticité d'applications d'une CMDB qui n'en ont pas, parmi : Vitale (arrêt de l'activité), Majeure "
+            + "(activité fortement dégradée), Standard (gêne contournable), Mineure (confort). Juge d'après le nom, la description et les "
+            + "relations (une application dont dépendent beaucoup d'autres, ou qui sert la paie, la facturation, la production, est plus "
+            + "critique). Ne propose rien si les données ne permettent pas d'en juger." + Common,
         _ => throw new ArgumentException($"Tâche inconnue : {task}", nameof(task)),
     };
 
     public static JsonElement SchemaOf(string task) => task switch
     {
-        Rename => RenameSchema, Normalize => NormalizeSchema, Reclassify => ReclassifySchema,
+        Rename => RenameSchema, Normalize => NormalizeSchema, Reclassify => ReclassifySchema, Criticality => CriticalitySchema,
         _ => throw new ArgumentException($"Tâche inconnue : {task}", nameof(task)),
     };
 
     /// <summary>Champ du CI que la tâche propose de changer (OPT-14).</summary>
     public static string FieldOf(string task, string? champ = null) => task switch
     {
-        Rename => "title", Reclassify => "ciType", Normalize => champ ?? "", _ => "",
+        Rename => "title", Reclassify => "ciType", Criticality => "criticality", Normalize => champ ?? "", _ => "",
     };
 
     /// <summary>
@@ -111,7 +125,8 @@ public static class CmdbTasks
 
     /// <summary>
     /// CMA-09 : les propositions d'une réponse valide. Écartée et comptée : un CI hors du lot, une valeur vide, un renommage
-    /// d'un type sans convention. Ignorée sans compter : une valeur égale à l'actuelle, un second avis sur le même champ.
+    /// d'un type sans convention, une criticité pour un CI qui n'est pas une application sans criticité. Ignorée sans compter :
+    /// une valeur égale à l'actuelle, un second avis sur le même champ.
     /// </summary>
     public static (List<CmdbProposal> Kept, int Rejected) Read(string task, JsonElement output, IReadOnlyDictionary<int, CiRecord> batch,
         IReadOnlySet<string> namedTypes)
@@ -126,17 +141,20 @@ public static class CmdbTasks
             {
                 Rename => ("title", p.GetProperty("nom").GetString()),
                 Reclassify => ("ciType", p.GetProperty("type").GetString()),
+                Criticality => ("criticality", p.GetProperty("criticite").GetString()),
                 _ => (p.GetProperty("champ").GetString()!, p.GetProperty("valeur").GetString()),
             };
             value = value?.Trim();
-            if (!batch.TryGetValue(id, out var ci) || string.IsNullOrEmpty(value) || (task == Rename && !namedTypes.Contains(ci.CiType ?? "")))
+            if (!batch.TryGetValue(id, out var ci) || string.IsNullOrEmpty(value) || (task == Rename && !namedTypes.Contains(ci.CiType ?? ""))
+                || (task == Criticality && !NeedsCriticality(ci)))
             {
                 rejected++;
                 continue;
             }
             var current = field switch
             {
-                "title" => ci.Title, "ciType" => ci.CiType, "operatingSystem" => ci.OperatingSystem, "vendor" => ci.Vendor, "model" => ci.Model, _ => null,
+                "title" => ci.Title, "ciType" => ci.CiType, "operatingSystem" => ci.OperatingSystem, "vendor" => ci.Vendor, "model" => ci.Model,
+                "criticality" => ci.Criticality, _ => null,
             };
             if (value == current?.Trim() || !seen.Add((id, field))) continue;
             kept.Add(new CmdbProposal(id, field, value, p.GetProperty("motif").GetString()?.Trim() ?? ""));
