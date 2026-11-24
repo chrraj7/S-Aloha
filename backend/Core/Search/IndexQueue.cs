@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using SAloha.Api.Core.Attachments;
 using SAloha.Api.Core.Data;
 
 namespace SAloha.Api.Core.Search;
@@ -57,7 +58,8 @@ public class IndexWorker(IServiceScopeFactory scopes, IndexQueue queue, ILogger<
 /// <summary>
 /// Repère, à chaque enregistrement EF, les articles, problèmes et incidents
 /// ajoutés, modifiés ou supprimés, et les met en file une fois l'enregistrement
-/// réussi (l'identifiant d'un ajout n'est connu qu'après).
+/// réussi (l'identifiant d'un ajout n'est connu qu'après). Une pièce jointe
+/// déposée ou retirée remet en file son enregistrement (RAG-12).
 /// </summary>
 public class SearchIndexInterceptor(IndexQueue queue) : SaveChangesInterceptor
 {
@@ -92,7 +94,8 @@ public class SearchIndexInterceptor(IndexQueue queue) : SaveChangesInterceptor
         if (context is null) return;
         var changed = context.ChangeTracker.Entries()
             .Where(x => x.State is EntityState.Added or EntityState.Modified or EntityState.Deleted
-                        && SearchSources.TypeOf(x.Entity) is not null)
+                        && (SearchSources.TypeOf(x.Entity) is not null
+                            || x.Entity is Attachment a && SearchSources.Types.Contains(a.TargetType)))
             .Select(x => x.Entity).ToList();
         if (changed.Count > 0) _pending.AddOrUpdate(context, changed);
     }
@@ -103,6 +106,7 @@ public class SearchIndexInterceptor(IndexQueue queue) : SaveChangesInterceptor
         _pending.Remove(context);
         foreach (var entity in entities)
         {
+            if (entity is Attachment a) { queue.Enqueue(a.TargetType, a.TargetId); continue; }
             var id = (int)context.Entry(entity).Property("Id").CurrentValue!;
             queue.Enqueue(SearchSources.TypeOf(entity)!, id);
         }

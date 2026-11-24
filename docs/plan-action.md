@@ -19,8 +19,8 @@
 ## Prochaine séance
 
 *Mise à jour le 2026-11-04.* État : 352 règles ✅ (compte du 2026-11-16, [RAG-10](reference/recherche.md)
-comprise : calibrage fait le 2026-11-09), une en lot 3
-(RAG-12, indexation des pièces jointes), aucune en lot 2 ([synthèse](reference/processus/readme.md)) ;
+comprise : calibrage fait le 2026-11-09), RAG-12 (indexation des pièces jointes, lot 3) faite
+le 2026-11-24, aucune en lot 2 ([synthèse](reference/processus/readme.md)) ;
 tous les indicateurs des pratiques sont au tableau de bord. Le lot 3 des pratiques, F7
 (courriels, pièces jointes) et les indicateurs ont été faits le 2026-10-23
 ([journal](archives/journal-2026-10-23.md)).
@@ -39,7 +39,7 @@ ci-dessous, les points avant mise en production (section 5 : S1, S2 ; S3 et O1 f
 | Chantier | Décision à prendre |
 |---|---|
 | ~~F7~~ | **Décidé et fait le 2026-10-23** : pièces jointes dans un stockage objet **compatible S3 (Garage)**, courriels par un **SMTP configurable** ; le paramétrage des deux se fait dans la **console d'administration**. [ADR-0020](decisions/adr-0020-pieces-jointes-s3-et-smtp-configurables.md) ; **réglages et essais faits le 2026-10-23** (ADM-60 à ADM-63). Courriels des notifications et préférences par utilisateur faits le 2026-10-23 (SOC-22). Pièces jointes faites le 2026-10-23 (SOC-25 : types bureautiques, texte et images ; nœud Garage dans `docker-compose.yml`) |
-| RAG-12 — indexation des pièces jointes | Extraire le texte des documents déposés pour la recherche : quels formats (PDF, bureautique), bibliothèque d'extraction, taille indexée, contenu soumis aux droits de l'enregistrement |
+| ~~RAG-12 — indexation des pièces jointes~~ | **Décidé le 2026-11-09 (précisé le 2026-11-24) et fait le 2026-11-24** (#280) : texte, PDF à couche texte (PdfPig), Office Open XML et OpenDocument lus sans bibliothèque, 100 000 caractères par fichier, passages rattachés à l'enregistrement ([RAG-12](reference/recherche.md)) |
 | F12 — référentiels définis par l'Admin | Spécifier d'abord (format d'import, échelle, calcul des niveaux), sur le modèle de l'[ADR-0012](decisions/adr-0012-referentiel-nis2-structure-versionnee-texte-importe.md) |
 | F13 phase 4 — agent nomade | Forme de l'agent (service Windows et Linux, langage, signature du binaire), jeton d'enrôlement par périmètre, fréquence d'envoi ; preuves NIS 2 nourries par la découverte |
 
