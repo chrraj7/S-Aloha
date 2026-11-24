@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -58,6 +59,48 @@ public static class AssistedCmdbTasks
     };
 }
 
+/// <summary>
+/// CMA-12 : réglages de la CMDB assistée, par l'Admin (OPT-02) : tâches proposées aux gestionnaires, CI au plus par
+/// analyse (de 20 à 500 ; <c>AssistedCmdb:MaxItems</c> reste le plafond de l'exploitation), paires au plus par requête de
+/// Fusionner (de 10 à 50, CMA-06), aide au sas (CMA-08). Une tâche retirée n'est plus lancée, ni traitée par le conteneur.
+/// </summary>
+public record AssistedCmdbSettings : IFeatureSettings
+{
+    public const int MinItems = 20, MaxItemsCeiling = 500, MinPairs = 10, MaxPairs = 50;
+
+    public string[] Tasks { get; init; } = [.. AssistedCmdbTasks.Labels.Keys];
+    public int MaxItems { get; init; } = MaxItemsCeiling;
+    public int PairsPerRequest { get; init; } = MaxPairs;
+    public bool StagingHelp { get; init; } = true;
+
+    public string? Error()
+    {
+        if (Tasks is null) return "Tâches proposées : une liste est attendue.";
+        if (Tasks.FirstOrDefault(t => !AssistedCmdbTasks.Labels.ContainsKey(t ?? "")) is { } unknown)
+            return $"Tâche inconnue : « {unknown} ». Valeurs : {string.Join(", ", AssistedCmdbTasks.Labels.Keys)}.";
+        if (MaxItems is < MinItems or > MaxItemsCeiling) return $"CI au plus par analyse : de {MinItems} à {MaxItemsCeiling}.";
+        if (PairsPerRequest is < MinPairs or > MaxPairs) return $"Paires au plus par requête : de {MinPairs} à {MaxPairs}.";
+        return null;
+    }
+
+    /// <summary>Les tâches sans doublon, dans l'ordre de la liste (CMA-02).</summary>
+    public AssistedCmdbSettings Normalized() => this with { Tasks = [.. AssistedCmdbTasks.Labels.Keys.Where(Tasks.Contains)] };
+
+    public IEnumerable<(string Label, string Value)> Traced()
+    {
+        var tasks = Normalized().Tasks;
+        yield return ("Tâches proposées", tasks.Length == 0 ? "aucune" : string.Join(", ", tasks.Select(t => AssistedCmdbTasks.Labels[t])));
+        yield return ("CI au plus par analyse", MaxItems.ToString(CultureInfo.InvariantCulture));
+        yield return ("Paires au plus par requête", PairsPerRequest.ToString(CultureInfo.InvariantCulture));
+        yield return ("Aide au sas", StagingHelp ? "oui" : "non");
+    }
+
+    public static AssistedCmdbSettings Of(OptionalFeature? row) => FeatureSettings.Read(row, () => new AssistedCmdbSettings());
+
+    public static async Task<AssistedCmdbSettings> ReadAsync(AppDbContext db, CancellationToken ct = default) =>
+        Of(await FeatureSettings.RowAsync(db, FeatureCatalog.AssistedCmdb, ct));
+}
+
 /// <summary>Lancement : périmètre, tâches, et CI choisis (absents : tout le périmètre).</summary>
 public record AnalysisInput(int? PerimeterId, string[]? Tasks, int[]? ConfigurationItemIds);
 
@@ -80,11 +123,20 @@ public record AssistedCmdbAnalysisView(int Id, int PerimeterId, string Perimeter
 [RequiresFeature(FeatureCatalog.AssistedCmdb)]
 public class AssistedCmdbAnalysesController(AppDbContext db, PerimeterAccess access, IConfiguration config) : ControllerBase
 {
-    private int MaxItems => Math.Max(1, config.GetValue("AssistedCmdb:MaxItems", 500));
+    /// <summary>CMA-01, CMA-12 : le réglage de l'Admin, sous le plafond de l'exploitation.</summary>
+    private int MaxItems(AssistedCmdbSettings settings) => Math.Max(1, Math.Min(config.GetValue("AssistedCmdb:MaxItems", 500), settings.MaxItems));
     private int StaleMinutes => Math.Max(1, config.GetValue("AssistedCmdb:StaleMinutes", 30));
 
     private async Task<Dictionary<int, string>> PerimeterNamesAsync() =>
         await db.Perimeters.AsNoTracking().ToDictionaryAsync(p => p.Id, p => p.Name);
+
+    /// <summary>CMA-12 : ce que l'Admin a réglé et dont l'interface a besoin : tâches proposées, CI au plus, aide au sas.</summary>
+    [HttpGet("~/api/assisted-cmdb/settings")]
+    public async Task<IActionResult> Settings()
+    {
+        var settings = await AssistedCmdbSettings.ReadAsync(db, HttpContext.RequestAborted);
+        return Ok(new { settings.Normalized().Tasks, MaxItems = MaxItems(settings), settings.StagingHelp });
+    }
 
     [HttpPost]
     public async Task<IActionResult> Launch(AnalysisInput input)
@@ -99,6 +151,11 @@ public class AssistedCmdbAnalysesController(AppDbContext db, PerimeterAccess acc
         if (tasks.Count == 0) return BadRequest(new { message = "Choisir au moins une tâche." });
         if (tasks.FirstOrDefault(t => !AssistedCmdbTasks.Labels.ContainsKey(t)) is { } unknown)
             return BadRequest(new { message = $"Tâche inconnue : « {unknown} ». Valeurs : {string.Join(", ", AssistedCmdbTasks.Labels.Keys)}." });
+        // CMA-12 : une tâche que l'Admin ne propose pas ne se lance pas.
+        var settings = await AssistedCmdbSettings.ReadAsync(db);
+        if (tasks.FirstOrDefault(t => !settings.Tasks.Contains(t)) is { } cut)
+            return BadRequest(new { message = $"Tâche non proposée par l'administrateur : « {AssistedCmdbTasks.Labels[cut]} »." });
+        var maxItems = MaxItems(settings);
 
         int count;
         string? itemIds = null;
@@ -106,7 +163,7 @@ public class AssistedCmdbAnalysesController(AppDbContext db, PerimeterAccess acc
         {
             var ids = chosen.Distinct().ToList();
             if (ids.Count == 0) return BadRequest(new { message = "Choisir au moins un CI, ou tout le périmètre." });
-            if (ids.Count > MaxItems) return BadRequest(new { message = $"{MaxItems} CI au plus par analyse." });
+            if (ids.Count > maxItems) return BadRequest(new { message = $"{maxItems} CI au plus par analyse." });
             var found = await db.ConfigurationItems.AsNoTracking().Where(c => ids.Contains(c.Id) && c.PerimeterId == perimeter)
                 .Select(c => c.Id).ToListAsync();
             if (found.Count != ids.Count) return BadRequest(new { message = "CI introuvables ou hors du périmètre de l'analyse." });
@@ -116,8 +173,8 @@ public class AssistedCmdbAnalysesController(AppDbContext db, PerimeterAccess acc
         {
             count = await db.ConfigurationItems.CountAsync(c => c.PerimeterId == perimeter && c.Status != "Retiré");
             if (count == 0) return BadRequest(new { message = "Aucun CI à analyser dans ce périmètre." });
-            if (count > MaxItems)
-                return BadRequest(new { message = $"Le périmètre compte {count} CI : en choisir {MaxItems} au plus." });
+            if (count > maxItems)
+                return BadRequest(new { message = $"Le périmètre compte {count} CI : en choisir {maxItems} au plus." });
         }
 
         // Sans compte rendu du conteneur depuis trop longtemps, une analyse active est interrompue et ne bloque plus.
