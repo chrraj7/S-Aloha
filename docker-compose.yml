@@ -71,7 +71,7 @@ services:
   embeddings:
     # Embeddings bge-m3 servis par Ollama, hors du processus de l'API (ADR-0013).
     # Premier démarrage : téléchargement du modèle (~1,2 Go), gardé dans le volume.
-    image: ollama/ollama:0.40.16
+    image: ollama/ollama:0.40.17
     entrypoint: ["/bin/sh", "-c", "ollama serve & until ollama list >/dev/null 2>&1; do sleep 1; done; ollama pull bge-m3 && wait"]
     volumes:
       - ollama:/root/.ollama
