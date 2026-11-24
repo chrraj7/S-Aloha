@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.Sockets;
 using System.Text.RegularExpressions;
 
 namespace SAloha.Features.LanguageModel;
@@ -42,7 +44,8 @@ public sealed partial class Pseudonymizer
     [GeneratedRegex(@"\b[A-Za-z][A-Za-z0-9-]{1,14}\\[A-Za-z0-9._-]{2,}\b")] private static partial Regex Accounts();
     [GeneratedRegex(@"\b(?:[0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}\b")] private static partial Regex Macs();
     [GeneratedRegex(@"\b(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)\b")] private static partial Regex Ipv4();
-    [GeneratedRegex(@"(?<![\w:])(?:[0-9A-Fa-f]{1,4}:){2,7}[0-9A-Fa-f]{0,4}(?![\w:])")] private static partial Regex Ipv6();
+    // IPv6, formes compressées comprises (fe80::1) : repérage large, puis validée par IPAddress.
+    [GeneratedRegex(@"(?<![\w:])[0-9A-Fa-f]{0,4}(?::[0-9A-Fa-f]{0,4}){2,7}(?![\w:])")] private static partial Regex Ipv6();
     [GeneratedRegex(@"\b(?=[A-Za-z0-9-]*[A-Za-z])(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+(?:local|lan|intra|corp|internal|[A-Za-z]{2,6})\b")]
     private static partial Regex Fqdns();
     [GeneratedRegex(@"\b(?:IP|MAC|HOTE|SERIE|COMPTE|COURRIEL)_\d+\b")] private static partial Regex TokenPattern();
@@ -56,7 +59,8 @@ public sealed partial class Pseudonymizer
         text = Accounts().Replace(text, m => TokenFor(Account, m.Value));
         text = Macs().Replace(text, m => TokenFor(Mac, m.Value));
         text = Ipv4().Replace(text, m => TokenFor(Ip, m.Value));
-        text = Ipv6().Replace(text, m => m.Value.Count(c => c == ':') >= 2 && m.Value.Any(char.IsDigit) ? TokenFor(Ip, m.Value) : m.Value);
+        text = Ipv6().Replace(text, m => m.Value.Any(Uri.IsHexDigit) && IPAddress.TryParse(m.Value, out var ip)
+            && ip.AddressFamily == AddressFamily.InterNetworkV6 ? TokenFor(Ip, m.Value) : m.Value);
         text = Fqdns().Replace(text, m => TokenPattern().IsMatch(m.Value) ? m.Value : TokenFor(Host, m.Value));
         return text;
     }
