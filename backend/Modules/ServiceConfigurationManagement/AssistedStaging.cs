@@ -94,7 +94,7 @@ public class AssistedStagingController(AppDbContext db, PerimeterAccess access) 
 /// <summary>
 /// CMA-08, OPT-13 : à la fin d'une tâche de découverte (<c>discovery.finished</c>), le conteneur lit la tâche et les actifs
 /// qu'elle laisse au sas sans rapprochement : À rapprocher sans CI, ou En conflit. Sans l'option « Analyser avec la CMDB
-/// assistée », la liste est vide.
+/// assistée », ou l'aide au sas coupée par l'Admin (CMA-12), la liste est vide.
 /// </summary>
 [ApiController]
 [Route("internal/discovery/staging")]
@@ -107,7 +107,8 @@ public class InternalStagingController(AppDbContext db) : ControllerBase
     {
         var j = await db.Set<DiscoveryJob>().AsNoTracking().FirstOrDefaultAsync(x => x.Id == job);
         if (j is null) return NotFound();
-        var assets = !j.AssistedCmdb ? [] : await db.DiscoveredAssets.AsNoTracking()
+        var help = j.AssistedCmdb && (await AssistedCmdbSettings.ReadAsync(db, HttpContext.RequestAborted)).StagingHelp;
+        var assets = !help ? [] : await db.DiscoveredAssets.AsNoTracking()
             .Where(a => a.JobId == job && a.PerimeterId == j.PerimeterId
                 && ((a.Status == DiscoveredAsset.ToReconcile && a.MatchedCiId == null) || a.Status == DiscoveredAsset.InConflict))
             .OrderBy(a => a.Id).Take(500).ToListAsync();
