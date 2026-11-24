@@ -37,7 +37,12 @@ public class AssistedCmdbContractTests(ApiFixture api) : IAsyncLifetime
     private async Task EnableAsync(params string[] keys)
     {
         await using var db = api.Database();
-        foreach (var key in keys) db.OptionalFeatures.Add(new OptionalFeature { Key = key, Enabled = true, UpdatedAt = DateTime.UtcNow });
+        foreach (var key in keys) db.OptionalFeatures.Add(new OptionalFeature
+        {
+            Key = key, Enabled = true, UpdatedAt = DateTime.UtcNow,
+            // Toutes les tâches proposées (CMA-12 : par défaut, celles mesurées sous 70 % sont coupées, CMA-11).
+            SettingsJson = key == FeatureCatalog.AssistedCmdb ? """{"tasks":["rename","normalize","reclassify","merge","relate","criticality"]}""" : null,
+        });
         await db.SaveChangesAsync();
     }
 

@@ -117,8 +117,8 @@ public class AssistedCmdbSettingsTests(ApiFixture api) : IAsyncLifetime
     {
         var admin = api.Client();
         var defaults = await Json(await admin.GetAsync(Path));
-        Assert.Equal(["rename", "normalize", "reclassify", "merge", "relate", "criticality"],
-            defaults.GetProperty("tasks").EnumerateArray().Select(t => t.GetString()));
+        // CMA-11 : Normaliser, Fusionner et Relier, sous 70 % de précision mesurée, sont coupées par défaut.
+        Assert.Equal(["rename", "reclassify", "criticality"], defaults.GetProperty("tasks").EnumerateArray().Select(t => t.GetString()));
         Assert.Equal((500, 50, true), (defaults.GetProperty("maxItems").GetInt32(), defaults.GetProperty("pairsPerRequest").GetInt32(),
             defaults.GetProperty("stagingHelp").GetBoolean()));
 
@@ -133,7 +133,7 @@ public class AssistedCmdbSettingsTests(ApiFixture api) : IAsyncLifetime
             var lines = await db.AuditEntries.AsNoTracking().Where(a => a.Id > last).OrderBy(a => a.Id).ToListAsync();
             Assert.Equal(
             [
-                ("CMDB assistée — Tâches proposées", "Renommer, Normaliser, Reclasser, Fusionner, Relier, Criticité", "Renommer, Reclasser"),
+                ("CMDB assistée — Tâches proposées", "Renommer, Reclasser, Criticité", "Renommer, Reclasser"),
                 ("CMDB assistée — CI au plus par analyse", "500", "20"), ("CMDB assistée — Paires au plus par requête", "50", "10"),
             ], lines.Select(a => (a.Field, a.OldValue, a.NewValue)));
             Assert.All(lines, a => Assert.Equal(("parametre", "Fonctionnalités"), (a.EntityType, a.Reference)));
