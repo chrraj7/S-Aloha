@@ -164,6 +164,15 @@ public class ApiClient
         ((await http.GetFromJsonAsync<List<int[]>>($"internal/assisted-cmdb/declined-pairs?perimeter={perimeter}", Json, ct)) ?? [])
             .Where(p => p.Length == 2).Select(p => (Math.Min(p[0], p[1]), Math.Max(p[0], p[1]))).ToHashSet();
 
+    /// <summary>CMA-08 : une tâche de découverte finie et les actifs qu'elle laisse au sas sans rapprochement ; null si elle a disparu.</summary>
+    public async Task<AssistedCmdb.StagingRead?> StagingAsync(int job, CancellationToken ct)
+    {
+        using var res = await http.GetAsync($"internal/discovery/staging?job={job}", ct);
+        if (res.StatusCode == HttpStatusCode.NotFound) return null;
+        res.EnsureSuccessStatusCode();
+        return await res.Content.ReadFromJsonAsync<AssistedCmdb.StagingRead>(Json, ct);
+    }
+
     /// <summary>TRI-06 : une page des incidents ouverts, avec leurs CI reliés.</summary>
     public async Task<OpenPage> OpenIncidentsAsync(int after, CancellationToken ct) =>
         (await http.GetFromJsonAsync<OpenPage>($"internal/incidents/open?after={after}&limit=500", Json, ct))!;

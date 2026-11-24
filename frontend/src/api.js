@@ -243,7 +243,10 @@ export const api = {
       reconcile: (id, dto) => request(`/discovery/staging/${id}/reconcile`, { method: 'POST', body: JSON.stringify(dto) }),
       ignore: (id) => request(`/discovery/staging/${id}/ignore`, { method: 'POST' }),
       restore: (id) => request(`/discovery/staging/${id}/restore`, { method: 'POST' }),
-      remove: (id) => request('/discovery/staging/' + id, { method: 'DELETE' })
+      remove: (id) => request('/discovery/staging/' + id, { method: 'DELETE' }),
+      // CMA-08 : aide au sas de la CMDB assistée (CI candidat ou type pour la création).
+      proposals: (id) => request(`/discovery/staging/${id}/proposals`),
+      rejectProposal: (id, proposal) => request(`/discovery/staging/${id}/proposals/${proposal}/reject`, { method: 'POST' })
     },
     jobs: {
       list: () => request('/discovery/jobs'),
