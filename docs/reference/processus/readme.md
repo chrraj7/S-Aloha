@@ -27,11 +27,11 @@
 | [Périmètres](../perimetres.md) | PER | 13 | 0 | 0 | 0 |
 | [Recherche](../recherche.md) | RAG | 13 | 0 | 0 | 0 |
 | [Reporting](../reporting.md) | REP | 43 | 0 | 0 | 0 |
-| [Fonctionnalités optionnelles](../fonctionnalites-optionnelles.md) | OPT | 16 | 0 | 0 | 9 |
+| [Fonctionnalités optionnelles](../fonctionnalites-optionnelles.md) | OPT | 25 | 0 | 0 | 0 |
 | [Tri assisté des tickets](../tri-assiste-des-tickets.md) | TRI | 14 | 0 | 0 | 0 |
-| [CMDB assistée](../cmdb-assistee.md) | CMA | 0 | 0 | 0 | 12 |
-| [Serveur MCP](../serveur-mcp.md) | MCP | 0 | 0 | 0 | 9 |
-| **Total** | | **383** | **0** | **0** | **30** |
+| [CMDB assistée](../cmdb-assistee.md) | CMA | 11 | 0 | 0 | 1 |
+| [Serveur MCP](../serveur-mcp.md) | MCP | 2 | 0 | 0 | 7 |
+| **Total** | | **405** | **0** | **0** | **8** |
 
 *Comptes au 2026-11-16 (main `84c4070`), sur les tableaux de règles (hors indicateurs du § 8
 des pratiques ; les règles REP du [reporting](../reporting.md) qui les affichent sont comptées).
@@ -39,7 +39,9 @@ Une règle faite en partie compte ✅ (7 règles, la part restante est décrite 
 Dernière règle de lot 1, RAG-10 (calibrage de la recherche), faite le 2026-11-09 ; RAG-12
 (pièces jointes, lot 3) l'est le 2026-11-24. Les 60 règles des fonctionnalités optionnelles (OPT, TRI, CMA,
 MCP, chantier F14) ont été spécifiées le 2026-11-23, toutes en lot 3, à livrer avant la
-version stable ; OPT-01 à OPT-08 (étape 1, #363) OPT-10 à OPT-17 (#364, parties 2a à 2c ; OPT-13 avec les lectures du tri, #365) et TRI-01 à TRI-14 (#365, parties 3a à 3e, calibrage compris) sont faites le même jour.*
+version stable ; OPT-01 à OPT-08 (étape 1, #363) OPT-10 à OPT-17 (#364, parties 2a à 2c ; OPT-13 avec les lectures du tri, #365) et TRI-01 à TRI-14 (#365, parties 3a à 3e, calibrage compris) sont faites le même jour ;
+OPT-20 à OPT-28 (étape 4, #366), CMA-01 à CMA-10 et CMA-12 (étape 5, #367), MCP-03 et MCP-04
+(#368, partie 6a) le 2026-11-24. Reste CMA-11, le jeu d'essai, et le serveur MCP.*
 
 ## Interface et navigation
 
