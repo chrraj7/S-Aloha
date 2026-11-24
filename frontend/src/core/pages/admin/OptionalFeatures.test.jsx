@@ -1,6 +1,6 @@
 import React from 'react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import OptionalFeatures from './OptionalFeatures'
 import { api } from '../../../api'
 
@@ -54,8 +54,12 @@ it('affiche le motif d’un refus et ne change rien sans confirmation (OPT-03)',
   fireEvent.click((await screen.findAllByRole('button', { name: 'Activer' }))[0])
   expect(api.admin.switchFeature).not.toHaveBeenCalled()
   fireEvent.click(screen.getAllByRole('button', { name: 'Activer' })[0])
-  expect(await screen.findByRole('alert')).toBeTruthy()
-  expect(screen.getByText('Conteneur « features » injoignable.')).toBeTruthy()
+  // L'alerte de la carte du tri : la carte « Modèle de langage », en bas de page, peut afficher la sienne
+  // (sa lecture des réglages échoue ici), dans un ordre qui varie d'une exécution à l'autre.
+  const card = screen.getByRole('heading', { name: /Tri assisté des tickets/ }).closest('.card')
+  expect((await within(card).findByRole('alert')).textContent).toBe('Conteneur « features » injoignable.')
+  // Le refus ne change rien : la fonctionnalité reste coupée.
+  expect(within(card).getByText('Coupée')).toBeTruthy()
 })
 
 it('TRI-06 : l’état de l’index des incidents ouverts du tri s’affiche, construit ou non', async () => {
