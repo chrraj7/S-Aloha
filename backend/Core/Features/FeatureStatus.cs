@@ -29,8 +29,11 @@ public class FeatureStatus(AppDbContext db, ContainerProbe probe, IEmbeddingClie
                 return new(key, "Service d'embeddings", required, ok, ok ? $"Modèle {embeddings.Model} joignable."
                     : $"Modèle {embeddings.Model} injoignable : voisins par les mots seuls, pas de corrélation par le sens.");
             case FeatureCatalog.LanguageModel:
-                // Les réglages du modèle de langage arrivent avec OPT-20 : d'ici là, il n'est jamais réglé.
-                return new(key, "Modèle de langage", required, false, "Non réglé.");
+                // OPT-20 : réglé et activé par l'Admin ; l'essai (OPT-26) dit s'il répond.
+                var lm = await db.LanguageModelSettings.AsNoTracking().FirstOrDefaultAsync(ct);
+                return lm is { Ready: true }
+                    ? new(key, "Modèle de langage", required, true, $"Modèle {lm.Model} réglé ({lm.Location.ToLowerInvariant()}).")
+                    : new(key, "Modèle de langage", required, false, lm is null || lm.Url == "" ? "Non réglé." : "Réglé mais désactivé.");
             default:
                 return new(key, key, required, false, "Dépendance inconnue.");
         }
