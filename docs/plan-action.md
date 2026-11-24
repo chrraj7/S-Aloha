@@ -62,10 +62,10 @@ lancement de la v1.0.0 compris (C7).
   de fournir ses secrets et d'activer LDAPS et HTTPS sur son installation.
 - **Communauté** : #120 à #126 sont faites ([#126](https://github.com/chrraj7/S-Aloha/issues/126),
   captures des pages de la configuration, le 2026-11-24).
-- **Mainteneur**, après le tag `v1.0.0` : release GitHub avec ses notes, paquets ghcr publics
-  et liés au dépôt (tirage anonyme vérifié), image de partage refaite le 2026-11-24
-  téléversée (`docs/screenshots/partage-1280x640.png`, *Settings → General → Social
-  preview*), puis le lancement (C7).
+- **v1.0.0 publiée le 2026-11-24** : tag sur `dd8db6e` (#434), [release](https://github.com/chrraj7/S-Aloha/releases/tag/v1.0.0)
+  avec ses notes et ses réserves, images `v1.0.0` et `latest` publiques (tirage anonyme
+  vérifié), aperçu social du dépôt remplacé par l'image de partage refaite le même jour.
+  Reste au mainteneur le lancement (C7).
 
 ## 1. Bloquants fonctionnels — le processus est inutilisable
 
@@ -274,7 +274,7 @@ feuille de route allégée, partie anglaise comprise), le produit, la page Soute
 connexion, dont les quatre blocs sont désormais les trois fonctionnalités assistées et la
 console, puis les captures en tête de l'aperçu (saisie et panne probable du tri, propositions de
 la CMDB assistée, jetons du serveur MCP, prises sur l'environnement d'essai) et l'image de
-partage ; reste au mainteneur de téléverser celle-ci comme aperçu social du dépôt.
+partage, téléversée comme aperçu social du dépôt le même jour.
 
 ### Sortie du MVP
 
@@ -304,6 +304,6 @@ Accueil des contributeurs et financement du projet ; canaux et contreparties pub
 | ~~C2~~ | ~~Code de conduite, `.github/FUNDING.yml`~~ — faits le 2026-10-23 (Contributor Covenant 2.1, signalement privé par « Report content » de GitHub : activer **Settings › Moderation options › Reported content** du dépôt) | code + action |
 | ~~C5~~ | ~~Tableau GitHub Projects public alimenté par ce plan~~ — fait le 2026-10-23 : [S-Aloha — feuille de route](https://github.com/users/chrraj7/projects/3) (issues ouvertes et chantiers restants) | action |
 | ~~C6~~ | ~~Activer GitHub Sponsors~~ (profil public, objectif « 5 monthly sponsors ») ; **niveaux** décidés le 2026-10-23 — Soutien 5 $, Bronze 25 $, Argent 100 $, Or 500 $ par mois ([Soutenir](soutenir.md)) — créés sur la page Sponsors le 2026-10-23 — soldé ([ADR-0011](decisions/adr-0011-financement-sponsoring-et-services.md)) | action |
-| C7 | Lancement **à la version stable** (décision du 2026-10-23) : LinuxFr, Reddit, AlternativeTo, Framalibre (textes prêts) ; aperçu social du dépôt : image de partage refaite le 2026-11-24 avec les trois fonctionnalités assistées, à téléverser par le mainteneur ([protocole § 2](protocole-documentation.md#2-mettre-à-jour-la-référence)) ; awesome-selfhosted **4 mois après la première version stable** (première version de plus de 4 mois exigée ; les préversions retirées ne comptent plus) | action |
+| C7 | Lancement **à la version stable** (décision du 2026-10-23) : LinuxFr, Reddit, AlternativeTo, Framalibre (textes prêts) ; aperçu social du dépôt : image de partage refaite et téléversée le 2026-11-24 avec les trois fonctionnalités assistées ([protocole § 2](protocole-documentation.md#2-mettre-à-jour-la-référence)) ; awesome-selfhosted **4 mois après la première version stable** (première version de plus de 4 mois exigée ; les préversions retirées ne comptent plus) | action |
 | C8 | Démo en ligne réinitialisée chaque nuit | décision |
 | C9 | `GOVERNANCE.md` dès le deuxième contributeur régulier | décision |
