@@ -113,7 +113,12 @@ export const api = {
     // TRI-13 : réglages propres d'une fonctionnalité ; TRI-10 : mesure du tri assisté.
     featureSettings: key => request(`/admin/features/${key}/settings`),
     saveFeatureSettings: (key, settings) => request(`/admin/features/${key}/settings`, { method: 'PUT', body: JSON.stringify(settings) }),
-    triageMetrics: () => request('/admin/triage/metrics')
+    triageMetrics: () => request('/admin/triage/metrics'),
+    // OPT-20 à OPT-27 : modèle de langage, essai et compteurs des appels.
+    languageModel: () => request('/admin/settings/language-model'),
+    saveLanguageModel: (dto) => request('/admin/settings/language-model', { method: 'PUT', body: JSON.stringify(dto) }),
+    testLanguageModel: () => request('/admin/settings/language-model/test', { method: 'POST' }),
+    languageModelUsage: (days = 30) => request(`/admin/settings/language-model/usage?days=${days}`)
   },
   login: (username, password) =>
     request('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }), quiet: true }),
