@@ -38,7 +38,8 @@ public static class McpHost
         Logs(builder);
         builder.Services.Configure<McpLimits>(builder.Configuration.GetSection("Mcp"));
         builder.Services.AddHttpContextAccessor();
-        builder.Services.AddHttpClient<PublicApi>(c => c.Timeout = TimeSpan.FromSeconds(30));
+        // MCP-09 : sans le journal du client HTTP, qui écrirait l'adresse appelée, donc le texte recherché.
+        builder.Services.AddHttpClient<PublicApi>(c => c.Timeout = TimeSpan.FromSeconds(30)).RemoveAllLoggers();
         builder.Services.AddSingleton(sp => Limiter(sp.GetRequiredService<IOptions<McpLimits>>().Value.CallsPerMinute));
         builder.Services.AddMcpServer(o =>
             {

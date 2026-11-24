@@ -123,6 +123,45 @@ public class PersonalTokensTests(ApiFixture api)
     }
 
     [Fact]
+    public async Task MCP_01_MCP_09_le_jeton_presente_se_reconnait_pour_le_conteneur_mcp()
+    {
+        await using var f = Factory();
+        var user = As(f, ApiFixture.Token("tech.mcp01", "User"));
+        var created = await Json(await user.PostAsJsonAsync("/api/me/tokens", new { name = "Assistant" }));
+        var secret = created.GetProperty("secret").GetString()!;
+        var id = created.GetProperty("token").GetProperty("id").GetInt32();
+
+        // Le jeton présenté, et lui seul : son identifiant et son titulaire (MCP-09), jamais le jeton lui-même.
+        var current = await Json(await As(f, secret).GetAsync("/api/me/tokens/current"));
+        Assert.Equal((id, "tech.mcp01", "Assistant"),
+            (current.GetProperty("id").GetInt32(), current.GetProperty("username").GetString(), current.GetProperty("name").GetString()));
+        Assert.DoesNotContain(secret, current.GetRawText());
+
+        // Sans jeton personnel (aucun, ou un jeton de session) : 401, avec le schéma attendu.
+        var none = await f.CreateClient().GetAsync("/api/me/tokens/current");
+        Assert.Equal(HttpStatusCode.Unauthorized, none.StatusCode);
+        Assert.Equal("Bearer", none.Headers.WwwAuthenticate.ToString());
+        Assert.Equal(HttpStatusCode.Unauthorized, (await user.GetAsync("/api/me/tokens/current")).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await As(f, PersonalTokens.Prefix + "inconnu").GetAsync("/api/me/tokens/current")).StatusCode);
+
+        // Annuaire injoignable à la relecture : 503, comme sur toute route.
+        await Age(id);
+        directory.Down = true;
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, (await As(f, secret).GetAsync("/api/me/tokens/current")).StatusCode);
+        directory.Down = false;
+
+        // MCP-01 : serveur MCP coupé, la route n'existe pas, que le jeton soit présenté ou non.
+        gate.On = false;
+        Assert.Equal(HttpStatusCode.NotFound, (await As(f, secret).GetAsync("/api/me/tokens/current")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await f.CreateClient().GetAsync("/api/me/tokens/current")).StatusCode);
+        gate.On = true;
+
+        // Révoqué : refusé à l'appel suivant.
+        Assert.Equal(HttpStatusCode.NoContent, (await user.DeleteAsync($"/api/me/tokens/{id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await As(f, secret).GetAsync("/api/me/tokens/current")).StatusCode);
+    }
+
+    [Fact]
     public async Task MCP_04_l_identite_d_un_jeton_est_relue_dans_l_annuaire()
     {
         await using var f = Factory();
