@@ -59,7 +59,7 @@ créateur, dates) : [socle](../regles-metier.md#5-règles-communes-aux-processus
 | `ImplementedAt` | date UTC | auto | Entrée dans Mis en œuvre (relance CHG-31 ; à défaut, le début réel) | ✅ CHG-31 |
 | `StandardModelId` | lien | si Standard | Modèle de changement standard, choisi à la création ; plans et risque en sont repris | ✅ CHG-26 |
 | Modèle : `SuspendedAt`, `SuspendedByChange`, `ReviewedAt`, `ReviewedBy`, `ReviewNote` | date, référence, texte | auto | Suspension après un échec et sa revue | ✅ CHG-27 |
-| Décisions du CAB (`ChangeApprovals`) | liste | si CAB | Approbateur, décision, date, commentaire ; une par gestionnaire ; effacées à une nouvelle évaluation | ✅ CHG-20 |
+| Décisions du CAB (`ChangeApprovals`) | liste | si CAB | Approbateur, décision, date, commentaire ; une par gestionnaire ; effacées à une nouvelle évaluation, et quand le type, le risque, les plans ou le créneau d'un changement Évalué changent | ✅ CHG-20 |
 
 ## 4. Cycle de vie
 
@@ -126,7 +126,7 @@ les conditions de statut.
 
 | ID | Règle | Statut | Lot |
 |---|---|---|---|
-| CHG-20 | **Autorité selon le risque** : Normal à risque Faible ou Moyen → un Manager ; Normal à risque **Élevé** → **CAB** : deux Managers distincts approuvent (`Approvals`), un seul rejet suffit à rejeter ; Urgent → un Manager (autorisation accélérée), revue obligatoire (CHG-15) | ✅ (`POST /api/changes/{id}/approvals` ; autorisation directe refusée à risque Élevé ; Urgent : un Manager, revue CHG-15 ; encadré « CAB » de la fiche) | |
+| CHG-20 | **Autorité selon le risque** : Normal à risque Faible ou Moyen → un Manager ; Normal à risque **Élevé** → **CAB** : deux Managers distincts approuvent (`Approvals`), un seul rejet suffit à rejeter ; une décision porte sur le contenu que le gestionnaire a vu : modifier le type, le risque, les plans ou le créneau d'un changement Évalué **efface les décisions déjà données** (titre et description se modifient librement) ; Urgent → un Manager (autorisation accélérée), revue obligatoire (CHG-15) | ✅ (`POST /api/changes/{id}/approvals` ; autorisation directe refusée à risque Élevé ; Urgent : un Manager, revue CHG-15 ; encadré « CAB » de la fiche) | |
 | CHG-21 | Le demandeur d'un changement ne peut pas l'autoriser lui-même (séparation des tâches), sauf Admin | ✅ (le demandeur est le créateur du changement) | |
 | CHG-22 | **Conflit non résolu** : autoriser un changement en conflit de calendrier (CHG-09) exige un commentaire de l'autorité (`ConflictComment` ; au CAB, le commentaire de l'approbation) ; le refus cite les changements en conflit | ✅ | 2 |
 | CHG-23 | Un changement peut être **créé depuis un problème ou une action corrective** (PRB-27) : titre, description et lien repris | ✅ (depuis une action ; depuis la fiche du problème, « Créer un changement » : dans le périmètre du problème) | 2 |
@@ -194,5 +194,5 @@ et de l'équipe (Relances, gestionnaires), avec une notification au responsable 
 - **CHG-07** — *Étant donné* un changement Normal Planifié, *quand* un User change son risque, *alors* il revient à Évalué et `AuthorizedAt` est vide ; si c'est un Manager autre que le demandeur, il reste Planifié, autorisé à son nom. *Quand* ce Manager passe le risque à Élevé, ou *quand* le demandeur, même Manager, réécrit ses plans, *alors* il revient à Évalué (CHG-20, CHG-21).
 - **CHG-09** — *Étant donné* deux changements liés au CI `VPN-GW-01`, de 10 h à 12 h et de 11 h à 13 h le même jour, *alors* chacun signale un conflit avec l'autre ; de 10 h à 11 h et de 11 h à 12 h, aucun.
 - **CHG-15** — *Étant donné* un changement Urgent Mis en œuvre avec résultat Réussi et sans revue, *quand* on le clôt, *alors* 400 « revue post-implémentation requise ». *Quand* on le renvoie Normal, avec ou sans la clôture dans le même envoi, *alors* 400 et il reste Urgent.
-- **CHG-20** — *Étant donné* un changement Normal à risque Élevé, *quand* un premier Manager l'approuve, *alors* il reste Évalué (1 approbation sur 2) ; au second Manager distinct, il passe Autorisé.
+- **CHG-20** — *Étant donné* un changement Normal à risque Élevé, *quand* un premier Manager l'approuve, *alors* il reste Évalué (1 approbation sur 2) ; au second Manager distinct, il passe Autorisé. *Quand* le demandeur réécrit les plans entre les deux approbations, *alors* la première est effacée et il faut de nouveau deux approbations.
 - **CHG-25** — *Étant donné* une période de gel du 20 au 31 décembre, *quand* on planifie un changement Normal le 22, *alors* 400 ; Urgent, accepté ; ce changement Urgent planifié le 22, renvoyé Normal par un gestionnaire sans toucher au créneau, *alors* 400 et il reste Urgent.
