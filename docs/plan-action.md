@@ -27,18 +27,19 @@ au tableau de bord. Le lot 3 des pratiques, F7
 ([journal](archives/journal-2026-10-23.md)).
 
 **Versions** : préversions 0.1.0 et 0.2.0 retirées le 2026-10-23 (releases et tags). La
-première version publiée sera la **v1.0.0**, stable, au **périmètre allégé** (décision du
-2026-11-09) : `main`, la part code de S1 et les issues et PR en cours soldées ; elle attendait
-aussi F14, livré le 2026-11-24. Ses notes de version diront les **réserves** : RAG-10 à
+première version publiée est la **v1.0.0**, stable (2026-11-24, [journal des versions](../CHANGELOG.md)),
+au **périmètre allégé** (décision du 2026-11-09) : `main`, la part code de S1 et les issues et
+PR en cours soldées ; elle attendait aussi F14, livré le 2026-11-24. Ses notes de version disent
+les **réserves** : RAG-10 à
 remesurer sur des données réelles, F12, F13 phase 4 (agent nomade), WinRM à valider sur un
-Windows réel (CFG-57), `dotnet format` (Q5), C8 et C9. Le tag est posé par le mainteneur seul.
+Windows réel (CFG-57), `dotnet format` (Q5), C8 et C9. Le tag a été posé par le mainteneur.
 
 **Reste du plan** : le chantier **F14** (fonctionnalités optionnelles : tri assisté des
 tickets, CMDB assistée, serveur MCP) est livré et mis en avant le 2026-11-24
 ([§ F14](#fonctionnalités-optionnelles-f14)) ; restent les chantiers à arbitrer
 ci-dessous (F12 et F13 phase 4, spécifiés, à confirmer avant de les implémenter), l'action de l'exploitant avant mise en production (section 5 :
-S1 et S2 faits côté code, S3 et O1 le 2026-10-29), la v1.0.0 et les tâches de communauté
-(section 8).
+S1 et S2 faits côté code, S3 et O1 le 2026-10-29) et les tâches de communauté (section 8),
+lancement de la v1.0.0 compris (C7).
 
 **À arbitrer avant de commencer** :
 
@@ -61,9 +62,10 @@ S1 et S2 faits côté code, S3 et O1 le 2026-10-29), la v1.0.0 et les tâches de
   de fournir ses secrets et d'activer LDAPS et HTTPS sur son installation.
 - **Communauté** : #120 à #126 sont faites ([#126](https://github.com/chrraj7/S-Aloha/issues/126),
   captures des pages de la configuration, le 2026-11-24).
-- **Mainteneur** : téléverser l'image de partage refaite le 2026-11-24
-  (`docs/screenshots/partage-1280x640.png`, *Settings → General → Social preview*), puis
-  publier la v1.0.0.
+- **Mainteneur**, après le tag `v1.0.0` : release GitHub avec ses notes, paquets ghcr publics
+  et liés au dépôt (tirage anonyme vérifié), image de partage refaite le 2026-11-24
+  téléversée (`docs/screenshots/partage-1280x640.png`, *Settings → General → Social
+  preview*), puis le lancement (C7).
 
 ## 1. Bloquants fonctionnels — le processus est inutilisable
 

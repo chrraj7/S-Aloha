@@ -18,8 +18,9 @@ services:
       retries: 10
 
   api:
-    # Image `edge` (état de `main`) par défaut ; S_ALOHA_VERSION fige une version ; « up --build » construit depuis les sources.
-    image: ghcr.io/chrraj7/s-aloha-api:${S_ALOHA_VERSION:-edge}
+    # Dernière version publiée (`latest`) par défaut ; S_ALOHA_VERSION fige une version (v1.0.0) ou suit `main` (edge) ;
+    # « up --build » construit depuis les sources.
+    image: ghcr.io/chrraj7/s-aloha-api:${S_ALOHA_VERSION:-latest}
     build: ./backend
     depends_on:
       db:
@@ -98,7 +99,7 @@ services:
     # seulement avec le profil « fonctionnalites », puis activées par l'Admin (Administration ›
     # Fonctionnalités optionnelles). Aucune ligne « ports: » : seule l'API l'appelle. Arrêté, ses
     # fonctionnalités sont indisponibles, rien d'autre (OPT-05).
-    image: ghcr.io/chrraj7/s-aloha-features:${S_ALOHA_VERSION:-edge}
+    image: ghcr.io/chrraj7/s-aloha-features:${S_ALOHA_VERSION:-latest}
     build: ./features/SAloha.Features
     profiles: ["fonctionnalites"]
     environment:
@@ -119,7 +120,7 @@ services:
     # Serveur MCP en lecture seule (ADR-0024), démarré seulement avec le profil « mcp », puis activé par
     # l'Admin. Aucune ligne « ports: » : nginx y relaie /mcp, l'API y lit /health. Il appelle le port
     # public de l'API avec le jeton personnel de chaque utilisateur, jamais avec le sien (MCP-02).
-    image: ghcr.io/chrraj7/s-aloha-mcp:${S_ALOHA_VERSION:-edge}
+    image: ghcr.io/chrraj7/s-aloha-mcp:${S_ALOHA_VERSION:-latest}
     build: ./features/SAloha.Mcp
     profiles: ["mcp"]
     environment:
@@ -134,7 +135,7 @@ services:
       retries: 3
 
   web:
-    image: ghcr.io/chrraj7/s-aloha-web:${S_ALOHA_VERSION:-edge}
+    image: ghcr.io/chrraj7/s-aloha-web:${S_ALOHA_VERSION:-latest}
     build: ./frontend
     depends_on:
       - api
