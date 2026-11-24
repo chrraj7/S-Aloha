@@ -49,6 +49,56 @@ public record LanguageModelView(bool Enabled, string Location, string Url, strin
 }
 
 /// <summary>
+/// OPT-27 : trace d'un appel au modèle, remise par le conteneur (ou par l'essai), sans l'invite ni la réponse en clair :
+/// l'entrée pseudonymisée n'en laisse que son empreinte SHA-256. Gardée 90 jours (<c>Features:LanguageModelCallRetentionDays</c>).
+/// </summary>
+public class LanguageModelCall
+{
+    public const string Valid = "valide", NonConforming = "non conforme", TimedOut = "délai", Failed = "erreur";
+    public static readonly string[] Outcomes = [Valid, NonConforming, TimedOut, Failed];
+    /// <summary>L'essai de la page (OPT-26) se trace sous ce nom, hors de toute fonctionnalité.</summary>
+    public const string EssayFeature = "language-model", EssayTask = "essai";
+
+    public long Id { get; set; }
+    public DateTime At { get; set; }
+    [MaxLength(50)] public string Feature { get; set; } = "";
+    [MaxLength(50)] public string Task { get; set; } = "";
+    [MaxLength(100)] public string Model { get; set; } = "";
+    [MaxLength(20)] public string Location { get; set; } = "";
+    [MaxLength(20)] public string PromptVersion { get; set; } = "";
+    [MaxLength(64)] public string InputHash { get; set; } = "";
+    public int DurationMs { get; set; }
+    [MaxLength(20)] public string Outcome { get; set; } = "";
+    public int Attempts { get; set; }
+    /// <summary>OPT-25 : réponses écartées (non conformes) pendant l'appel.</summary>
+    public int Rejected { get; set; }
+    [MaxLength(500)] public string? Error { get; set; }
+}
+
+/// <summary>Trace remise par le conteneur ; mêmes champs que <see cref="LanguageModelCall"/>, sans l'identifiant ni la date.</summary>
+public record LanguageModelCallInput(string? Feature, string? Task, string? Model, string? Location, string? PromptVersion, string? InputHash,
+    int DurationMs, string? Outcome, int Attempts, int Rejected, string? Error)
+{
+    /// <summary>Champs bornés ; rend le motif d'un refus, ou null.</summary>
+    public string? Invalid(bool essay = false)
+    {
+        if (!essay && FeatureCatalog.ByKey(Feature)?.Container != FeatureCatalog.FeaturesContainer) return $"Fonctionnalité inconnue : {Feature}.";
+        if (!LanguageModelCall.Outcomes.Contains(Outcome)) return $"Issue inconnue : {Outcome}. Valeurs : {string.Join(", ", LanguageModelCall.Outcomes)}.";
+        if (string.IsNullOrWhiteSpace(Task) || Task.Length > 50 || (PromptVersion?.Length ?? 0) > 20 || (Model?.Length ?? 0) > 100) return "Tâche, version ou modèle hors bornes.";
+        if (InputHash is null || !System.Text.RegularExpressions.Regex.IsMatch(InputHash, "^[0-9a-f]{64}$")) return "Empreinte SHA-256 attendue, en hexadécimal minuscule.";
+        if (DurationMs < 0 || Attempts < 0 || Rejected < 0) return "Durée, essais et réponses écartées positifs.";
+        return null;
+    }
+
+    public LanguageModelCall ToEntity(string feature) => new()
+    {
+        At = DateTime.UtcNow, Feature = feature, Task = Task!, Model = Model ?? "", Location = Location is { Length: <= 20 } l ? l : "",
+        PromptVersion = PromptVersion ?? "", InputHash = InputHash!, DurationMs = DurationMs, Outcome = Outcome!, Attempts = Attempts, Rejected = Rejected,
+        Error = Error is null ? null : Error.Length > 500 ? Error[..500] : Error,
+    };
+}
+
+/// <summary>
 /// OPT-22 : une adresse se résout ; une seule adresse hors des plages privées (RFC 1918, RFC 4193), de bouclage et
 /// locales au lien la fait « hors du SI ».
 /// </summary>
@@ -170,5 +220,16 @@ public class InternalLanguageModelController(AppDbContext db, CredentialVault va
     {
         var s = await db.LanguageModelSettings.AsNoTracking().FirstOrDefaultAsync() ?? new LanguageModelSettings();
         return Ok(new { s.Enabled, s.Location, s.Url, s.Model, Key = s.EncryptedKey is null ? null : vault.Unprotect(s.EncryptedKey), s.TimeoutSeconds, s.MaxResponseKb });
+    }
+
+    /// <summary>OPT-27 : trace d'un appel, remise par le conteneur après chaque tâche ; 400 hors bornes.</summary>
+    [HttpPost("calls")]
+    public async Task<IActionResult> Trace(LanguageModelCallInput call)
+    {
+        if (call.Invalid() is { } refused) return BadRequest(new { message = refused });
+        var entity = call.ToEntity(call.Feature!);
+        db.LanguageModelCalls.Add(entity);
+        await db.SaveChangesAsync();
+        return StatusCode(StatusCodes.Status201Created, new { id = entity.Id });
     }
 }
