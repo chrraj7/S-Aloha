@@ -145,7 +145,10 @@ public class FeatureEventsInterceptor(IFeatureGate gate, ILogger<FeatureEventsIn
     }
 }
 
-/// <summary>OPT-12 : le fil garde 7 jours (Features:EventRetentionDays), purge quotidienne.</summary>
+/// <summary>
+/// OPT-12 : le fil garde 7 jours (Features:EventRetentionDays) ; OPT-27 : les traces des appels au modèle de langage,
+/// 90 jours (Features:LanguageModelCallRetentionDays). Purge quotidienne.
+/// </summary>
 public class FeatureEventsRetention(IServiceScopeFactory scopes, IConfiguration config, ILogger<FeatureEventsRetention> logger) : BackgroundService
 {
     public static Task<int> PurgeAsync(AppDbContext db, int days, CancellationToken ct = default)
@@ -154,16 +157,26 @@ public class FeatureEventsRetention(IServiceScopeFactory scopes, IConfiguration 
         return db.FeatureEvents.Where(e => e.At < limit).ExecuteDeleteAsync(ct);
     }
 
+    public static Task<int> PurgeCallsAsync(AppDbContext db, int days, CancellationToken ct = default)
+    {
+        var limit = DateTime.UtcNow.AddDays(-days);
+        return db.LanguageModelCalls.Where(c => c.At < limit).ExecuteDeleteAsync(ct);
+    }
+
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
         var days = Math.Max(1, config.GetValue("Features:EventRetentionDays", 7));
+        var callDays = Math.Max(1, config.GetValue("Features:LanguageModelCallRetentionDays", 90));
         while (!ct.IsCancellationRequested)
         {
             try
             {
                 await using var scope = scopes.CreateAsyncScope();
-                var purged = await PurgeAsync(scope.ServiceProvider.GetRequiredService<AppDbContext>(), days, ct);
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var purged = await PurgeAsync(db, days, ct);
                 if (purged > 0) logger.LogInformation("Fil des fonctionnalités : {Count} événements de plus de {Days} jours purgés.", purged, days);
+                var calls = await PurgeCallsAsync(db, callDays, ct);
+                if (calls > 0) logger.LogInformation("Modèle de langage : {Count} traces d'appel de plus de {Days} jours purgées.", calls, callDays);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {

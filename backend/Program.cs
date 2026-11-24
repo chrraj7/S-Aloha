@@ -36,7 +36,11 @@ builder.Services.AddSingleton<SAloha.Api.Core.Features.IFeatureGate, SAloha.Api.
 builder.Services.AddHttpClient<SAloha.Api.Core.Features.ContainerProbe>();
 // OPT-16 : appels vers le conteneur features, bornés à 2 s et à 1 Mio de réponse.
 builder.Services.AddHttpClient<SAloha.Api.Core.Features.FeaturesClient>(c =>
-    c.MaxResponseContentBufferSize = SAloha.Api.Core.Features.FeaturesClient.MaxResponseBytes);
+{
+    c.MaxResponseContentBufferSize = SAloha.Api.Core.Features.FeaturesClient.MaxResponseBytes;
+    // Chaque appel borne son délai : 2 s pour un écran (OPT-16), celui du modèle pour l'essai (OPT-26).
+    c.Timeout = Timeout.InfiniteTimeSpan;
+});
 builder.Services.AddScoped<SAloha.Api.Core.Features.FeatureStatus>();
 builder.Services.AddSingleton<SAloha.Api.Core.Features.FeatureEventsInterceptor>();
 builder.Services.AddHostedService<SAloha.Api.Core.Features.FeatureEventsRetention>();

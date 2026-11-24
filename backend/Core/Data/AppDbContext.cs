@@ -33,6 +33,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Administration.DuplicateDismissal> DuplicateDismissals => Set<Administration.DuplicateDismissal>();
     public DbSet<Platform.MailSettings> MailSettings => Set<Platform.MailSettings>();
     public DbSet<Features.LanguageModelSettings> LanguageModelSettings => Set<Features.LanguageModelSettings>();
+    public DbSet<Features.LanguageModelCall> LanguageModelCalls => Set<Features.LanguageModelCall>();
     public DbSet<Notifications.MailPreference> MailPreferences => Set<Notifications.MailPreference>();
     public DbSet<Attachments.Attachment> Attachments => Set<Attachments.Attachment>();
     public DbSet<Platform.StorageSettings> StorageSettings => Set<Platform.StorageSettings>();
@@ -238,6 +239,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         b.Entity<Platform.MailSettings>().Property(s => s.Id).ValueGeneratedNever();
         // OPT-20 : une seule ligne de réglages du modèle de langage.
         b.Entity<Features.LanguageModelSettings>().Property(s => s.Id).ValueGeneratedNever();
+        // OPT-27 : purge par date, compteurs par fonctionnalité sur une période.
+        b.Entity<Features.LanguageModelCall>().HasIndex(c => c.At);
+        b.Entity<Features.LanguageModelCall>().HasIndex(c => new { c.Feature, c.At });
         b.Entity<Platform.StorageSettings>().Property(s => s.Id).ValueGeneratedNever();
         b.Entity<Features.FeatureEvent>().HasIndex(e => e.At);   // OPT-12 : purge par date
         b.Entity<Features.Proposal>().HasIndex(p => new { p.TargetType, p.TargetId, p.Status });

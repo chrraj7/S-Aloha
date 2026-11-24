@@ -29,20 +29,37 @@ public class FeaturesClient(HttpClient http, IConfiguration config, IFeatureGate
         if (FeatureCatalog.ByKey(feature)?.Container != FeatureCatalog.FeaturesContainer)
             throw new ArgumentException($"Fonctionnalité inconnue du conteneur features : {feature}", nameof(feature));
         if (!await gate.IsEnabledAsync(feature, ct)) return null;
+        var (result, failure, elapsed) = await SendAsync<T>(path, body, Timeout, ct);
+        if (result is null && failure is not null)
+            logger.LogWarning("Conteneur features : appel {Path} ({Feature}) sans réponse, {Failure}, après {Elapsed} ms ; réponse vide rendue.",
+                path, feature, failure, elapsed);
+        return result;
+    }
 
+    /// <summary>
+    /// OPT-26 : l'essai du modèle de langage, qu'un écran attend aussi, mais sans fonctionnalité activée (l'Admin essaie
+    /// avant d'activer) et avec le délai du modèle. Rend la réponse, ou la cause de l'échec, sans secret.
+    /// </summary>
+    public async Task<(T? Result, string? Failure)> EssayAsync<T>(string path, object body, TimeSpan timeout, CancellationToken ct) where T : class
+    {
+        var (result, failure, elapsed) = await SendAsync<T>(path, body, timeout, ct);
+        if (failure is not null) logger.LogWarning("Conteneur features : essai {Path} sans réponse, {Failure}, après {Elapsed} ms.", path, failure, elapsed);
+        return (result, failure);
+    }
+
+    private async Task<(T? Result, string? Failure, int ElapsedMs)> SendAsync<T>(string path, object body, TimeSpan limit, CancellationToken ct) where T : class
+    {
         var url = config["Features:Url"]?.Trim().TrimEnd('/');
         if (string.IsNullOrEmpty(url) || !Uri.TryCreate(url + path, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https"))
-        {
-            logger.LogWarning("Conteneur features : appel {Path} ({Feature}) sans réponse, adresse absente ou invalide (Features:Url).", path, feature);
-            return null;
-        }
+            return (null, "adresse absente ou invalide (Features:Url)", 0);
 
         using var request = new HttpRequestMessage(HttpMethod.Post, uri) { Content = JsonContent.Create(body, options: Json) };
         var token = config["Features:Token"];
         if (!string.IsNullOrEmpty(token)) request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        timeout.CancelAfter(Timeout);
+        timeout.CancelAfter(limit);
         var started = DateTime.UtcNow;
+        int Elapsed() => (int)(DateTime.UtcNow - started).TotalMilliseconds;
         string? failure;
         try
         {
@@ -50,7 +67,7 @@ public class FeaturesClient(HttpClient http, IConfiguration config, IFeatureGate
             if (response.IsSuccessStatusCode)
             {
                 var result = await response.Content.ReadFromJsonAsync<T>(Json, timeout.Token);
-                if (result is not null) return result;
+                if (result is not null) return (result, null, Elapsed());
                 failure = "réponse vide";
             }
             else failure = $"réponse {(int)response.StatusCode}";
@@ -58,11 +75,11 @@ public class FeaturesClient(HttpClient http, IConfiguration config, IFeatureGate
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
             // L'écran a renoncé (nouvelle frappe, page quittée) : rien à signaler.
-            return null;
+            return (null, null, Elapsed());
         }
         catch (OperationCanceledException)
         {
-            failure = $"délai de {Timeout.TotalSeconds:0} s dépassé";
+            failure = $"délai de {limit.TotalSeconds:0} s dépassé";
         }
         catch (HttpRequestException ex)
         {
@@ -72,8 +89,6 @@ public class FeaturesClient(HttpClient http, IConfiguration config, IFeatureGate
         {
             failure = "réponse illisible";
         }
-        logger.LogWarning("Conteneur features : appel {Path} ({Feature}) sans réponse, {Failure}, après {Elapsed} ms ; réponse vide rendue.",
-            path, feature, failure, (int)(DateTime.UtcNow - started).TotalMilliseconds);
-        return null;
+        return (null, failure, Elapsed());
     }
 }

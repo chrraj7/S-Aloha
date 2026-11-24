@@ -49,6 +49,63 @@ public record LanguageModelView(bool Enabled, string Location, string Url, strin
 }
 
 /// <summary>
+/// OPT-27 : trace d'un appel au modèle, remise par le conteneur (ou par l'essai), sans l'invite ni la réponse en clair :
+/// l'entrée pseudonymisée n'en laisse que son empreinte SHA-256. Gardée 90 jours (<c>Features:LanguageModelCallRetentionDays</c>).
+/// </summary>
+public class LanguageModelCall
+{
+    public const string Valid = "valide", NonConforming = "non conforme", TimedOut = "délai", Failed = "erreur";
+    public static readonly string[] Outcomes = [Valid, NonConforming, TimedOut, Failed];
+    /// <summary>L'essai de la page (OPT-26) se trace sous ce nom, hors de toute fonctionnalité.</summary>
+    public const string EssayFeature = "language-model", EssayTask = "essai";
+
+    public long Id { get; set; }
+    public DateTime At { get; set; }
+    [MaxLength(50)] public string Feature { get; set; } = "";
+    [MaxLength(50)] public string Task { get; set; } = "";
+    [MaxLength(100)] public string Model { get; set; } = "";
+    [MaxLength(20)] public string Location { get; set; } = "";
+    [MaxLength(20)] public string PromptVersion { get; set; } = "";
+    [MaxLength(64)] public string InputHash { get; set; } = "";
+    public int DurationMs { get; set; }
+    [MaxLength(20)] public string Outcome { get; set; } = "";
+    public int Attempts { get; set; }
+    /// <summary>OPT-25 : réponses écartées (non conformes) pendant l'appel.</summary>
+    public int Rejected { get; set; }
+    [MaxLength(500)] public string? Error { get; set; }
+}
+
+/// <summary>Trace remise par le conteneur ; mêmes champs que <see cref="LanguageModelCall"/>, sans l'identifiant ni la date.</summary>
+public record LanguageModelCallInput(string? Feature, string? Task, string? Model, string? Location, string? PromptVersion, string? InputHash,
+    int DurationMs, string? Outcome, int Attempts, int Rejected, string? Error)
+{
+    /// <summary>Champs bornés ; rend le motif d'un refus, ou null.</summary>
+    public string? Invalid(bool essay = false)
+    {
+        if (!essay && FeatureCatalog.ByKey(Feature)?.Container != FeatureCatalog.FeaturesContainer) return $"Fonctionnalité inconnue : {Feature}.";
+        if (!LanguageModelCall.Outcomes.Contains(Outcome)) return $"Issue inconnue : {Outcome}. Valeurs : {string.Join(", ", LanguageModelCall.Outcomes)}.";
+        if (string.IsNullOrWhiteSpace(Task) || Task.Length > 50 || (PromptVersion?.Length ?? 0) > 20 || (Model?.Length ?? 0) > 100) return "Tâche, version ou modèle hors bornes.";
+        if (InputHash is null || !System.Text.RegularExpressions.Regex.IsMatch(InputHash, "^[0-9a-f]{64}$")) return "Empreinte SHA-256 attendue, en hexadécimal minuscule.";
+        if (DurationMs < 0 || Attempts < 0 || Rejected < 0) return "Durée, essais et réponses écartées positifs.";
+        return null;
+    }
+
+    public LanguageModelCall ToEntity(string feature) => new()
+    {
+        At = DateTime.UtcNow, Feature = feature, Task = Task!, Model = Model ?? "", Location = Location is { Length: <= 20 } l ? l : "",
+        PromptVersion = PromptVersion ?? "", InputHash = InputHash!, DurationMs = DurationMs, Outcome = Outcome!, Attempts = Attempts, Rejected = Rejected,
+        Error = Error is null ? null : Error.Length > 500 ? Error[..500] : Error,
+    };
+}
+
+/// <summary>OPT-26 : résultat de l'essai, sans secret ; <c>Outcome</c> et <c>DurationMs</c> quand le conteneur a répondu.</summary>
+public record LanguageModelTestResult(bool Ok, string Message, string? Outcome = null, int? DurationMs = null);
+
+/// <summary>OPT-27 : compteurs tirés des traces, par fonctionnalité et issue, sur une période.</summary>
+public record LanguageModelUsageRow(string Feature, string Outcome, int Count, int AverageMs, int Rejected, DateTime Last);
+public record LanguageModelUsage(int Days, List<LanguageModelUsageRow> Rows);
+
+/// <summary>
 /// OPT-22 : une adresse se résout ; une seule adresse hors des plages privées (RFC 1918, RFC 4193), de bouclage et
 /// locales au lien la fait « hors du SI ».
 /// </summary>
@@ -92,7 +149,7 @@ public static class LanguageModelLocation
 [ApiController]
 [Route("api/admin/settings/language-model")]
 [Authorize(Policy = "Admin")]
-public class LanguageModelController(AppDbContext db, CredentialVault vault) : ControllerBase
+public class LanguageModelController(AppDbContext db, CredentialVault vault, FeaturesClient features) : ControllerBase
 {
     public const string AuditReference = "Modèle de langage";
 
@@ -152,6 +209,51 @@ public class LanguageModelController(AppDbContext db, CredentialVault vault) : C
         await db.SaveChangesAsync();
         return Ok(LanguageModelView.From(s));
     }
+
+    /// <summary>Réponse du conteneur à l'essai : la trace de l'appel (OPT-27).</summary>
+    private record EssayReply(LanguageModelCallInput Call);
+
+    /// <summary>
+    /// OPT-26 : essai avec les réglages enregistrés, même désactivés, la CMDB assistée coupée comprise : une requête courte
+    /// passe par le conteneur <c>features</c> (<c>POST /language-model/test</c>), qui pseudonymise, appelle et valide comme
+    /// pour une tâche. Le résultat se lit sans secret, comme ADM-63 ; l'essai est tracé (OPT-27).
+    /// </summary>
+    [HttpPost("test")]
+    public async Task<IActionResult> Test()
+    {
+        var s = await db.LanguageModelSettings.AsNoTracking().FirstOrDefaultAsync();
+        if (s is null || s.Url == "" || s.Model == "") return BadRequest(new { message = "Enregistrer d'abord l'adresse et le nom du modèle." });
+        if (s.EncryptedKey is not null && !vault.Configured) return BadRequest(new { message = CredentialVault.NotConfigured });
+        var settings = new { s.Enabled, s.Location, s.Url, s.Model, Key = s.EncryptedKey is null ? null : vault.Unprotect(s.EncryptedKey), s.TimeoutSeconds, s.MaxResponseKb };
+        // Deux essais au plus (OPT-25), chacun borné par le délai réglé.
+        var (reply, failure) = await features.EssayAsync<EssayReply>("/language-model/test", settings,
+            TimeSpan.FromSeconds(s.TimeoutSeconds * 2 + 10), HttpContext.RequestAborted);
+        if (reply?.Call is not { } call || call.Invalid(essay: true) is not null)
+            return Ok(new LanguageModelTestResult(false, $"Conteneur features injoignable ou hors contrat : {failure ?? "réponse illisible"}."));
+        db.LanguageModelCalls.Add(call.ToEntity(LanguageModelCall.EssayFeature));
+        await db.SaveChangesAsync();
+        var message = call.Outcome switch
+        {
+            LanguageModelCall.Valid => $"Modèle {s.Model} joignable : réponse JSON valide en {call.DurationMs} ms.",
+            LanguageModelCall.NonConforming => $"Modèle joignable, mais sa réponse n'est pas conforme au schéma de l'essai : {call.Error}",
+            LanguageModelCall.TimedOut => $"Pas de réponse du modèle en {s.TimeoutSeconds} s.",
+            _ => $"Échec : {call.Error}",
+        };
+        return Ok(new LanguageModelTestResult(call.Outcome == LanguageModelCall.Valid, message, call.Outcome, call.DurationMs));
+    }
+
+    /// <summary>OPT-27 : compteurs des appels, par fonctionnalité et issue, sur les <paramref name="days"/> derniers jours (1 à 90).</summary>
+    [HttpGet("usage")]
+    public async Task<LanguageModelUsage> Usage(int days = 30)
+    {
+        days = Math.Clamp(days, 1, 90);
+        var since = DateTime.UtcNow.AddDays(-days);
+        var rows = await db.LanguageModelCalls.AsNoTracking().Where(c => c.At >= since)
+            .GroupBy(c => new { c.Feature, c.Outcome })
+            .Select(g => new LanguageModelUsageRow(g.Key.Feature, g.Key.Outcome, g.Count(), (int)g.Average(c => c.DurationMs), g.Sum(c => c.Rejected), g.Max(c => c.At)))
+            .ToListAsync();
+        return new LanguageModelUsage(days, rows.OrderBy(r => r.Feature).ThenBy(r => Array.IndexOf(LanguageModelCall.Outcomes, r.Outcome)).ToList());
+    }
 }
 
 /// <summary>
@@ -170,5 +272,16 @@ public class InternalLanguageModelController(AppDbContext db, CredentialVault va
     {
         var s = await db.LanguageModelSettings.AsNoTracking().FirstOrDefaultAsync() ?? new LanguageModelSettings();
         return Ok(new { s.Enabled, s.Location, s.Url, s.Model, Key = s.EncryptedKey is null ? null : vault.Unprotect(s.EncryptedKey), s.TimeoutSeconds, s.MaxResponseKb });
+    }
+
+    /// <summary>OPT-27 : trace d'un appel, remise par le conteneur après chaque tâche ; 400 hors bornes.</summary>
+    [HttpPost("calls")]
+    public async Task<IActionResult> Trace(LanguageModelCallInput call)
+    {
+        if (call.Invalid() is { } refused) return BadRequest(new { message = refused });
+        var entity = call.ToEntity(call.Feature!);
+        db.LanguageModelCalls.Add(entity);
+        await db.SaveChangesAsync();
+        return StatusCode(StatusCodes.Status201Created, new { id = entity.Id });
     }
 }
