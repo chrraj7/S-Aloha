@@ -92,7 +92,7 @@ public class LanguageModelSettingsTests(ApiFixture api) : IAsyncLifetime
         Assert.True(hosted.GetProperty("dataLeavesSi").GetBoolean());
         Assert.NotEqual(JsonValueKind.Null, hosted.GetProperty("hostedConfirmedAt").ValueKind);
         // Adresse de bouclage, privée ou locale au lien : dans le SI.
-        foreach (var url in new[] { "http://127.0.0.1:11434/v1", "http://localhost:11434/v1", "http://192.168.1.20/v1", "http://[fd00::1]/v1" })
+        foreach (var url in new[] { "http://127.0.0.1:11434/v1", "http://localhost:11434/v1", "http://172.20.0.9/v1", "http://[fd00::1]/v1" })
             Assert.Equal("Dans le SI", (await Json(await admin.PutAsJsonAsync(Path, Dto(url)))).GetProperty("location").GetString());
         // Chaque changement d'emplacement est tracé (OPT-07).
         await using var db = api.Database();
