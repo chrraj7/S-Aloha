@@ -20,7 +20,7 @@
 | Administration | Périmètres | Admin | [PER-01 à PER-12](perimetres.md) | ✅ |
 | Administration | Index de recherche | Admin | [RAG-08](recherche.md) | ✅ |
 | Administration | Messagerie et stockage | Admin | ADM-60 à ADM-63 | ✅ |
-| Administration | Fonctionnalités optionnelles (tri assisté des tickets, CMDB assistée, serveur MCP, modèle de langage) | Admin | [OPT-01 à OPT-28](fonctionnalites-optionnelles.md), [TRI-10, TRI-13](tri-assiste-des-tickets.md), [CMA-10, CMA-12](cmdb-assistee.md), [MCP-03](serveur-mcp.md) | ✅ activation, conteneurs, dépendances (OPT-01 à OPT-08) ; 🔜 modèle de langage, réglages propres |
+| Administration | Fonctionnalités optionnelles (tri assisté des tickets, CMDB assistée, serveur MCP, modèle de langage) | Admin | [OPT-01 à OPT-28](fonctionnalites-optionnelles.md), [TRI-10, TRI-13](tri-assiste-des-tickets.md), [CMA-10, CMA-12](cmdb-assistee.md), [MCP-03](serveur-mcp.md) | ✅ activation, conteneurs, dépendances (OPT-01 à OPT-08), modèle de langage (OPT-20 à OPT-28), réglages du tri (TRI-10, TRI-13) ; 🔜 réglages de la CMDB assistée (CMA-10, CMA-12) et du serveur MCP (MCP-03) |
 | Paramétrage | Catégories (incidents, problèmes) | Manager, Admin | ADM-50 à ADM-53 | ✅ |
 
 ## 2. Utilisateurs et rôles
