@@ -449,7 +449,7 @@ Indicateurs du tableau de bord : onglet [Configuration & inventaire](../reportin
 | Route | Policy | Rôle |
 |---|---|---|
 | `GET /api/configuration-items` (filtres `status`, `q`, `owner`, `type`, `perimeter`), `GET /api/configuration-items/{id}` | User | Registre, fiche (relations) |
-| `GET /api/configuration-items/{id}/impact` | User | Vue d'impact amont et aval, services touchés (CFG-21) |
+| `GET /api/configuration-items/{id}/impact` | User | Vue d'impact amont et aval, services touchés (CFG-21) ; incidents et changements ouverts reliés au CI et visibles de l'utilisateur, les plus anciens d'abord (`openIncidents`, `openChanges`, outil `ci_impact` du [serveur MCP](../serveur-mcp.md)) |
 | `GET /api/configuration-items/impact-of?type=&id=` | User | Impact d'un enregistrement (changement) : CI reliés, CI en aval, services (CFG-20) |
 | `GET /api/configuration-items/inventory` (`retired=true` : retirés compris) | User | Rapport d'inventaire (CFG-39) |
 | `POST /api/configuration-items/{id}/verify` | User (propriétaire) ou Manager | Marque la fiche vérifiée (CFG-15) |

@@ -24,6 +24,27 @@ public class PersonalTokensController(AppDbContext db, ILogger<PersonalTokensCon
     public async Task<List<PersonalTokenView>> Mine() =>
         (await Active().Where(t => t.Username == Me).OrderByDescending(t => t.CreatedAt).ToListAsync()).Select(PersonalTokenView.From).ToList();
 
+    /// <summary>
+    /// MCP-01, MCP-09 : le jeton personnel présenté, pour le conteneur <c>mcp</c>, qui n'a ni secret ni route interne (MCP-02).
+    /// Serveur MCP coupé : 404, comme toute route de la fonctionnalité, le conteneur répond alors 404 à <c>/mcp</c> ; jeton absent,
+    /// inconnu, expiré, révoqué ou compte retiré : 401 ; annuaire injoignable : 503. Ouverte sans authentification pour que la
+    /// fonctionnalité coupée se distingue d'un jeton refusé ; elle ne rend rien d'autre que le jeton présenté.
+    /// </summary>
+    [HttpGet("api/me/tokens/current")]
+    [AllowAnonymous]
+    public async Task<ActionResult<PersonalTokenView>> Current()
+    {
+        if (User.Identity?.AuthenticationType != PersonalTokenHandler.SchemeName
+            || !int.TryParse(User.FindFirst(PersonalTokens.TokenClaim)?.Value, out var id))
+        {
+            if (HttpContext.Items.ContainsKey(PersonalTokenHandler.DirectoryDown)) return StatusCode(StatusCodes.Status503ServiceUnavailable);
+            Response.Headers.WWWAuthenticate = "Bearer";
+            return Unauthorized();
+        }
+        var token = await db.PersonalTokens.AsNoTracking().FirstAsync(t => t.Id == id);
+        return PersonalTokenView.From(token);
+    }
+
     [HttpPost("api/me/tokens")]
     [Authorize(Policy = "User")]
     public async Task<IActionResult> Create(PersonalTokenDto dto)

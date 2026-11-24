@@ -246,7 +246,8 @@ public class ConfigurationItemsController(AppDbContext db) : RecordController<Co
     /// Vue d'impact transitive : en aval, ce qui est touché si ce CI tombe ;
     /// en amont, ce dont il dépend. Parcours en largeur sur tout le graphe des
     /// relations : chaque CI n'apparaît qu'une fois, à sa plus courte distance,
-    /// ce qui arrête aussi le parcours en cas de cycle.
+    /// ce qui arrête aussi le parcours en cas de cycle. S'y ajoutent les incidents et
+    /// les changements ouverts reliés à ce CI, que l'utilisateur voit (MCP-05, <c>ci_impact</c>).
     /// </summary>
     [HttpGet("{id:int}/impact")]
     public async Task<IActionResult> Impact(int id)
@@ -258,7 +259,32 @@ public class ConfigurationItemsController(AppDbContext db) : RecordController<Co
         var describe = await DescriberAsync(downstream.Concat(upstream).SelectMany(n => new[] { n.Id, n.Via }));
         // CFG-21 : les services touchés si ce CI tombe (les siens et ceux des CI en aval).
         var services = await ServicesTouchedAsync(downstream.Select(n => n.Id).Append(id));
-        return Ok(new { Downstream = downstream.Select(describe), Upstream = upstream.Select(describe), Services = services });
+        var (incidents, changes) = await OpenLinkedAsync(id);
+        return Ok(new { Downstream = downstream.Select(describe), Upstream = upstream.Select(describe), Services = services,
+            OpenIncidents = incidents, OpenChanges = changes });
+    }
+
+    /// <summary>MCP-05 : incidents et changements ouverts reliés à ce CI, dans les périmètres de l'utilisateur (PER-08), les plus anciens d'abord.</summary>
+    private async Task<(List<object> Incidents, List<object> Changes)> OpenLinkedAsync(int id)
+    {
+        var links = await Db.ItemLinks.AsNoTracking()
+            .Where(l => (l.FromType == "ci" && l.FromId == id && (l.ToType == "incident" || l.ToType == "change"))
+                     || (l.ToType == "ci" && l.ToId == id && (l.FromType == "incident" || l.FromType == "change")))
+            .ToListAsync();
+        var others = links.Select(l => l.FromType == "ci" && l.FromId == id ? (Type: l.ToType, Id: l.ToId) : (Type: l.FromType, Id: l.FromId)).ToList();
+        var incidentIds = others.Where(o => o.Type == "incident").Select(o => o.Id).Distinct().ToList();
+        var changeIds = others.Where(o => o.Type == "change").Select(o => o.Id).Distinct().ToList();
+        var scope = await ScopeAsync();
+        var incidents = await Db.Incidents.AsNoTracking()
+            .Where(i => incidentIds.Contains(i.Id) && !IncidentManagement.Incident.Done.Contains(i.Status))
+            .OrderBy(i => i.CreatedAt).ThenBy(i => i.Id)
+            .Select(i => new { i.Id, i.Reference, i.Title, i.Status, i.Priority, i.PerimeterId, i.CreatedAt }).ToListAsync();
+        var changes = await Db.Changes.AsNoTracking()
+            .Where(c => changeIds.Contains(c.Id) && !ChangeEnablement.Change.Done.Contains(c.Status))
+            .OrderBy(c => c.CreatedAt).ThenBy(c => c.Id)
+            .Select(c => new { c.Id, c.Reference, c.Title, c.Status, c.PerimeterId, c.CreatedAt }).ToListAsync();
+        return (incidents.Where(i => scope.Sees(i.PerimeterId)).Select(i => (object)new { i.Id, i.Reference, i.Title, i.Status, i.Priority, i.CreatedAt }).ToList(),
+            changes.Where(c => scope.Sees(c.PerimeterId)).Select(c => (object)new { c.Id, c.Reference, c.Title, c.Status, c.CreatedAt }).ToList());
     }
 
     /// <summary>
