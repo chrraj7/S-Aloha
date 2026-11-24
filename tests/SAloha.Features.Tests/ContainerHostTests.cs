@@ -44,7 +44,7 @@ public class ContainerHostTests
     [Fact]
     public async Task OPT_01_le_controle_de_sante_rend_la_version_et_les_fonctionnalites_declarees()
     {
-        // Joignable, jeton reconnu ; le tri assisté des tickets est déclaré par sa clé, celle du catalogue de l'API.
+        // Joignable, jeton reconnu ; le tri assisté des tickets et la CMDB assistée sont déclarés par leur clé, celle du catalogue de l'API.
         using (var host = Factory(Token))
         {
             var res = await Health(host, Token);
@@ -52,15 +52,15 @@ public class ContainerHostTests
             var body = JsonDocument.Parse(await res.Content.ReadAsStringAsync()).RootElement;
             Assert.False(string.IsNullOrEmpty(body.GetProperty("version").GetString()));
             Assert.DoesNotContain("+", body.GetProperty("version").GetString());
-            Assert.Equal(["assisted-ticket-triage"], body.GetProperty("features").EnumerateArray().Select(e => e.GetString()));
+            Assert.Equal(["assisted-ticket-triage", "assisted-cmdb"], body.GetProperty("features").EnumerateArray().Select(e => e.GetString()));
             // L'état du tri : son index des incidents ouverts, pas encore construit au démarrage (TRI-06).
             var triage = body.GetProperty("status").GetProperty("assisted-ticket-triage");
             Assert.Equal((false, 0), (triage.GetProperty("indexBuilt").GetBoolean(), triage.GetProperty("openIncidents").GetInt32()));
         }
         // Une fonctionnalité de plus s'ajoute à la liste ; une clé inscrite deux fois n'y figure qu'une fois.
-        using var withMore = Factory(Token, features: ["assisted-cmdb", "assisted-ticket-triage"]);
+        using var withMore = Factory(Token, features: ["fonctionnalite-future", "assisted-ticket-triage"]);
         var declared = JsonDocument.Parse(await (await Health(withMore, Token)).Content.ReadAsStringAsync()).RootElement.GetProperty("features");
-        Assert.Equal(["assisted-ticket-triage", "assisted-cmdb"], declared.EnumerateArray().Select(e => e.GetString()));
+        Assert.Equal(["assisted-ticket-triage", "assisted-cmdb", "fonctionnalite-future"], declared.EnumerateArray().Select(e => e.GetString()));
     }
 
     [Fact]
