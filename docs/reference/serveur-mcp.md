@@ -47,8 +47,8 @@ sequenceDiagram
 
 | Endroit | Contenu | Statut |
 |---|---|---|
-| Préférences › **Jetons d'accès** (tous les rôles, si la fonctionnalité est activée) | Créer (nom, durée), voir la liste (nom, création, expiration, dernière utilisation), révoquer ; adresse du serveur à copier | 🔜 |
-| Administration › Fonctionnalités optionnelles › Serveur MCP | État du conteneur, tous les jetons actifs (compte, nom, expiration, dernière utilisation ; jamais le jeton), révocation | 🔜 |
+| Préférences › **Jetons d'accès** (tous les rôles, si la fonctionnalité est activée) | Créer (nom, durée : 7, 30 ou 90 jours), voir la liste (nom, création, expiration, dernière utilisation), révoquer ; adresse du serveur à copier ; le jeton n'est montré qu'une fois, juste après sa création (`AccessTokens`) | ✅ |
+| Administration › Fonctionnalités optionnelles › Serveur MCP | État du conteneur, tous les jetons actifs (compte, nom, expiration, dernière utilisation ; jamais le jeton), révocation | ✅ (jetons, la fonctionnalité activée ; état du conteneur : carte commune des fonctionnalités) |
 
 ## 4. API
 
