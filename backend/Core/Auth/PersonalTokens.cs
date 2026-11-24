@@ -121,7 +121,10 @@ public class PersonalTokenHandler(IOptionsMonitor<AuthenticationSchemeOptions> o
             new Claim(PersonalTokens.TokenClaim, token.Id.ToString()),
         }.Concat(groups.Select(g => new Claim(Principals.GroupClaim, g))), SchemeName);
         // MCP-09, côté API : compte et identifiant du jeton, jamais le jeton ni le contenu.
-        Logger.LogInformation("Jeton personnel {TokenId} de {Username} : {Method} {Path}", token.Id, token.Username, Request.Method, Request.Path.Value);
+        // Méthode et chemin viennent de la requête : sans saut de ligne, ils ne fabriquent pas de fausse ligne de journal.
+        var method = Request.Method.Replace("\r", "").Replace("\n", "");
+        var path = (Request.Path.Value ?? "").Replace("\r", "").Replace("\n", "");
+        Logger.LogInformation("Jeton personnel {TokenId} de {Username} : {Method} {Path}", token.Id, token.Username, method, path);
         return AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(identity), SchemeName));
     }
 
