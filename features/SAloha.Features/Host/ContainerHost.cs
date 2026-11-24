@@ -71,6 +71,14 @@ public static class ContainerHost
             }
             await next();
         });
+        // OPT-26 : essai du modèle de langage avec les réglages que l'API remet (enregistrés, même désactivés), sans
+        // fonctionnalité activée ; rend la trace de l'appel, que l'API garde (OPT-27).
+        app.MapPost("/language-model/test", async (LanguageModel.LanguageModelSettingsData settings, LanguageModel.LanguageModelClient client,
+            CancellationToken ct) =>
+        {
+            var result = await client.RunAsync(LanguageModel.LanguageModelEssay.Build(), new LanguageModel.Pseudonymizer(), ct, settings);
+            return Results.Json(new { call = result.Call });
+        });
         // OPT-01 : version et fonctionnalités déclarées ; l'API attend la réponse 3 s au plus.
         app.MapGet("/health", (IEnumerable<IContainerFeature> features) =>
         {
