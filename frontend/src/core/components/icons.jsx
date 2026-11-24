@@ -60,6 +60,8 @@ export const IconRail = (p) => <Svg size={15} {...p}><rect x="3.5" y="4.5" width
 // une icône commune à toute la section (on ne distinguerait plus les entrées
 // dans la barre réduite).
 export const IconTag = (p) => <Svg {...p}><path d="M3.5 3.5h8l9 9-8 8-9-9v-8Z" /><circle cx="8" cy="8" r="1.4" /></Svg>
+// CMA-04 : convention de nommage des CI — une étiquette qui porte un nom.
+export const IconNaming = (p) => <Svg {...p}><rect x="3" y="6" width="18" height="12" /><path d="M7 15l2-6 2 6M7.7 13h2.6M14 9v6M14 9h2.5a1.5 1.5 0 0 1 0 3H14M14 12h3a1.5 1.5 0 0 1 0 3h-3" /></Svg>
 export const IconRadar = (p) => <Svg {...p}><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="4.5" /><path d="m12 12 6-6" /></Svg>
 export const IconFramework = (p) => <Svg {...p}><path d="M9 6h11M9 12h11M9 18h11" /><path d="m3.5 6 1.3 1.3L7 5M3.5 12l1.3 1.3L7 11M3.5 18l1.3 1.3L7 17" /></Svg>
 export const IconUsers = (p) => <Svg {...p}><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c.6-3.6 3.1-5.5 6.5-5.5s5.9 1.9 6.5 5.5M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.8c2 .7 3.2 2.4 3.5 5.2" /></Svg>
@@ -78,6 +80,7 @@ export const IconAdmin = (p) => <Svg {...p}><rect x="3" y="4" width="18" height=
 /** Icône de chaque entrée de section (Paramétrage, Administration) du registre. */
 export const SECTION_ICONS = {
   categories: IconTag,
+  naming: IconNaming,
   discovery: IconRadar,
   'nis2-framework': IconFramework,
   users: IconUsers,

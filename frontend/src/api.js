@@ -75,6 +75,14 @@ export const api = {
   features: () => request('/features'),
   // TRI-02 : suggestions du tri assisté à la saisie d'un incident.
   triage: { suggest: draft => request('/triage/suggest', { method: 'POST', body: JSON.stringify(draft) }) },
+  // CMA-01, CMA-03, CMA-04 : CMDB assistée — analyses, file des propositions, convention de nommage.
+  assistedCmdb: {
+    analyses: (perimeter) => request('/assisted-cmdb/analyses' + (perimeter ? `?perimeter=${perimeter}` : '')),
+    launch: (dto) => request('/assisted-cmdb/analyses', { method: 'POST', body: JSON.stringify(dto) }),
+    proposals: (params = {}) => request('/assisted-cmdb/proposals?' + new URLSearchParams(params)),
+    naming: () => request('/assisted-cmdb/naming'),
+    saveNaming: (ciType, dto) => request(`/assisted-cmdb/naming/${encodeURIComponent(ciType)}`, { method: 'PUT', body: JSON.stringify(dto) })
+  },
   // Administration (ADM, Admin) : santé, journal d'audit global.
   // SOC-25 : pièces jointes d'un enregistrement (le téléchargement est un simple lien).
   attachments: {

@@ -71,6 +71,8 @@ export const MODULES = [
       { href: '/configuration/inventory', label: 'Inventaire' },
       // CFG-40 : file de travail des gestionnaires, pas un réglage (docs/reference/frontend.md).
       { href: '/configuration/staging', label: 'Sas de staging', roles: ['Manager', 'Admin'] },
+      // CMA-01, CMA-03 : analyses et file des propositions, la CMDB assistée activée (OPT-04).
+      { href: '/configuration/assisted', label: 'CMDB assistée', roles: ['Manager', 'Admin'], feature: 'assisted-cmdb' },
     ],
   },
   {
@@ -129,6 +131,8 @@ export const SECTIONS = [
   {
     id: 'settings', label: 'Paramétrage', roles: ['Manager', 'Admin'], entries: [
       { href: '/settings/categories', label: 'Catégories', description: 'Incidents et problèmes', icon: 'categories' },
+      { href: '/settings/naming', label: 'Convention de nommage', description: 'Noms des CI, pour la CMDB assistée', icon: 'naming',
+        feature: 'assisted-cmdb' },
       { href: '/settings/discovery', label: 'Découverte du réseau', description: 'Tâches de scan, coffre, fins de support',
         icon: 'discovery' },
       { href: '/settings/nis2', label: 'Référentiel NIS 2', description: 'Structure et texte des exigences',
