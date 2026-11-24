@@ -7,7 +7,7 @@
 La plateforme ITIL libre qui **aide à trier les tickets**, **à tenir la CMDB à jour**<br/>
 et **s'ouvre à vos assistants**, et montre à chacun **ce qui requiert son intervention, maintenant**.
 
-**Tri assisté des tickets** · **CMDB assistée** · **Serveur MCP** · **10 pratiques ITIL 4** reliées entre elles · **NIS 2** intégré · **on-prem** et libre
+**Tri assisté des tickets** · **CMDB assistée** · **Serveur MCP** · **10 pratiques ITIL** reliées entre elles · **NIS 2** intégré · **on-prem** et libre
 
 [![CI](https://github.com/chrraj7/S-Aloha/actions/workflows/ci.yml/badge.svg)](https://github.com/chrraj7/S-Aloha/actions/workflows/ci.yml)
 ![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)
