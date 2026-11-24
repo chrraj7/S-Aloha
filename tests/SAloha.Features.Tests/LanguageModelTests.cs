@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Net;
+using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -82,6 +83,8 @@ public sealed class FakeModelServer : IAsyncLifetime
     public volatile object? Settings;
     public readonly ConcurrentQueue<JsonElement> Requests = new();
     public readonly ConcurrentQueue<string> Authorizations = new();
+    /// <summary>OPT-27 : traces remises par le conteneur.</summary>
+    public readonly ConcurrentQueue<JsonElement> Traces = new();
     /// <summary>Contenus rendus tour à tour ; vide : la dernière règle reste.</summary>
     public readonly ConcurrentQueue<Func<JsonElement, Task<IResult>>> Replies = new();
     public volatile bool RefuseResponseFormat;
@@ -95,6 +98,11 @@ public sealed class FakeModelServer : IAsyncLifetime
         app = builder.Build();
         app.MapGet("/internal/events", () => Results.StatusCode(403));
         app.MapGet("/internal/language-model", () => Settings is { } s ? Results.Json(s) : Results.StatusCode(403));
+        app.MapPost("/internal/language-model/calls", async (HttpContext c) =>
+        {
+            Traces.Enqueue(await JsonSerializer.DeserializeAsync<JsonElement>(c.Request.Body));
+            return Results.Json(new { id = Traces.Count }, statusCode: 201);
+        });
         app.MapPost("/v1/chat/completions", async (HttpContext c) =>
         {
             var body = await JsonSerializer.DeserializeAsync<JsonElement>(c.Request.Body);
@@ -140,6 +148,7 @@ public class LanguageModelClientTests(FakeModelServer model) : IClassFixture<Fak
 
     private void Clear()
     {
+        model.Traces.Clear();
         model.Requests.Clear();
         model.Replies.Clear();
         model.RefuseResponseFormat = false;
@@ -283,5 +292,54 @@ public class LanguageModelClientTests(FakeModelServer model) : IClassFixture<Fak
         var essay = await Client().RunAsync(Job(), new Pseudonymizer(), CancellationToken.None,
             JsonSerializer.Deserialize<LanguageModelSettingsData>(JsonSerializer.Serialize(Settings(enabled: false)), JsonSerializerOptions.Web));
         Assert.True(essay.Valid, essay.Call.Error);
+    }
+
+    [Fact]
+    public async Task OPT_27_chaque_appel_d_une_fonctionnalite_remet_sa_trace_sans_l_invite_ni_la_reponse()
+    {
+        Clear();
+        model.Settings = Settings();
+        model.Replies.Enqueue(_ => Task.FromResult(FakeModelServer.Content("""{ "proprietaire": "Équipe paie", "motif": "HOTE_1 en IP_1" }""")));
+        var result = await Client().RunAsync(Job(), new Pseudonymizer(), CancellationToken.None);
+        Assert.True(result.Valid, result.Call.Error);
+        var trace = Assert.Single(model.Traces);
+        Assert.Equal(("assisted-cmdb", "proprietaire", "qwen2.5:7b", "Dans le SI", "v1", "valide", result.Call.InputHash),
+            (trace.GetProperty("feature").GetString(), trace.GetProperty("task").GetString(), trace.GetProperty("model").GetString(),
+             trace.GetProperty("location").GetString(), trace.GetProperty("promptVersion").GetString(), trace.GetProperty("outcome").GetString(),
+             trace.GetProperty("inputHash").GetString()));
+        var raw = trace.GetRawText();
+        foreach (var clear in new[] { "srv-paie-01", "10.1.2.3", "HOTE_1", "Équipe paie", "propriétaire ?" }) Assert.DoesNotContain(clear, raw);
+
+        // L'essai ne remet pas de trace : l'API la garde elle-même.
+        model.Replies.Enqueue(_ => Task.FromResult(FakeModelServer.Content("""{ "proprietaire": "a", "motif": "b" }""")));
+        await Client().RunAsync(Job(), new Pseudonymizer(), CancellationToken.None,
+            JsonSerializer.Deserialize<LanguageModelSettingsData>(JsonSerializer.Serialize(Settings()), JsonSerializerOptions.Web));
+        Assert.Single(model.Traces);
+    }
+
+    [Fact]
+    public async Task OPT_26_l_essai_passe_par_le_chemin_d_une_tache_et_rend_sa_trace()
+    {
+        Clear();
+        model.Settings = null;   // CMDB assistée coupée : l'essai ne lit rien à l'API, il reçoit ses réglages.
+        var http = container.CreateClient();
+        Assert.Equal(HttpStatusCode.Unauthorized, (await http.PostAsJsonAsync("/language-model/test", Settings(enabled: false))).StatusCode);
+        http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", FakeInternalApi.Token);
+
+        // Le modèle recopie le jeton du nom d'hôte : valide ; le nom d'hôte n'est jamais parti.
+        model.Replies.Enqueue(_ => Task.FromResult(FakeModelServer.Content("""{ "etat": "pret", "hote": "HOTE_1" }""")));
+        var ok = JsonDocument.Parse(await (await http.PostAsJsonAsync("/language-model/test", Settings(enabled: false))).Content.ReadAsStringAsync())
+            .RootElement.GetProperty("call");
+        Assert.Equal(("language-model", "essai", "valide"), (ok.GetProperty("feature").GetString(), ok.GetProperty("task").GetString(), ok.GetProperty("outcome").GetString()));
+        Assert.DoesNotContain(LanguageModelEssay.Host, model.Requests.Last().GetRawText());
+        Assert.Empty(model.Traces);
+
+        // Un modèle qui ne recopie pas le jeton échoue à l'essai, motif donné.
+        model.Replies.Enqueue(_ => Task.FromResult(FakeModelServer.Content("""{ "etat": "pret", "hote": "serveur" }""")));
+        model.Replies.Enqueue(_ => Task.FromResult(FakeModelServer.Content("""{ "etat": "pret", "hote": "serveur" }""")));
+        var bad = JsonDocument.Parse(await (await http.PostAsJsonAsync("/language-model/test", Settings())).Content.ReadAsStringAsync())
+            .RootElement.GetProperty("call");
+        Assert.Equal("non conforme", bad.GetProperty("outcome").GetString());
+        Assert.Contains("jeton du nom d'hôte", bad.GetProperty("error").GetString());
     }
 }
