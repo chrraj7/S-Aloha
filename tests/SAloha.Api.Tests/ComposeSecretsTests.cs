@@ -39,6 +39,23 @@ public class ComposeSecretsTests
     }
 
     [Fact]
+    public void S1_le_mot_de_passe_du_compte_de_service_vient_de_l_environnement_et_vide_il_est_refuse()
+    {
+        var compose = Read("docker-compose.yml");
+        Assert.DoesNotContain("MotDePasseServiceAccount", compose);
+        Assert.Contains("Ldap__BindPassword: \"${LDAP_BIND_PASSWORD:-}\"", compose);
+        // La démonstration garde son compte de service, celui de l'annuaire qu'elle démarre.
+        Assert.Contains("Ldap__BindPassword: \"Demo-Service-2026\"", Read("docker-compose.demo.yml"));
+        // Ce que donne docker-compose.yml sans LDAP_BIND_PASSWORD : une valeur vide, qui l'emporte sur celle
+        // d'appsettings.json ; un bind sans mot de passe serait anonyme, l'API refuse de démarrer (S7).
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Jwt:Key"] = new string('x', 64), ["Ldap:BindPassword"] = "", ["ConnectionStrings:Default"] = "Host=db;Password=autre"
+        }).Build();
+        Assert.Contains("Ldap:BindPassword est vide", Assert.Single(SampleSecrets.Problems(config)));
+    }
+
+    [Fact]
     public void S1_la_demonstration_garde_les_valeurs_d_exemple_reconnues_par_S7()
     {
         var demo = Read("docker-compose.demo.yml");
