@@ -98,6 +98,8 @@ public class DiscoveryJob : IHasPerimeter
     [MaxLength(250)] public string PortList { get; set; } = DefaultPorts;
     /// <summary>Lancement automatique toutes les N heures ; 0 : lancement manuel seulement.</summary>
     public int FrequencyHours { get; set; } = 24;
+    /// <summary>CMA-08 : à la fin de la tâche, la CMDB assistée (activée) aide au rapprochement des actifs qu'elle laisse au sas.</summary>
+    public bool AssistedCmdb { get; set; }
     /// <summary>Fenêtre de scan, en heure locale de l'organisation ; sans fenêtre, à toute heure.</summary>
     public TimeOnly? WindowStart { get; set; } = new(20, 0);
     public TimeOnly? WindowEnd { get; set; } = new(6, 0);
@@ -226,7 +228,7 @@ public record ReconcileAssetDto(string Action, int? TargetCiId = null, Configura
 public record DiscoveryJobDto(
     string Name, string ScanType, string? TargetRange, string? PortList, int? CredentialId,
     int FrequencyHours = 24, string? WindowStart = "20:00", string? WindowEnd = "06:00",
-    bool IsActive = true, int? PerimeterId = null);
+    bool IsActive = true, int? PerimeterId = null, bool AssistedCmdb = false);
 
 /// <summary>
 /// Identifiant du coffre ; en SNMP v3, <see cref="Secret"/> est la phrase d'authentification et

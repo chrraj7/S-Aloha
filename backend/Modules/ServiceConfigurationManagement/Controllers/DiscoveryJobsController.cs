@@ -24,7 +24,7 @@ public class DiscoveryJobsController(AppDbContext db, PerimeterAccess access, Di
         j.Id, j.PerimeterId, j.Name, j.ScanType, j.TargetRange, j.PortList, j.FrequencyHours,
         WindowStart = j.WindowStart?.ToString("HH:mm"), WindowEnd = j.WindowEnd?.ToString("HH:mm"),
         j.CredentialId, Credential = j.Credential == null ? null : new { j.Credential.Id, j.Credential.Name, j.Credential.CredentialType },
-        j.IsActive, j.LastRunAt, j.LastStatus, j.LastError, j.LastFoundCount, j.CreatedAt, j.CreatedBy
+        j.IsActive, j.AssistedCmdb, j.LastRunAt, j.LastStatus, j.LastError, j.LastFoundCount, j.CreatedAt, j.CreatedBy
     };
 
     [HttpGet]
@@ -151,6 +151,7 @@ public class DiscoveryJobsController(AppDbContext db, PerimeterAccess access, Di
         job.FrequencyHours = dto.FrequencyHours;
         (job.WindowStart, job.WindowEnd) = (start, end);
         job.IsActive = dto.IsActive;
+        job.AssistedCmdb = dto.AssistedCmdb;
         return Lengths.Check(job);
     }
 }

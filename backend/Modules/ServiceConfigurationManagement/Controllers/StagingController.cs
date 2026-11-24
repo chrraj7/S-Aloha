@@ -176,6 +176,8 @@ public class StagingController(AppDbContext db, PerimeterAccess access, Matching
         MatchingEngine.MarkReconciled(asset, ci, Me);
         asset.SuggestedAction = dto.Action == "create" ? "CreateNew" : "UpdateExisting";
         await db.SaveChangesAsync();
+        // CMA-08 : la décision du rapprochement décide aussi les propositions de la CMDB assistée sur l'actif.
+        await AssistedStaging.DecideAsync(db, asset, dto.Action, ci, Me);
         return Ok(new { asset.Id, asset.Status, ConfigurationItem = new { ci.Id, ci.Reference, ci.Title, ci.CiType, ci.Status } });
     }
 
@@ -196,6 +198,7 @@ public class StagingController(AppDbContext db, PerimeterAccess access, Matching
         asset.Status = to;
         if (to == DiscoveredAsset.ToReconcile) asset.MatchedCiId = null;
         await db.SaveChangesAsync();
+        if (to == DiscoveredAsset.Ignored) await AssistedStaging.DecideAsync(db, asset, "ignore", null, Me);
         return Ok(new { asset.Id, asset.Status });
     }
 
