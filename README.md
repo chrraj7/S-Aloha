@@ -188,6 +188,18 @@ règle, elles arrivent avec la **première version stable**
     <td width="50%"><img src="docs/screenshots/12-configuration-relations.png" alt="CI et relations" /><br/><b>Configuration</b> — éléments de configuration et leurs dépendances</td>
   </tr>
   <tr>
+    <td><img src="docs/screenshots/20-configuration-application.png" alt="Fiche d'une application" /><br/><b>Portefeuille applicatif</b> — code, direction, propriétaires, criticité, RTO / RPO, RGPD et NIS 2</td>
+    <td><img src="docs/screenshots/21-configuration-equipement.png" alt="Fiche d'un équipement" /><br/><b>Actif matériel</b> — identification technique, constructeur, série, garantie et fin de support</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/22-configuration-inventaire.png" alt="Inventaire" /><br/><b>Inventaire</b> — applications et actifs matériels, fins de support, export</td>
+    <td><img src="docs/screenshots/23-sas-de-staging.png" alt="Sas de staging" /><br/><b>Sas de staging</b> — les équipements découverts attendent une décision avant la CMDB</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/24-sas-actif.png" alt="Actif découvert" /><br/><b>Rapprochement</b> — ce que la découverte a vu, comparé au CI proposé</td>
+    <td><img src="docs/screenshots/25-decouverte-reseau.png" alt="Découverte du réseau" /><br/><b>Découverte du réseau</b> — tâches de scan, identifiants, fins de support</td>
+  </tr>
+  <tr>
     <td><img src="docs/screenshots/03-problemes.png" alt="Registre des problèmes" /><br/><b>Registre des problèmes</b> — statut, priorité P1–P4 calculée</td>
     <td><img src="docs/screenshots/04-probleme-informations.png" alt="Fiche problème" /><br/><b>Fiche problème</b> — impact × urgence, contournement, cause racine</td>
   </tr>
