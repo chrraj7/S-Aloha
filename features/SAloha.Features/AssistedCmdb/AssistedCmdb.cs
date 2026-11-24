@@ -8,14 +8,15 @@ namespace SAloha.Features.AssistedCmdb;
 /// arrive par le fil (<c>analysis.requested</c>, CMA-01) ; le conteneur lit ses CI (la sélection, ou le périmètre page
 /// après page), les soumet au modèle de langage par lots, une requête par tâche et par lot, et dépose les propositions
 /// retenues (OPT-14), qu'un gestionnaire décide (CMA-03). Il rend compte après chaque lot ; un modèle en panne met
-/// l'analyse en échec, motif donné (OPT-28). Aujourd'hui : Renommer, Normaliser, Reclasser (CMA-02, étape 5a).
+/// l'analyse en échec, motif donné (OPT-28). Aujourd'hui : Renommer, Normaliser, Reclasser (CMA-02, étape 5a), et Fusionner
+/// (CMA-06, étape 5b) : les paires candidates de toute l'analyse, présélectionnées ici, partent par requêtes de 50.
 /// </summary>
 public class AssistedCmdb(ApiClient api, LanguageModelClient model, ILogger<AssistedCmdb> log) : IContainerFeature, IEventHandler
 {
     public const string FeatureKey = "assisted-cmdb";
     /// <summary>CI par requête au modèle : assez pour comparer, assez peu pour une réponse courte et un délai borné.</summary>
     public const int BatchSize = 20;
-    public static readonly string[] Supported = [CmdbTasks.Rename, CmdbTasks.Normalize, CmdbTasks.Reclassify];
+    public static readonly string[] Supported = [CmdbTasks.Rename, CmdbTasks.Normalize, CmdbTasks.Reclassify, Duplicates.Task];
 
     public string Key => FeatureKey;
     public string Feature => FeatureKey;
@@ -37,9 +38,10 @@ public class AssistedCmdb(ApiClient api, LanguageModelClient model, ILogger<Assi
             var named = naming.Select(n => n.CiType).ToHashSet();
             var items = await ItemsAsync(analysis, ct);
             var titles = items.ToDictionary(c => c.Id, c => c.Title ?? "");
-            foreach (var batch in items.Chunk(BatchSize))
+            var perBatch = tasks.Where(t => t != Duplicates.Task).ToList();
+            foreach (var batch in perBatch.Count == 0 ? [] : items.Chunk(BatchSize))
             {
-                foreach (var task in tasks)
+                foreach (var task in perBatch)
                 {
                     // CMA-04 : sans convention pour un type, Renommer ne s'y applique pas.
                     var subject = task == CmdbTasks.Rename ? batch.Where(c => named.Contains(c.CiType ?? "")).ToList() : batch.ToList();
@@ -67,6 +69,38 @@ public class AssistedCmdb(ApiClient api, LanguageModelClient model, ILogger<Assi
                 }
                 // Le compte rendu de chaque lot garde l'analyse vivante côté API.
                 await api.ReportAnalysisAsync(analysis.Id, new AnalysisReport("En cours", null, proposals, rejected), ct);
+            }
+            if (tasks.Contains(Duplicates.Task))
+            {
+                // CMA-06 : le modèle ne juge que les paires présélectionnées, jamais une paire rejetée.
+                var declined = await api.DeclinedPairsAsync(analysis.PerimeterId, ct);
+                var byId = items.ToDictionary(c => c.Id);
+                foreach (var chunk in Duplicates.Candidates(items, declined).Chunk(Duplicates.PairsPerRequest))
+                {
+                    var pseudo = new Pseudonymizer();
+                    var job = new LanguageModelTask(FeatureKey, Duplicates.Task, CmdbTasks.PromptVersion, Duplicates.Instructions,
+                        Duplicates.Input(chunk, byId, titles, pseudo), Duplicates.Schema);
+                    var result = await model.RunAsync(job, pseudo, ct);
+                    rejected += result.Call.Rejected;
+                    if (result.Call.Outcome is LanguageModelClient.Error or LanguageModelClient.Timeout)
+                    {
+                        await api.ReportAnalysisAsync(analysis.Id, new AnalysisReport("En échec", result.Call.Error ?? "Modèle de langage en échec.",
+                            proposals, rejected), ct);
+                        return;
+                    }
+                    if (result.Output is { } output)
+                    {
+                        var (kept, refused) = Duplicates.Read(output, chunk);
+                        rejected += refused;
+                        foreach (var m in kept)
+                        {
+                            if (await api.ProposeAsync(new ProposalInput(FeatureKey, "ci", m.Duplicate, "merge", m.Keep.ToString(), m.Reasons, [], null), ct))
+                                proposals++;
+                            else rejected++;
+                        }
+                    }
+                    await api.ReportAnalysisAsync(analysis.Id, new AnalysisReport("En cours", null, proposals, rejected), ct);
+                }
             }
             await api.ReportAnalysisAsync(analysis.Id, new AnalysisReport("Terminée", null, proposals, rejected), ct);
         }

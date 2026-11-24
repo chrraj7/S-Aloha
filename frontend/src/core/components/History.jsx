@@ -23,6 +23,9 @@ function Detail({ e, labels }) {
       return <>{e.field && <>{e.field} </>}<b>{show(e.newValue)}</b></>
     case 'Lien retiré':
       return <>{e.field && <>{e.field} </>}<s>{show(e.oldValue)}</s></>
+    // ADM-41, CMA-05 : la fusion d'un doublon, décrite d'une phrase.
+    case 'Fusion':
+      return <>{show(e.newValue)}</>
     default:
       return (
         <>

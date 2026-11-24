@@ -7,6 +7,8 @@ vi.mock('../../api', () => ({
   api: {
     audit: {
       list: () => Promise.resolve([
+        { id: 4, at: '2026-10-10T09:00:00Z', authorDisplayName: 'Lova Rabe', action: 'Fusion', field: null, oldValue: null,
+          newValue: 'CI-2026-0015 « Serveur paie prod » fusionné ici : 1 lien(s), 1 relation(s), 0 actif(s) du sas reportés.', origin: 'CMDB assistée' },
         { id: 3, at: '2026-10-10T08:00:00Z', authorDisplayName: 'Lova Rabe', action: 'Transition forcée',
           field: 'status', oldValue: 'Clos', newValue: 'En cours', reason: 'Clôture par erreur' },
         { id: 2, at: '2026-10-10T07:00:00Z', authorDisplayName: 'Fara Rasoa', action: 'Modification',
@@ -26,4 +28,6 @@ it('affiche les entrées du journal avec libellés, valeurs et motif (SOC-20)', 
   expect(screen.getByText('Élevé')).toBeTruthy()
   expect(screen.getByText('Transition forcée')).toBeTruthy()
   expect(screen.getByText(/Statut initial/)).toBeTruthy()
+  // ADM-41, CMA-05 : une fusion se lit d'une phrase, sans « champ : — → ».
+  expect(screen.getByText('CI-2026-0015 « Serveur paie prod » fusionné ici : 1 lien(s), 1 relation(s), 0 actif(s) du sas reportés.')).toBeTruthy()
 })

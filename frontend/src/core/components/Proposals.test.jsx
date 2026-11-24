@@ -78,3 +78,16 @@ it('OPT-15 : une proposition périmée ne s’applique plus ; sans proposition, 
   setup([])
   await waitFor(() => expect(screen.queryByLabelText('Suggestions du tri assisté')).toBeNull())
 })
+
+it('CMA-05 : une fusion cite l’autre CI et se décide dans la file de la CMDB assistée, jamais par la modification', async () => {
+  const merge = { id: 41, field: 'merge', before: null, after: '16', reasons: 'Même serveur de paie.',
+    cited: [{ type: 'ci', id: 16, reference: 'CI-2026-0016', title: 'SRV-PAIE-01' }], stale: false }
+  const { config } = setup([merge])
+  // L'autre CI, en titre de la ligne et parmi les sources.
+  expect((await screen.findAllByText('CI-2026-0016')).map(a => a.getAttribute('href'))).toEqual(['/configuration/16', '/configuration/16'])
+  expect(screen.getByText('Décider la fusion').getAttribute('href')).toBe('/configuration/assisted')
+  expect(screen.queryByText('Appliquer')).toBeNull()
+  fireEvent.click(screen.getByText('Rejeter'))
+  await waitFor(() => expect(config.api.rejectProposal).toHaveBeenCalledWith(9, 41))
+  expect(config.api.applyProposal).not.toHaveBeenCalled()
+})

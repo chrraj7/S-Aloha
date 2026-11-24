@@ -156,6 +156,14 @@ public class ApiClient
         return await res.Content.ReadFromJsonAsync<List<NamingRule>>(Json, ct) ?? [];
     }
 
+    /// <summary>
+    /// CMA-06 : paires du périmètre dont la fusion a été rejetée, identifiants dans l'ordre croissant. Sans elles, l'analyse
+    /// échoue : une paire rejetée n'est plus jamais soumise au modèle.
+    /// </summary>
+    public async Task<HashSet<(int, int)>> DeclinedPairsAsync(int perimeter, CancellationToken ct) =>
+        ((await http.GetFromJsonAsync<List<int[]>>($"internal/assisted-cmdb/declined-pairs?perimeter={perimeter}", Json, ct)) ?? [])
+            .Where(p => p.Length == 2).Select(p => (Math.Min(p[0], p[1]), Math.Max(p[0], p[1]))).ToHashSet();
+
     /// <summary>TRI-06 : une page des incidents ouverts, avec leurs CI reliés.</summary>
     public async Task<OpenPage> OpenIncidentsAsync(int after, CancellationToken ct) =>
         (await http.GetFromJsonAsync<OpenPage>($"internal/incidents/open?after={after}&limit=500", Json, ct))!;

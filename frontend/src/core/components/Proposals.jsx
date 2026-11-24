@@ -53,12 +53,18 @@ export default function Proposals({ config, record, reload, title = 'Suggestions
           const open = editing?.id === p.id
           return (
             <li key={p.id} style={{ marginBottom: 10 }}>
-              <b>{label} : {display(field, p.after)}</b>{p.before ? <span className="small"> (actuellement {display(field, p.before)})</span> : null}
+              {p.field === 'merge'
+                ? <b>Fusion avec {p.cited?.[0] ? <Link to={hrefOf(p.cited[0].type, p.cited[0].id)}>{p.cited[0].reference}</Link> : 'un autre CI'}</b>
+                : <><b>{label} : {display(field, p.after)}</b>{p.before ? <span className="small"> (actuellement {display(field, p.before)})</span> : null}</>}
               <div className="small">{p.reasons}{p.cited?.length > 0 && <> — {p.cited.map((c, i) => <React.Fragment key={c.type + c.id}>
                 {i > 0 && ', '}<Link to={hrefOf(c.type, c.id)}>{c.reference}</Link></React.Fragment>)}</>}</div>
               {p.stale
                 ? <div className="small" role="note">Périmée : la fiche a changé depuis ; elle se recalcule.</div>
-                : !open && <div className="toolbar">
+                : p.field === 'merge'
+                  // CMA-05 : une fusion se décide dans la file de la CMDB assistée, où l'on choisit le CI conservé.
+                  ? <div className="toolbar"><Link className="btn small" to="/configuration/assisted">Décider la fusion</Link>
+                      <button className="btn ghost small" onClick={() => reject(p)}>Rejeter</button></div>
+                  : !open && <div className="toolbar">
                     <button className="btn small" onClick={() => (p.field === 'owner' ? start(p) : apply(p, p.after))}>Appliquer</button>
                     <button className="btn ghost small" onClick={() => start(p, '')}>Corriger</button>
                     <button className="btn ghost small" onClick={() => reject(p)}>Rejeter</button>
