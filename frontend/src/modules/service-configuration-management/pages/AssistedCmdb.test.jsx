@@ -27,6 +27,8 @@ const reject = vi.fn(() => Promise.resolve())
 const merge = vi.fn(() => Promise.resolve({}))
 const relate = vi.fn(() => Promise.resolve({}))
 const saveNaming = vi.fn(() => Promise.resolve({}))
+const ALL = ['rename', 'normalize', 'reclassify', 'merge', 'relate', 'criticality']
+let settings = { tasks: ALL, maxItems: 500, stagingHelp: true }
 vi.mock('../../../api', () => ({
   api: {
     perimeters: { mine: () => Promise.resolve([{ id: 7, name: 'Siège', role: 'Manager' }]) },
@@ -35,6 +37,7 @@ vi.mock('../../../api', () => ({
         status: 'En échec', reason: 'Pas de réponse du modèle en 120 s.', proposalCount: 0, rejectedCount: 0, requestedBy: 'Hery Rakoto',
         requestedAt: '2026-11-24T08:00:00Z' }]),
       launch: d => launch(d),
+      settings: () => Promise.resolve(settings),
       proposals: p => proposals(p),
       naming: () => Promise.resolve([{ ciType: 'Serveur', description: 'SRV-<RÔLE>-<NN>', examples: ['SRV-PAIE-01'], updatedAt: '2026-11-24T08:00:00Z',
         updatedBy: 'Hery Rakoto' }]),
@@ -50,9 +53,20 @@ vi.mock('../../../api', () => ({
   },
   getUser: () => ({ role: 'Manager' }),
 }))
-afterEach(() => { cleanup(); vi.clearAllMocks() })
+afterEach(() => { cleanup(); vi.clearAllMocks(); settings = { tasks: ALL, maxItems: 500, stagingHelp: true } })
 
 const page = () => render(<MemoryRouter><AssistedCmdb /></MemoryRouter>)
+
+it('CMA-12 : seules les tâches que l’Admin propose se lancent, dans la limite qu’il a réglée', async () => {
+  settings = { tasks: ['rename', 'reclassify'], maxItems: 120, stagingHelp: true }
+  page()
+  expect(await screen.findByText(/120 CI au plus/)).toBeTruthy()
+  expect(screen.queryByLabelText('Fusionner')).toBeNull()
+  expect(screen.queryByLabelText('Normaliser')).toBeNull()
+  fireEvent.click(screen.getByText('Lancer l’analyse'))
+  await waitFor(() => expect(launch).toHaveBeenCalled())
+  expect(launch.mock.calls[0][0]).toEqual({ perimeterId: undefined, tasks: ['rename', 'reclassify'] })
+})
 
 it('CMA-01 : un gestionnaire lance une analyse avec ses tâches et suit les analyses, motif d’un échec compris', async () => {
   page()

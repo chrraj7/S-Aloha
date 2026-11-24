@@ -84,6 +84,8 @@ export const api = {
     merge: (id, keepId) => request(`/assisted-cmdb/proposals/${id}/merge`, { method: 'POST', body: JSON.stringify({ keepId }) }),
     // CMA-02 : relation acceptée, au besoin avec un autre type.
     relate: (id, type) => request(`/assisted-cmdb/proposals/${id}/relate`, { method: 'POST', body: JSON.stringify({ type }) }),
+    // CMA-12 : tâches proposées, CI au plus par analyse, aide au sas, réglés par l'Admin.
+    settings: () => request('/assisted-cmdb/settings'),
     naming: () => request('/assisted-cmdb/naming'),
     saveNaming: (ciType, dto) => request(`/assisted-cmdb/naming/${encodeURIComponent(ciType)}`, { method: 'PUT', body: JSON.stringify(dto) })
   },
@@ -134,6 +136,8 @@ export const api = {
     featureSettings: key => request(`/admin/features/${key}/settings`),
     saveFeatureSettings: (key, settings) => request(`/admin/features/${key}/settings`, { method: 'PUT', body: JSON.stringify(settings) }),
     triageMetrics: () => request('/admin/triage/metrics'),
+    // CMA-10 : mesure de la CMDB assistée.
+    assistedCmdbMetrics: () => request('/admin/assisted-cmdb/metrics'),
     // OPT-20 à OPT-27 : modèle de langage, essai et compteurs des appels.
     languageModel: () => request('/admin/settings/language-model'),
     saveLanguageModel: (dto) => request('/admin/settings/language-model', { method: 'PUT', body: JSON.stringify(dto) }),

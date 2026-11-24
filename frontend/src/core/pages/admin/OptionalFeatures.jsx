@@ -3,6 +3,7 @@ import { api } from '../../../api'
 import { dateTimeFr } from '../../fields'
 import { refreshFeatures } from '../../features'
 import TriageSettings from './TriageSettings'
+import AssistedCmdbSettings from './AssistedCmdbSettings'
 import LanguageModelSettings from './LanguageModelSettings'
 import AccessTokens from '../AccessTokens'
 
@@ -56,6 +57,8 @@ function FeatureCard({ f, onSwitched }) {
       {!on && !f.available && <p className="muted small">Indisponible tant que son conteneur ne la propose pas (exploitation).</p>}
       {/* TRI-10, TRI-13 : réglages et mesure du tri, la fonctionnalité activée seulement (OPT-04). */}
       {on && f.key === 'assisted-ticket-triage' && <TriageSettings />}
+      {/* CMA-10, CMA-12 : réglages et mesure de la CMDB assistée, activée seulement. */}
+      {on && f.key === 'assisted-cmdb' && <AssistedCmdbSettings />}
       {/* MCP-03, MCP-09 : jetons actifs de tous les comptes, révocables. */}
       {on && f.key === 'mcp-server' && <AccessTokens admin />}
     </div>

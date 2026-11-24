@@ -77,7 +77,7 @@ public class FeatureSettingsTests(ApiFixture api) : IAsyncLifetime
 
         // Admin seul ; une fonctionnalité sans réglages, ou inconnue : 404.
         Assert.Equal(HttpStatusCode.Forbidden, (await api.Client("Manager", "lova.rabe").GetAsync(Path)).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await admin.GetAsync($"/api/admin/features/{FeatureCatalog.AssistedCmdb}/settings")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await admin.GetAsync($"/api/admin/features/{FeatureCatalog.McpServer}/settings")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await admin.PutAsJsonAsync("/api/admin/features/inconnue/settings", Settings())).StatusCode);
     }
 

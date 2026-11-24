@@ -16,8 +16,8 @@ public record MergeProposal(int Duplicate, int Keep, string Reasons);
 /// <summary>
 /// CMA-06 : doublons candidats, en fonctions pures. Le conteneur présélectionne lui-même les paires (même environnement, types
 /// compatibles, noms proches une fois normalisés, paires rejetées exclues) ; le modèle ne juge que ces paires, par requêtes de
-/// <see cref="PairsPerRequest"/>, et ne voit jamais toute la CMDB. Les CI de l'analyse sont déjà ceux d'un seul périmètre
-/// (CMA-07).
+/// <see cref="PairsPerRequest"/> au plus (moins si l'Admin l'a réglé, CMA-12), et ne voit jamais toute la CMDB. Les CI de
+/// l'analyse sont déjà ceux d'un seul périmètre (CMA-07).
 /// </summary>
 public static partial class Duplicates
 {
