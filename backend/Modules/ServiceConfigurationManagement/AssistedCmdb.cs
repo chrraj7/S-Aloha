@@ -68,7 +68,10 @@ public record AssistedCmdbSettings : IFeatureSettings
 {
     public const int MinItems = 20, MaxItemsCeiling = 500, MinPairs = 10, MaxPairs = 50;
 
-    public string[] Tasks { get; init; } = [.. AssistedCmdbTasks.Labels.Keys];
+    /// <summary>CMA-11 : par défaut, les tâches mesurées à 70 % de précision au moins (Normaliser, Fusionner, Relier coupées).</summary>
+    public static readonly string[] DefaultTasks = [AssistedCmdbTasks.Rename, AssistedCmdbTasks.Reclassify, AssistedCmdbTasks.Criticality];
+
+    public string[] Tasks { get; init; } = [.. DefaultTasks];
     public int MaxItems { get; init; } = MaxItemsCeiling;
     public int PairsPerRequest { get; init; } = MaxPairs;
     public bool StagingHelp { get; init; } = true;
