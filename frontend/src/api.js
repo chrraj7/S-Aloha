@@ -82,6 +82,8 @@ export const api = {
     proposals: (params = {}) => request('/assisted-cmdb/proposals?' + new URLSearchParams(params)),
     // CMA-05 : fusion décidée, en gardant l'un des deux CI de la proposition.
     merge: (id, keepId) => request(`/assisted-cmdb/proposals/${id}/merge`, { method: 'POST', body: JSON.stringify({ keepId }) }),
+    // CMA-02 : relation acceptée, au besoin avec un autre type.
+    relate: (id, type) => request(`/assisted-cmdb/proposals/${id}/relate`, { method: 'POST', body: JSON.stringify({ type }) }),
     naming: () => request('/assisted-cmdb/naming'),
     saveNaming: (ciType, dto) => request(`/assisted-cmdb/naming/${encodeURIComponent(ciType)}`, { method: 'PUT', body: JSON.stringify(dto) })
   },

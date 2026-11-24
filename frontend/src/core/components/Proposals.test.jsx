@@ -85,9 +85,18 @@ it('CMA-05 : une fusion cite l’autre CI et se décide dans la file de la CMDB 
   const { config } = setup([merge])
   // L'autre CI, en titre de la ligne et parmi les sources.
   expect((await screen.findAllByText('CI-2026-0016')).map(a => a.getAttribute('href'))).toEqual(['/configuration/16', '/configuration/16'])
-  expect(screen.getByText('Décider la fusion').getAttribute('href')).toBe('/configuration/assisted')
+  expect(screen.getByText('Décider dans la file').getAttribute('href')).toBe('/configuration/assisted')
   expect(screen.queryByText('Appliquer')).toBeNull()
   fireEvent.click(screen.getByText('Rejeter'))
   await waitFor(() => expect(config.api.rejectProposal).toHaveBeenCalledWith(9, 41))
   expect(config.api.applyProposal).not.toHaveBeenCalled()
+})
+
+it('CMA-02 : une relation proposée montre son type et l’autre CI, et se décide dans la file', async () => {
+  const relation = { id: 42, field: 'relation', before: null, after: '12|Dépend de', reasons: 'La description cite la base.',
+    cited: [{ type: 'ci', id: 12, reference: 'CI-2026-0012', title: 'BDD-PAIE' }], stale: false }
+  setup([relation])
+  expect((await screen.findByText(/Relation : Dépend de/)).textContent).toContain('CI-2026-0012')
+  expect(screen.getByText('Décider dans la file').getAttribute('href')).toBe('/configuration/assisted')
+  expect(screen.queryByText('Appliquer')).toBeNull()
 })
