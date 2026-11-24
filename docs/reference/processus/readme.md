@@ -30,8 +30,8 @@
 | [Fonctionnalités optionnelles](../fonctionnalites-optionnelles.md) | OPT | 25 | 0 | 0 | 0 |
 | [Tri assisté des tickets](../tri-assiste-des-tickets.md) | TRI | 14 | 0 | 0 | 0 |
 | [CMDB assistée](../cmdb-assistee.md) | CMA | 12 | 0 | 0 | 0 |
-| [Serveur MCP](../serveur-mcp.md) | MCP | 2 | 0 | 0 | 7 |
-| **Total** | | **406** | **0** | **0** | **7** |
+| [Serveur MCP](../serveur-mcp.md) | MCP | 9 | 0 | 0 | 0 |
+| **Total** | | **413** | **0** | **0** | **0** |
 
 *Comptes au 2026-11-16 (main `84c4070`), sur les tableaux de règles (hors indicateurs du § 8
 des pratiques ; les règles REP du [reporting](../reporting.md) qui les affichent sont comptées).
@@ -41,7 +41,8 @@ Dernière règle de lot 1, RAG-10 (calibrage de la recherche), faite le 2026-11-
 MCP, chantier F14) ont été spécifiées le 2026-11-23, toutes en lot 3, à livrer avant la
 version stable ; OPT-01 à OPT-08 (étape 1, #363) OPT-10 à OPT-17 (#364, parties 2a à 2c ; OPT-13 avec les lectures du tri, #365) et TRI-01 à TRI-14 (#365, parties 3a à 3e, calibrage compris) sont faites le même jour ;
 OPT-20 à OPT-28 (étape 4, #366), CMA-01 à CMA-12 (étape 5, #367), MCP-03 et MCP-04
-(#368, partie 6a) le 2026-11-24. Reste le serveur MCP.*
+(#368, partie 6a), puis MCP-01, MCP-02 et MCP-05 à MCP-09 (#368, partie 6b) le 2026-11-24 :
+les 60 règles sont faites.*
 
 ## Interface et navigation
 

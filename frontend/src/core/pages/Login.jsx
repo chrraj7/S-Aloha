@@ -2,20 +2,21 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api, setUser } from '../../api'
 import { refreshFeatures } from '../features'
-import { BrandMark, IconConsole, IconProblem, IconChange, IconReport } from '../components/icons'
+import { BrandMark, IconIncident, IconConfig, IconCode, IconConsole } from '../components/icons'
 import { SOURCE_URL, LICENSE_LABEL } from '../about'
 
 // Ce que l'outil permet de faire, pas la liste de ses menus. Chaque bloc
-// renvoie à une fonctionnalité existante (docs/reference/regles-metier.md).
+// renvoie à une fonctionnalité existante (docs/reference/regles-metier.md) ;
+// les fonctionnalités assistées, que l'Admin active, viennent en tête (F14).
 const FEATURES = [
+  { Icon: IconIncident, title: 'Des tickets triés dès la saisie',
+    text: 'Catégorie, service, groupe et impact suggérés d\'après les incidents résolus ; pannes probables signalées.' },
+  { Icon: IconConfig, title: 'Une CMDB tenue à jour',
+    text: 'Renommer, normaliser, fusionner, relier : un modèle de langage propose, un gestionnaire décide.' },
+  { Icon: IconCode, title: 'S-Aloha dans votre assistant',
+    text: 'Par le serveur MCP, en lecture seule, avec vos droits et un jeton personnel révocable.' },
   { Icon: IconConsole, title: 'Savoir quoi traiter d\'abord',
     text: 'Une console par rôle, classée par criticité : retards, incidents majeurs, décisions en attente.' },
-  { Icon: IconProblem, title: 'Remonter à la cause racine',
-    text: '5 Pourquoi, Ishikawa ou arbre des défaillances, puis actions correctives en RACI, confiées à des comptes ou groupes AD.' },
-  { Icon: IconChange, title: 'Encadrer les changements',
-    text: 'Risque, autorisation, plan de retour arrière et calendrier des mises en production.' },
-  { Icon: IconReport, title: 'Mesurer le service rendu',
-    text: 'Cibles SLA, MTTR des incidents et des problèmes, taux de changements réussis.' },
 ]
 
 export default function Login() {

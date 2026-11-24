@@ -29,8 +29,8 @@ tous les indicateurs des pratiques sont au tableau de bord. Le lot 3 des pratiqu
 première version publiée sera **stable**, à la fin de ce plan d'action.
 
 **Reste du plan** : le chantier **F14** (fonctionnalités optionnelles : tri assisté des
-tickets, CMDB assistée, serveur MCP), à livrer **avant la version stable** (décision du
-2026-11-23, [§ F14](#fonctionnalités-optionnelles-f14)) ; les chantiers à arbitrer
+tickets, CMDB assistée, serveur MCP) est livré et mis en avant le 2026-11-24
+([§ F14](#fonctionnalités-optionnelles-f14)) ; restent les chantiers à arbitrer
 ci-dessous, les points avant mise en production (section 5 : S1, S2 ; S3 et O1 faits le
 2026-10-29) et les tâches de communauté (section 8).
 
@@ -123,7 +123,7 @@ restantes sont spécifiées règle par règle dans [`reference/processus/`](refe
 | ~~F11~~ | Incidents, sécurité | **Déclarations réglementaires** des incidents cyber (NIS 2 : alerte précoce 24 h, notification 72 h, rapport final ; RGPD : 72 h) : lot 2 fait le 2026-10-21 (qualification de l'incident, déclarations, échéances, console, notifications, respect des délais)  ; modèle de contenu par régime et indicateurs faits le 2026-10-23 — soldé | [DRG-08, DRG-21, DRG-22](reference/processus/declarations-reglementaires.md) |
 | F12 | Conformité | 🔜 **Évaluations sur référentiels définis par l'Admin** (ex. CR-CMM, ISO 27002) : l'Admin importe un référentiel en CSV depuis sa console en choisissant les colonnes (domaine ou pratique, niveau, identifiant, question, preuve attendue) et règle l'échelle (ex. Implémenté = 1, Partiel = 0,5, Non = 0 ; un niveau n'est atteint que si tous ses points de contrôle et ceux des niveaux inférieurs sont implémentés). Le contenu est importé par l'organisation et **jamais versionné** dans le dépôt, même logique que l'[ADR-0012](decisions/adr-0012-referentiel-nis2-structure-versionnee-texte-importe.md) : CR-CMM est sous licence CC BY-NC 4.0, usage interne libre, œuvre dérivée ou revente soumises à l'accord écrit de ses auteurs (vérifié le 2026-10-12). Place : section Conformité & réglementation | À spécifier |
 | F13 | Configuration, Sécurité | **Découverte automatique du SI et CMDB augmentée** (phases 1 et 2, console de staging, Shadow IT et obsolescence faites le 2026-10-19, bannières, constructeur par préfixe MAC, SNMP v3, interfaces, inventaire SSH, hyperviseurs, flux réseau et WinRM le 2026-10-19 ; agent et preuves NIS 2 à venir) : approche hybride (agentless & agent léger), balayage IP / ICMP sweep, fingerprinting, synchronisation annuaire (AD / LDAP / Entra ID), cartographie des dépendances, protocoles standard (ICMP/ARP, SNMP v2c/v3, WMI/WinRM, SSH, REST), Credentials Vault, zone de staging et réconciliation, détection Shadow IT et alignement NIS 2 (ReCyF) | [Chantier F13](#découverte-automatique-et-cmdb-augmentée-f13) |
-| F14 | Incidents, Configuration, socle | 🔜 **Fonctionnalités optionnelles**, exécutées hors de l'API (un conteneur commun, le serveur MCP à part), activées par l'Admin : tri assisté des tickets, CMDB assistée (modèle de langage dans le SI ou hébergé), serveur MCP en lecture seule. **Avant la version stable** (décision du 2026-11-23) | [Chantier F14](#fonctionnalités-optionnelles-f14) |
+| F14 | Incidents, Configuration, socle | ✅ **Fonctionnalités optionnelles**, exécutées hors de l'API (un conteneur commun, le serveur MCP à part), activées par l'Admin : tri assisté des tickets, CMDB assistée (modèle de langage dans le SI ou hébergé), serveur MCP en lecture seule. **Avant la version stable** (décision du 2026-11-23) ; 60 règles faites et mise en avant le 2026-11-24 ([#426](https://github.com/chrraj7/S-Aloha/issues/426)) | [Chantier F14](#fonctionnalités-optionnelles-f14) |
 
 Ces chantiers sont décidés : leurs règles sont écrites et classées en lots
 ([plan d'implémentation du lot 1](reference/processus/readme.md#plan-dimplémentation-conseillé--lot-1)).
@@ -177,7 +177,7 @@ F11 comprises) ; restent les règles 🔜 du lot 3.
 fonctionnalités optionnelles, **hébergées et exécutées hors de l'API** : le tri assisté, la
 CMDB assistée et toute fonctionnalité future dans un **conteneur commun** (`features`), le
 serveur MCP dans le sien (`mcp`) ; activées ou coupées par l'Admin ; à livrer **avant la
-version stable**, qui attend F14. Le service d'embeddings reste à part : la recherche,
+version stable**, qui attend F14. **Livré le 2026-11-24** : les 60 règles, puis la mise en avant. Le service d'embeddings reste à part : la recherche,
 fonction de base, en dépend. Spécification, 60 règles en lot 3 : [fonctionnalités optionnelles](reference/fonctionnalites-optionnelles.md)
 (OPT : activation, contrat entre l'API et le conteneur des fonctionnalités, modèle de langage),
 [tri assisté des tickets](reference/tri-assiste-des-tickets.md) (TRI),
@@ -238,10 +238,10 @@ mainteneur. Les étapes 2 et 6 ajoutent un projet et une image à la CI : étiqu
 |---|---|---|---|
 | 1 ([#363](https://github.com/chrraj7/S-Aloha/issues/363)) | Socle : registre, Administration › Fonctionnalités optionnelles, `GET /api/features`, garde des routes, origine au journal d'audit | OPT-01 à OPT-08 | ✅ 2026-11-23 |
 | 2 ([#364](https://github.com/chrraj7/S-Aloha/issues/364)) | Contrat : port interne, jeton du conteneur, fil d'événements, lectures, propositions et décision ; conteneur `features` (hôte, sans fonctionnalité) | OPT-10 à OPT-17 | ✅ 2026-11-23 (2a à 2c ; conteneur `features` et profil `fonctionnalites` du compose ; OPT-13, lectures internes, avec les étapes 3 et 5) |
-| 3 ([#365](https://github.com/chrraj7/S-Aloha/issues/365)) | Tri assisté des tickets dans le conteneur `features` : vote, impact, corrélation par règles et par le sens, panne probable, interface, jeu d'essai | TRI-01 à TRI-14 | ✅ 2026-11-23 (3a à 3e, #377 à #391 : lectures internes, vote, impact, corrélation, pannes probables, interface, mesure, réglages, conservation, mode démonstration, calibrage de TRI-12) ; 🔜 mise en avant du tri (README, page de connexion, captures, image de partage) |
+| 3 ([#365](https://github.com/chrraj7/S-Aloha/issues/365)) | Tri assisté des tickets dans le conteneur `features` : vote, impact, corrélation par règles et par le sens, panne probable, interface, jeu d'essai | TRI-01 à TRI-14 | ✅ 2026-11-23 (3a à 3e, #377 à #391 : lectures internes, vote, impact, corrélation, pannes probables, interface, mesure, réglages, conservation, mode démonstration, calibrage de TRI-12) ; mise en avant le 2026-11-24 ([#426](https://github.com/chrraj7/S-Aloha/issues/426)) |
 | 4 ([#366](https://github.com/chrraj7/S-Aloha/issues/366)) | Modèle de langage : réglages, emplacement, pseudonymisation, validation, essai, trace | OPT-20 à OPT-28 | ✅ 2026-11-24 (4a réglages côté API, 4b connecteur dans le conteneur, 4c essai, trace et page) |
-| 5 ([#367](https://github.com/chrraj7/S-Aloha/issues/367)) | CMDB assistée dans le conteneur `features` : analyses, propositions, fusion, aide au sas, convention de nommage, jeu d'essai | CMA-01 à CMA-12 | 🔜 (2026-11-24 : 5a ✅ #399 à #404, analyses, Renommer, Normaliser, Reclasser, convention de nommage, file des propositions et page ; 5b ✅ #406, #407, fusion et doublons ; 5c ✅ #411, #415, relier, criticité, aide au sas ; 5d ✅ #421, #423, mesure, réglages, jeu d'essai mesuré sur qwen2.5:7b ; reste la mise en avant) |
-| 6 ([#368](https://github.com/chrraj7/S-Aloha/issues/368)) | Conteneur `mcp` : jetons personnels, outils de lecture, limites | MCP-01 à MCP-09 | ✅ 2026-11-24 (6a, #418 et #419 : jetons d'accès personnels, API et pages ; 6b-1 et 6b-2, #422 : conteneur `mcp`, six outils de lecture, marquage, limites, journal ; 6b-3 : image `s-aloha-mcp`, profil `mcp` du compose, `/mcp` dans nginx, CI, Recette) ; 🔜 mise en avant du serveur MCP (README, page de connexion, captures, image de partage) |
+| 5 ([#367](https://github.com/chrraj7/S-Aloha/issues/367)) | CMDB assistée dans le conteneur `features` : analyses, propositions, fusion, aide au sas, convention de nommage, jeu d'essai | CMA-01 à CMA-12 | ✅ 2026-11-24 (5a ✅ #399 à #404, analyses, Renommer, Normaliser, Reclasser, convention de nommage, file des propositions et page ; 5b ✅ #406, #407, fusion et doublons ; 5c ✅ #411, #415, relier, criticité, aide au sas ; 5d ✅ #421, #423, mesure, réglages, jeu d'essai mesuré sur qwen2.5:7b) ; mise en avant le même jour ([#426](https://github.com/chrraj7/S-Aloha/issues/426)) |
+| 6 ([#368](https://github.com/chrraj7/S-Aloha/issues/368)) | Conteneur `mcp` : jetons personnels, outils de lecture, limites | MCP-01 à MCP-09 | ✅ 2026-11-24 (6a, #418 et #419 : jetons d'accès personnels, API et pages ; 6b-1 et 6b-2, #422 : conteneur `mcp`, six outils de lecture, marquage, limites, journal ; 6b-3 : image `s-aloha-mcp`, profil `mcp` du compose, `/mcp` dans nginx, CI, Recette) ; mise en avant le même jour ([#426](https://github.com/chrraj7/S-Aloha/issues/426)) |
 
 **Mode démonstration** (décidé le 2026-11-23, [ADR-0009](decisions/adr-0009-mode-demonstration-public.md)) :
 il démarre le conteneur `features` avec le **seul tri assisté** activé, qui ne demande pas
@@ -255,7 +255,13 @@ d'intégration en entreprise. README, produit et page Soutenir le disent depuis 
 2026-11-23, en annonçant les trois fonctionnalités pour la première version stable. À la
 livraison de chacune (étapes 3, 5 et 6) : retirer cette annonce, ajouter son bloc à la page de
 connexion (qui ne présente que des fonctionnalités existantes), ses captures en tête de
-l'aperçu du README, et refaire l'image de partage du dépôt.
+l'aperçu du README, et refaire l'image de partage du dépôt. **Fait le 2026-11-24**
+([#426](https://github.com/chrraj7/S-Aloha/issues/426)) pour le README (annonces retirées,
+feuille de route allégée, partie anglaise comprise), le produit, la page Soutenir et la page de
+connexion, dont les quatre blocs sont désormais les trois fonctionnalités assistées et la
+console, puis les captures en tête de l'aperçu (saisie et panne probable du tri, propositions de
+la CMDB assistée, jetons du serveur MCP, prises sur l'environnement d'essai) et l'image de
+partage ; reste au mainteneur de téléverser celle-ci comme aperçu social du dépôt.
 
 ### Sortie du MVP
 

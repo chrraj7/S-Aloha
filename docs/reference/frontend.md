@@ -488,8 +488,10 @@ ligne des pages antérieures ; ne pas les utiliser dans du code nouveau.
   haut en bas : marque, « Plateforme ITIL de la DSI », titre « Piloter le service IT, de
   l'incident à l'amélioration. », maxime malgache et sa
   traduction, explication du nom, puis « Ce que vous y faites » : quatre blocs de
-  fonctionnalités (constante `FEATURES` de `Login.jsx` : console par rôle, cause racine et
-  RACI AD, changements, mesure du service rendu).
+  fonctionnalités (constante `FEATURES` de `Login.jsx`) : en tête les trois fonctionnalités
+  assistées, que l'Admin active (tri assisté des tickets, CMDB assistée, serveur MCP ;
+  [fonctionnalités optionnelles](fonctionnalites-optionnelles.md)), puis la console par rôle.
+  Pas plus de quatre : au-delà, la page défile à 1024×768.
 - Message et blocs forment un seul ensemble centré verticalement : aucun défilement de
   1024×768 à 1920×1080 ; contraste ≥ 8:1 pour tous les textes du panneau.
 - **Un bloc de fonctionnalité correspond à une fonctionnalité réelle** : le mettre à jour
