@@ -81,7 +81,12 @@ builder.Services.AddSingleton<IDirectoryRoster>(sp => sp.GetRequiredService<Ldap
 builder.Services.AddHostedService<SAloha.Api.Core.Administration.LastLoginRetention>();
 builder.Services.AddSingleton<TokenService>();
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+// MCP-03 : un jeton personnel (« Bearer sat_… ») passe par son schéma ; tout le reste, par le JWT de session.
+const string SessionOrToken = "SessionOrPersonalToken";
+builder.Services.AddAuthentication(SessionOrToken)
+    .AddPolicyScheme(SessionOrToken, null, o => o.ForwardDefaultSelector = ctx =>
+        PersonalTokens.Presented(ctx.Request) ? PersonalTokenHandler.SchemeName : JwtBearerDefaults.AuthenticationScheme)
+    .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, PersonalTokenHandler>(PersonalTokenHandler.SchemeName, null)
     .AddJwtBearer(o =>
     {
         o.TokenValidationParameters = new TokenValidationParameters

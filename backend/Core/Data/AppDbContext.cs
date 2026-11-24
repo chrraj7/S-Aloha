@@ -40,6 +40,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Attachments.Attachment> Attachments => Set<Attachments.Attachment>();
     public DbSet<Platform.StorageSettings> StorageSettings => Set<Platform.StorageSettings>();
     public DbSet<Features.OptionalFeature> OptionalFeatures => Set<Features.OptionalFeature>();
+    public DbSet<Auth.PersonalToken> PersonalTokens => Set<Auth.PersonalToken>();
     public DbSet<Features.FeatureEvent> FeatureEvents => Set<Features.FeatureEvent>();
     public DbSet<Features.Proposal> Proposals => Set<Features.Proposal>();
     public DbSet<Modules.IncidentManagement.ProbableOutage> ProbableOutages => Set<Modules.IncidentManagement.ProbableOutage>();
@@ -101,6 +102,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     protected override void OnModelCreating(ModelBuilder b)
     {
         b.Entity<Problem>().HasIndex(p => p.Reference).IsUnique();
+        b.Entity<Auth.PersonalToken>().HasIndex(t => t.Hash).IsUnique();   // MCP-03 : un jeton se retrouve par son empreinte
+        b.Entity<Auth.PersonalToken>().HasIndex(t => t.Username);
         b.Entity<Problem>().HasMany(p => p.Analyses).WithOne(a => a.Problem!)
             .HasForeignKey(a => a.ProblemId).OnDelete(DeleteBehavior.Cascade);
         b.Entity<Problem>().HasMany(p => p.Actions).WithOne(a => a.Problem!)
