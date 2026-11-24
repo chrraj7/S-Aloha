@@ -32,6 +32,7 @@ projets.
 | Engager une amélioration validée, la déclarer réalisée | Porteur | ✔ | ✔ | ✅ CSI-11 (§ 4) |
 | Changer le porteur d'une amélioration Validée ou En cours | Porteur | ✔ | ✔ | ✅ CSI-11 |
 | Valider / abandonner | ✘ | ✔ | ✔ | ✅ |
+| Changer la valeur, l'effort ou la priorité d'une amélioration Validée ou En cours | ✘ | ✔ | ✔ | ✅ CSI-12 |
 | Supprimer | ✘ | ✘ | ✔ | ✅ |
 
 ## 3. Données
@@ -49,7 +50,7 @@ porteur AD, créateur, dates) : [socle](../regles-metier.md#5-règles-communes-a
 | `DueDate` | date | | Échéance | ✅ |
 | `ValidatedBy`, `ValidatedAt`, `CompletedAt` | texte, date | auto | SOC-08 | ✅ |
 | `Source` | texte 20 | ✔ | Suggestion (défaut), Incident, Problème, SLA, Audit, Retour client ; l'enregistrement d'origine, s'il est donné à la proposition, est relié | ✅ CSI-10 |
-| `Value`, `Effort` | entier 1–3 | à la validation | Valeur métier, effort estimé ; la priorité en découle. Exigés à l'entrée dans Validée (une amélioration validée avant la règle reste modifiable) | ✅ CSI-12 |
+| `Value`, `Effort` | entier 1–3 | à la validation | Valeur métier, effort estimé ; la priorité en découle. Exigés à l'entrée dans Validée (une amélioration validée avant la règle reste modifiable) ; sur une amélioration Validée ou En cours, changés par un gestionnaire seulement | ✅ CSI-12 |
 | `AbandonReason` | texte | à l'abandon | Motif | ✅ |
 | `FollowUpDate` | date | | Date de contrôle de la durabilité (étape 7) ; ne change plus une fois le contrôle conclu | ✅ CSI-15 |
 | `FollowUpDoneAt`, `FollowUpDoneBy`, `FollowUpHolds`, `FollowUpNote` | date, texte, booléen, texte | auto | Conclusion du contrôle : le résultat tient ou non, constat | ✅ CSI-15 |
@@ -101,7 +102,7 @@ stateDiagram-v2
 | CSI-05 | **Abandonner**, comme revenir à Proposée, **retire la validation** : relancer demande une nouvelle validation | ✅ | |
 | CSI-10 | **Source** de l'amélioration et lien vers l'enregistrement d'origine (incident, problème, SLA) quand il existe | ✅ |  |
 | CSI-11 | **Transitions contraintes** selon le § 4 (SOC-05) ; Réalisée est finale. Le **porteur** d'une amélioration Validée ou En cours n'est changé que par le porteur en place (ou un membre du groupe porteur) ou par un gestionnaire du périmètre (400 sinon) : un tiers ne se désigne pas pour l'engager à l'envoi suivant. Une amélioration validée **sans porteur** est confiée par un gestionnaire (400 pour un User qui se désigne) ; proposée, son porteur se désigne librement | ✅ | 1 |
-| CSI-12 | **Priorisation** : à la validation, le gestionnaire note la valeur et l'effort (1 à 3) ; la priorité est calculée : valeur 3 et effort 1–2 → Élevée ; valeur 1 et effort 2–3 → Faible ; sinon Moyenne | ✅ |  |
+| CSI-12 | **Priorisation** : à la validation, le gestionnaire note la valeur et l'effort (1 à 3) ; la priorité est calculée : valeur 3 et effort 1–2 → Élevée ; valeur 1 et effort 2–3 → Faible ; sinon Moyenne. Sur une amélioration **Validée ou En cours**, valeur, effort et priorité ne changent que par un gestionnaire du périmètre (400 « La priorisation est une décision de gestionnaire » pour un User ; la fiche les fige) ; avant la validation, ils restent libres | ✅ |  |
 | CSI-13 | **Abandon** motivé : le motif est obligatoire et visible sur la fiche | ✅ | 1 |
 | CSI-14 | **Validation** exige valeur attendue, mesure de départ et mesure cible (une amélioration se mesure) | ✅ | 1 |
 | CSI-15 | **Durabilité** (étape 7) : une amélioration Réalisée peut porter une date de contrôle ; à cette date, le porteur confirme que le résultat tient, ou ouvre une nouvelle amélioration reliée | ✅ (porteur ou gestionnaire, à partir de la date ; « ne tient pas » exige un constat et ouvre une amélioration Proposée « Reprise : … », même porteur, reliée ; notification au porteur et console, Mon travail, à la date ; encadré « Durabilité » de la fiche) | 3 |
@@ -152,5 +153,5 @@ ouvertes et contrôles de durabilité arrivés à leur date (Mon travail, CSI-15
 - **CSI-02** — *Quand* on enregistre une étape 8, *alors* 400 « L'étape du modèle d'amélioration va de 1 à 7 ».
 - **CSI-04** — *Étant donné* une amélioration Proposée, *quand* on la passe En cours, *alors* 400 « doit d'abord être validée ».
 - **CSI-05** — *Étant donné* une amélioration Validée, *quand* un Manager l'abandonne puis qu'on la repasse Proposée, *alors* `ValidatedAt` est vide.
-- **CSI-12** — *Quand* un Manager valide avec valeur 3 et effort 1, *alors* la priorité devient Élevée.
+- **CSI-12** — *Quand* un Manager valide avec valeur 3 et effort 1, *alors* la priorité devient Élevée. *Quand* un User renvoie ensuite valeur 1 et effort 3, ou une priorité choisie sans note, *alors* 400 ; le Manager, lui, revoit sa note.
 - **CSI-16** — *Étant donné* une amélioration En cours à l'étape 5 avec un résultat, *quand* on la passe Réalisée, *alors* 400 « étape 6 requise ».
