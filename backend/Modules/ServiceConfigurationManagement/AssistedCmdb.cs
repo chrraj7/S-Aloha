@@ -177,3 +177,57 @@ public class AssistedCmdbAnalysesController(AppDbContext db, PerimeterAccess acc
         return Ok(AssistedCmdbAnalysisView.From(a, names.GetValueOrDefault(a.PerimeterId, "")));
     }
 }
+
+/// <summary>Compte rendu du conteneur : nouvel état, motif d'un échec, propositions faites et écartées jusque-là.</summary>
+public record AnalysisReport(string? Status, string? Reason, int? ProposalCount, int? RejectedCount);
+
+/// <summary>
+/// CMA-01 : le conteneur lit l'analyse annoncée par le fil (<c>analysis.requested</c>) et en rend compte : En cours au
+/// démarrage puis après chaque lot (le dernier compte rendu la garde vivante), Terminée ou En échec à la fin. Une
+/// analyse finie ne change plus (409) ; un retour en arrière non plus.
+/// </summary>
+[ApiController]
+[Route("internal/assisted-cmdb/analyses")]
+[Authorize(Policy = ContainerTokenHandler.Policy)]
+[InternalFeature(FeatureCatalog.AssistedCmdb)]
+public class InternalAssistedCmdbAnalysesController(AppDbContext db) : ControllerBase
+{
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> Get(int id)
+    {
+        var a = await db.AssistedCmdbAnalyses.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+        if (a is null) return NotFound();
+        return Ok(new { a.Id, a.PerimeterId, Tasks = a.TaskList, ConfigurationItemIds = a.ItemList, a.Status, a.ItemCount });
+    }
+
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Report(int id, AnalysisReport report)
+    {
+        var a = await db.AssistedCmdbAnalyses.FirstOrDefaultAsync(x => x.Id == id);
+        if (a is null) return NotFound();
+        var next = report.Status ?? a.Status;
+        if (!AssistedCmdbAnalysis.Statuses.Contains(next))
+            return BadRequest(new { message = $"Statut inconnu : « {next} ». Valeurs : {string.Join(", ", AssistedCmdbAnalysis.Statuses)}." });
+        var allowed = a.Status switch
+        {
+            AssistedCmdbAnalysis.Queued => next is AssistedCmdbAnalysis.Running or AssistedCmdbAnalysis.Failed,
+            AssistedCmdbAnalysis.Running => next is AssistedCmdbAnalysis.Running or AssistedCmdbAnalysis.Done or AssistedCmdbAnalysis.Failed,
+            _ => false,
+        };
+        if (!allowed) return Conflict(new { message = $"Analyse {a.Status.ToLowerInvariant()} : passage à « {next} » refusé." });
+        if (next == AssistedCmdbAnalysis.Failed && string.IsNullOrWhiteSpace(report.Reason))
+            return BadRequest(new { message = "Une analyse en échec porte son motif (OPT-28)." });
+        if ((report.Reason?.Length ?? 0) > 500 || report.ProposalCount < 0 || report.RejectedCount < 0)
+            return BadRequest(new { message = "Motif de 500 caractères au plus ; comptes positifs." });
+
+        var now = DateTime.UtcNow;
+        if (a.Status == AssistedCmdbAnalysis.Queued && next != AssistedCmdbAnalysis.Queued) a.StartedAt ??= now;
+        if (next is AssistedCmdbAnalysis.Done or AssistedCmdbAnalysis.Failed) a.FinishedAt = now;
+        (a.Status, a.UpdatedAt) = (next, now);
+        if (report.Reason is not null) a.Reason = report.Reason.Trim();
+        if (report.ProposalCount is { } proposals) a.ProposalCount = proposals;
+        if (report.RejectedCount is { } rejected) a.RejectedCount = rejected;
+        await db.SaveChangesAsync();
+        return Ok(new { a.Id, a.Status });
+    }
+}

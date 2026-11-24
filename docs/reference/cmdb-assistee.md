@@ -86,7 +86,9 @@ sequenceDiagram
 | Décision | — | Routes communes des propositions ([OPT-15](fonctionnalites-optionnelles.md#6-api)) |
 | `GET /api/assisted-cmdb/naming`, `PUT /api/assisted-cmdb/naming/{ciType}` | User (lecture), gestionnaire (écriture) | Convention de nommage (CMA-04) |
 | `GET /api/admin/assisted-cmdb/metrics` | Admin | Mesure (CMA-10) |
-| `GET /internal/configuration-items?perimeter=&ids=`, `GET /internal/discovery/staging/{id}`, `PUT /internal/assisted-cmdb/analyses/{id}` (état), `POST /internal/language-model/calls` (trace) | Jeton du conteneur `features` | Lectures et comptes rendus du conteneur (OPT-13, OPT-27) |
+| `GET /internal/assisted-cmdb/analyses/{id}`, `PUT /internal/assisted-cmdb/analyses/{id}` | Jeton du conteneur `features`, CMDB assistée activée | Analyse annoncée par le fil (`analysis.requested`) : `{ id, perimeterId, tasks, configurationItemIds, status, itemCount }` (`configurationItemIds` null : tout le périmètre). Compte rendu (CMA-01) : `{ status, reason, proposalCount, rejectedCount }` ; En file → En cours ou En échec, En cours → En cours (lot suivant, l'analyse reste vivante), Terminée ou En échec ; une analyse finie ne change plus (409) ; En échec sans motif : 400 (OPT-28) |
+| `GET /internal/configuration-items?perimeter=&after=`, `?ids=` | Jeton du conteneur `features` | CI d'un périmètre hors retirés, 200 par page par identifiant croissant, CMDB assistée activée (403 sinon : le tri ne lit que des CI désignés) ; ou des CI désignés, 50 au plus (OPT-13) |
+| `GET /internal/discovery/staging/{id}`, `POST /internal/language-model/calls` (trace) | Jeton du conteneur `features` | Lectures et comptes rendus du conteneur (OPT-13, OPT-27) |
 | `POST /language-model/test`, `GET /health` (conteneur `features`) | Jeton du conteneur | Appelées par l'API ([OPT-26](fonctionnalites-optionnelles.md#4-connecteur-de-modèle-de-langage), OPT-01) |
 
 ## 6. Scénarios d'acceptation
