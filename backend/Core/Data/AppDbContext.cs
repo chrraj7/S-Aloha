@@ -35,6 +35,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Features.LanguageModelSettings> LanguageModelSettings => Set<Features.LanguageModelSettings>();
     public DbSet<Features.LanguageModelCall> LanguageModelCalls => Set<Features.LanguageModelCall>();
     public DbSet<AssistedCmdbAnalysis> AssistedCmdbAnalyses => Set<AssistedCmdbAnalysis>();
+    public DbSet<NamingConvention> NamingConventions => Set<NamingConvention>();
     public DbSet<Notifications.MailPreference> MailPreferences => Set<Notifications.MailPreference>();
     public DbSet<Attachments.Attachment> Attachments => Set<Attachments.Attachment>();
     public DbSet<Platform.StorageSettings> StorageSettings => Set<Platform.StorageSettings>();
@@ -246,6 +247,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         // CMA-01 : une seule analyse active (en file ou en cours) par périmètre, même sous deux lancements simultanés.
         b.Entity<AssistedCmdbAnalysis>().HasIndex(a => a.PerimeterId).IsUnique().HasFilter("\"Status\" IN ('En file', 'En cours')");
         b.Entity<AssistedCmdbAnalysis>().HasIndex(a => new { a.PerimeterId, a.Id });
+        // CMA-04 : une convention par type de CI.
+        b.Entity<NamingConvention>().HasIndex(n => n.CiType).IsUnique();
         b.Entity<Platform.StorageSettings>().Property(s => s.Id).ValueGeneratedNever();
         b.Entity<Features.FeatureEvent>().HasIndex(e => e.At);   // OPT-12 : purge par date
         b.Entity<Features.Proposal>().HasIndex(p => new { p.TargetType, p.TargetId, p.Status });

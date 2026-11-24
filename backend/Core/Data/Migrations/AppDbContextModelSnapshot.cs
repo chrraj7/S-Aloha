@@ -3688,6 +3688,45 @@ namespace SAloha.Api.Core.Data.Migrations
                     b.ToTable("EndOfLifeRules");
                 });
 
+            modelBuilder.Entity("SAloha.Api.Modules.ServiceConfigurationManagement.NamingConvention", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CiType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Examples")
+                        .IsRequired()
+                        .HasMaxLength(600)
+                        .HasColumnType("character varying(600)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CiType")
+                        .IsUnique();
+
+                    b.ToTable("NamingConventions");
+                });
+
             modelBuilder.Entity("SAloha.Api.Modules.ServiceConfigurationManagement.RelationProposal", b =>
                 {
                     b.Property<int>("Id")

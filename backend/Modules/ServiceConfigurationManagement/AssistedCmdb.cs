@@ -231,3 +231,87 @@ public class InternalAssistedCmdbAnalysesController(AppDbContext db) : Controlle
         return Ok(new { a.Id, a.Status });
     }
 }
+
+/// <summary>
+/// CMA-04 : convention de nommage d'un type de CI, tenue par les gestionnaires dans Paramétrage : une description et
+/// des exemples, transmis au modèle. Sans convention pour un type, la tâche Renommer ne s'y applique pas.
+/// </summary>
+public class NamingConvention
+{
+    public const int MaxExamples = 5, MaxExampleLength = 100, MaxDescriptionLength = 500;
+
+    public int Id { get; set; }
+    [MaxLength(30)] public string CiType { get; set; } = "";
+    [MaxLength(500)] public string Description { get; set; } = "";
+    /// <summary>Exemples, un par ligne.</summary>
+    [MaxLength(600)] public string Examples { get; set; } = "";
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    [MaxLength(200)] public string UpdatedBy { get; set; } = "";
+
+    public List<string> ExampleList => Examples.Split('\n', StringSplitOptions.RemoveEmptyEntries).ToList();
+}
+
+/// <summary>Saisie d'une convention ; une description vide la retire.</summary>
+public record NamingInput(string? Description, string[]? Examples);
+
+public record NamingConventionView(string CiType, string Description, List<string> Examples, DateTime UpdatedAt, string UpdatedBy)
+{
+    public static NamingConventionView From(NamingConvention n) => new(n.CiType, n.Description, n.ExampleList, n.UpdatedAt, n.UpdatedBy);
+}
+
+/// <summary>
+/// Paramétrage › Convention de nommage (CMA-04) : lecture pour tous, écriture par un gestionnaire d'au moins un
+/// périmètre (PER-13, comme les autres référentiels sans périmètre). La CMDB assistée coupée, les routes n'existent pas.
+/// </summary>
+[ApiController]
+[Route("api/assisted-cmdb/naming")]
+[Authorize(Policy = "User")]
+[RequiresFeature(FeatureCatalog.AssistedCmdb)]
+public class AssistedCmdbNamingController(AppDbContext db) : ControllerBase
+{
+    internal static async Task<List<NamingConvention>> AllAsync(AppDbContext db) =>
+        (await db.NamingConventions.AsNoTracking().ToListAsync()).OrderBy(n => Array.IndexOf(ConfigurationItem.Types, n.CiType)).ToList();
+
+    [HttpGet]
+    public async Task<IActionResult> List() => Ok((await AllAsync(db)).Select(NamingConventionView.From));
+
+    [HttpPut("{ciType}")]
+    [Authorize(Policy = "Manager")]
+    public async Task<IActionResult> Put(string ciType, NamingInput input)
+    {
+        if (!ConfigurationItem.Types.Contains(ciType))
+            return BadRequest(new { message = $"Type de CI inconnu : « {ciType} ». Valeurs : {string.Join(", ", ConfigurationItem.Types)}." });
+        var description = input.Description?.Trim() ?? "";
+        var examples = (input.Examples ?? []).Select(e => e?.Trim() ?? "").Where(e => e != "").Distinct().ToList();
+        if (description.Length > NamingConvention.MaxDescriptionLength)
+            return BadRequest(new { message = $"Description : {NamingConvention.MaxDescriptionLength} caractères au plus." });
+        if (examples.Count > NamingConvention.MaxExamples || examples.Any(e => e.Length > NamingConvention.MaxExampleLength || e.Contains('\n')))
+            return BadRequest(new { message = $"{NamingConvention.MaxExamples} exemples au plus, d'une ligne de {NamingConvention.MaxExampleLength} caractères au plus." });
+
+        var n = await db.NamingConventions.FirstOrDefaultAsync(x => x.CiType == ciType);
+        if (description == "")
+        {
+            // Sans description, plus de convention : Renommer ne s'applique plus à ce type.
+            if (n is not null) db.NamingConventions.Remove(n);
+            await db.SaveChangesAsync();
+            return NoContent();
+        }
+        if (n is null) db.NamingConventions.Add(n = new NamingConvention { CiType = ciType });
+        (n.Description, n.Examples, n.UpdatedAt, n.UpdatedBy) =
+            (description, string.Join('\n', examples), DateTime.UtcNow, User.FindFirst("displayName")?.Value ?? User.Identity?.Name ?? "");
+        await db.SaveChangesAsync();
+        return Ok(NamingConventionView.From(n));
+    }
+}
+
+/// <summary>CMA-04 : le conteneur lit les conventions avant une analyse qui renomme.</summary>
+[ApiController]
+[Route("internal/assisted-cmdb/naming")]
+[Authorize(Policy = ContainerTokenHandler.Policy)]
+[InternalFeature(FeatureCatalog.AssistedCmdb)]
+public class InternalAssistedCmdbNamingController(AppDbContext db) : ControllerBase
+{
+    [HttpGet]
+    public async Task<IActionResult> List() =>
+        Ok((await AssistedCmdbNamingController.AllAsync(db)).Select(n => new { n.CiType, n.Description, Examples = n.ExampleList }));
+}
