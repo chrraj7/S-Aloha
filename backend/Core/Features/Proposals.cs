@@ -63,14 +63,21 @@ public record ProposalView(int Id, string Feature, string Field, string? Before,
 public static class ProposalFields
 {
     /// <param name="Validate">Contrôle de la valeur proposée, l'enregistrement visé en main : message (400) ou null.</param>
-    /// <param name="Pair">
-    /// La valeur désigne un second enregistrement du même type (fusion, CMA-05) : la proposition porte sur la paire, dans
-    /// un sens ou dans l'autre ; elle se décide par sa route propre, jamais par la modification de la pratique.
+    /// <param name="Other">
+    /// La valeur désigne un second enregistrement du même type (fusion, CMA-05 ; relation, CMA-02) : son identifiant, lu
+    /// dans la valeur. La proposition porte alors sur la paire ; elle se décide par sa route propre, jamais par la
+    /// modification de la pratique, et plusieurs restent ouvertes sur un même enregistrement.
     /// </param>
+    /// <param name="Mirror">Pour une paire sans sens (fusion) : la même proposition vue de l'autre enregistrement.</param>
     public record Field(string TargetType, string Name, string Feature, Func<object, string?> Read,
-        Func<AppDbContext, object, string, Task<string?>> Validate, bool Pair = false);
+        Func<AppDbContext, object, string, Task<string?>> Validate, Func<string, int?>? Other = null, Func<int, string>? Mirror = null)
+    {
+        public bool Pair => Other is not null;
+    }
 
-    public const string Merge = "merge";
+    public const string Merge = "merge", Relation = "relation";
+
+    private static int? Id(string v) => int.TryParse(v, out var id) ? id : null;
 
     private static Func<AppDbContext, object, string, Task<string?>> OneOf(string label, string[] values) =>
         (_, _, v) => Task.FromResult(values.Contains(v) ? null : $"{label} inconnu(e) : « {v} ». Valeurs : {string.Join(", ", values)}.");
@@ -97,7 +104,9 @@ public static class ProposalFields
         new("ci", "vendor", FeatureCatalog.AssistedCmdb, e => ((ConfigurationItem)e).Vendor, Text("Constructeur", 100)),
         new("ci", "model", FeatureCatalog.AssistedCmdb, e => ((ConfigurationItem)e).Model, Text("Modèle", 100)),
         // CMA-05 : fusionner le CI visé dans l'autre (son identifiant), que la proposition suggère de conserver.
-        new("ci", Merge, FeatureCatalog.AssistedCmdb, _ => null, CiMerge.ValidateAsync, Pair: true),
+        new("ci", Merge, FeatureCatalog.AssistedCmdb, _ => null, CiMerge.ValidateAsync, Id, target => target.ToString()),
+        // CMA-02 : relier le CI visé à un autre, « <identifiant>|<type de relation> » ; le sens compte.
+        new("ci", Relation, FeatureCatalog.AssistedCmdb, _ => null, CiRelate.ValidateAsync, v => CiRelate.Parse(v)?.Target),
     ];
 
     public static Field? Of(string targetType, string name) => All.FirstOrDefault(f => f.TargetType == targetType && f.Name == name);

@@ -6,6 +6,12 @@ import { hrefOf } from '../itemTypes'
 /** Champ de la proposition (nom de l'API) → champ du formulaire : le responsable est un champ « personne ». */
 const FORM_KEY = { owner: 'ownerId' }
 
+/** Propositions sur deux enregistrements (CMDB assistée) : leur intitulé, suivi de l'autre CI. */
+const PAIRS = {
+  merge: () => 'Fusion avec',
+  relation: p => `Relation : ${p.after.split('|').slice(1).join('|')}`,
+}
+
 /** Valeur lisible : libellé d'une option (service du catalogue) plutôt que son identifiant. */
 const display = (field, value) => {
   const option = (field?.options ?? []).find(o => String(o?.value ?? o) === String(value))
@@ -53,16 +59,16 @@ export default function Proposals({ config, record, reload, title = 'Suggestions
           const open = editing?.id === p.id
           return (
             <li key={p.id} style={{ marginBottom: 10 }}>
-              {p.field === 'merge'
-                ? <b>Fusion avec {p.cited?.[0] ? <Link to={hrefOf(p.cited[0].type, p.cited[0].id)}>{p.cited[0].reference}</Link> : 'un autre CI'}</b>
+              {PAIRS[p.field]
+                ? <b>{PAIRS[p.field](p)} {p.cited?.[0] ? <Link to={hrefOf(p.cited[0].type, p.cited[0].id)}>{p.cited[0].reference}</Link> : 'un autre CI'}</b>
                 : <><b>{label} : {display(field, p.after)}</b>{p.before ? <span className="small"> (actuellement {display(field, p.before)})</span> : null}</>}
               <div className="small">{p.reasons}{p.cited?.length > 0 && <> — {p.cited.map((c, i) => <React.Fragment key={c.type + c.id}>
                 {i > 0 && ', '}<Link to={hrefOf(c.type, c.id)}>{c.reference}</Link></React.Fragment>)}</>}</div>
               {p.stale
                 ? <div className="small" role="note">Périmée : la fiche a changé depuis ; elle se recalcule.</div>
-                : p.field === 'merge'
-                  // CMA-05 : une fusion se décide dans la file de la CMDB assistée, où l'on choisit le CI conservé.
-                  ? <div className="toolbar"><Link className="btn small" to="/configuration/assisted">Décider la fusion</Link>
+                : PAIRS[p.field]
+                  // CMA-02, CMA-05 : une fusion ou une relation se décide dans la file de la CMDB assistée (CI conservé, type).
+                  ? <div className="toolbar"><Link className="btn small" to="/configuration/assisted">Décider dans la file</Link>
                       <button className="btn ghost small" onClick={() => reject(p)}>Rejeter</button></div>
                   : !open && <div className="toolbar">
                     <button className="btn small" onClick={() => (p.field === 'owner' ? start(p) : apply(p, p.after))}>Appliquer</button>

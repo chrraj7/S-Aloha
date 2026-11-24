@@ -135,9 +135,9 @@ bloque toujours ; sur l'outillage de build et de test, il bloque sauf **exceptio
 un avis (GHSA) par exception, inscrite dans le script et donc soumise à l'étiquette
 `outillage`. Une exception attend une version corrigée ; échue, elle bloque de nouveau.
 
-| Avis | Paquet | Jusqu'au | Raison |
-|---|---|---|---|
-| [GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf) (haute, ReDoS) | picomatch ≤ 4.0.7, tiré par vite et vitest | 2026-12-18 | Aucune version corrigée publiée (4.0.7 est la dernière) ; absent du paquet livré ; motifs glob écrits par le projet, jamais saisis par un utilisateur |
+Aucune exception en cours. La dernière, GHSA-fc5q-39xc-vjpf (picomatch ≤ 4.0.7, tiré par vite
+et vitest), est retirée le 2026-11-24 : l'avis a été retiré par GitHub le 2026-11-18, et le
+script la signalait sans objet.
 
 ## Contrôles du dépôt
 
@@ -147,7 +147,7 @@ Réglages du dépôt GitHub public, en place depuis le 2026-10-06 :
 |---|---|
 | Signalement privé de vulnérabilités | Les failles arrivent hors des issues publiques ([SECURITY.md](../../SECURITY.md)) |
 | Secret scanning + push protection | Un push contenant un secret reconnu est refusé |
-| Dependabot (alertes, correctifs, versions) | Alerte et PR de correctif dès qu'un avis touche une dépendance ; mises à jour hebdomadaires groupées (npm, NuGet, Docker, Docker Compose, Actions) ; une mise à jour mineure ou corrective se fusionne d'elle-même, CI au vert, une majeure reste à la main |
+| Dependabot (alertes, correctifs, versions) | Alerte et PR de correctif dès qu'un avis touche une dépendance ; mises à jour hebdomadaires groupées (npm, NuGet, Docker, Docker Compose, Actions) ; une mise à jour mineure ou corrective se fusionne d'elle-même, CI au vert, une majeure reste à la main ; « Suivi Dependabot » ([`dependabot-suivi.yml`](../../.github/workflows/dependabot-suivi.yml), toutes les 6 h) supprime ensuite sa branche et lance la CI de `main`, que la fusion par le jeton du workflow ne déclenche pas |
 | CodeQL ([`codeql.yml`](../../.github/workflows/codeql.yml)) | Analyse statique des workflows, du C# et du JavaScript sur chaque pull request (fork compris), chaque poussée de `main` et chaque semaine ; une PR sans résultat CodeQL ne peut pas être fusionnée |
 | CI ([architecture § Intégration continue](architecture.md#intégration-continue)) | Tests, build, audit des dépendances, santé de la doc |
 | Preuve et garde-fous | Une PR prouve son changement par un test qui échoue sans lui ; elle ne peut ni retirer ni désactiver de test, ni modifier l'outillage de vérification sans l'accord du mainteneur ; sa classe de risque est calculée d'après ses chemins |

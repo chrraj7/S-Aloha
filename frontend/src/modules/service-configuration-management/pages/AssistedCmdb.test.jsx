@@ -1,6 +1,6 @@
 import React from 'react'
 import { afterEach, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import AssistedCmdb, { NamingConventions } from './AssistedCmdb'
 
@@ -16,12 +16,16 @@ const queue = [
   { id: 4, ciId: 15, ciReference: 'CI-2026-0015', ciTitle: 'Serveur paie prod', perimeterId: 7, task: 'merge', field: 'merge', before: null,
     after: '16', reasons: 'Même serveur de paie.', createdAt: '2026-11-24T09:00:00Z', stale: false,
     other: { id: 16, reference: 'CI-2026-0016', title: 'SRV-PAIE-01' } },
+  { id: 5, ciId: 17, ciReference: 'CI-2026-0017', ciTitle: 'APP-PAIE', perimeterId: 7, task: 'relate', field: 'relation', before: null,
+    after: '18|Dépend de', reasons: 'La description cite la base.', createdAt: '2026-11-24T09:00:00Z', stale: false,
+    other: { id: 18, reference: 'CI-2026-0018', title: 'BDD-PAIE' } },
 ]
 const launch = vi.fn(dto => Promise.resolve({ id: 9, ...dto }))
 const proposals = vi.fn(() => Promise.resolve(queue))
 const apply = vi.fn((id, proposal) => (proposal === 1 ? Promise.reject(new Error('Ce nom existe déjà en Production (CFG-17).')) : Promise.resolve({})))
 const reject = vi.fn(() => Promise.resolve())
 const merge = vi.fn(() => Promise.resolve({}))
+const relate = vi.fn(() => Promise.resolve({}))
 const saveNaming = vi.fn(() => Promise.resolve({}))
 vi.mock('../../../api', () => ({
   api: {
@@ -36,6 +40,7 @@ vi.mock('../../../api', () => ({
         updatedBy: 'Hery Rakoto' }]),
       saveNaming: (t, d) => saveNaming(t, d),
       merge: (...a) => merge(...a),
+      relate: (...a) => relate(...a),
     },
     configurationItems: {
       get: () => Promise.resolve(ci),
@@ -55,7 +60,7 @@ it('CMA-01 : un gestionnaire lance une analyse avec ses tâches et suit les anal
   fireEvent.click(screen.getByLabelText('Reclasser'))
   fireEvent.click(screen.getByText('Lancer l’analyse'))
   await waitFor(() => expect(launch).toHaveBeenCalled())
-  expect(launch.mock.calls[0][0]).toEqual({ perimeterId: undefined, tasks: ['rename', 'normalize', 'merge'] })
+  expect(launch.mock.calls[0][0]).toEqual({ perimeterId: undefined, tasks: ['rename', 'normalize', 'criticality', 'relate', 'merge'] })
 })
 
 it('CMA-03 : la file se décide par sélection ; un refus des règles du CI reste affiché, la proposition reste à décider', async () => {
@@ -92,6 +97,15 @@ it('CMA-05 : une fusion garde le CI suggéré ou l’autre, au choix du gestionn
   fireEvent.click(screen.getByText('Appliquer la sélection'))
   await waitFor(() => expect(merge).toHaveBeenCalledTimes(3))
   expect(merge.mock.calls[2]).toEqual([4, 16])
+  expect(apply).not.toHaveBeenCalled()
+})
+
+it('CMA-02 : une relation proposée montre son type et sa cible, et s’accepte par sa route', async () => {
+  page()
+  const row = (await screen.findByText('La description cite la base.')).closest('tr')
+  expect(row.textContent).toContain('Dépend de CI-2026-0018 BDD-PAIE')
+  fireEvent.click(within(row).getByText('Appliquer'))
+  await waitFor(() => expect(relate).toHaveBeenCalledWith(5))
   expect(apply).not.toHaveBeenCalled()
 })
 
