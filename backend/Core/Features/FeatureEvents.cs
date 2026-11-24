@@ -36,16 +36,16 @@ public static class FeatureEventSources
     public const string IncidentCreated = "incident.created", IncidentUpdated = "incident.updated",
         IncidentResolved = "incident.resolved", IncidentDeleted = "incident.deleted",
         CiCreated = "ci.created", CiUpdated = "ci.updated", CiRetired = "ci.retired", CiDeleted = "ci.deleted",
-        StagingCreated = "staging.created", DiscoveryFinished = "discovery.finished";
+        StagingCreated = "staging.created", DiscoveryFinished = "discovery.finished", AnalysisRequested = "analysis.requested";
 
     public static readonly string[] AllTypes = [IncidentCreated, IncidentUpdated, IncidentResolved, IncidentDeleted,
-        CiCreated, CiUpdated, CiRetired, CiDeleted, StagingCreated, DiscoveryFinished];
+        CiCreated, CiUpdated, CiRetired, CiDeleted, StagingCreated, DiscoveryFinished, AnalysisRequested];
 
     /// <summary>Préfixes lus par chaque fonctionnalité ; le serveur MCP n'en lit aucun (ADR-0024).</summary>
     public static readonly Dictionary<string, string[]> Consumers = new()
     {
         [FeatureCatalog.AssistedTriage] = ["incident."],
-        [FeatureCatalog.AssistedCmdb] = ["ci.", "staging.", "discovery."],
+        [FeatureCatalog.AssistedCmdb] = ["ci.", "staging.", "discovery.", "analysis."],
     };
 
     public static bool ConsumedBy(string type, IEnumerable<string> features) =>
@@ -67,6 +67,8 @@ public static class FeatureEventSources
             (ConfigurationItem, EntityState.Deleted) => (CiDeleted, "ci"),
             (ConfigurationItem, EntityState.Modified) => (Became(entry, "Status", "Retiré") ? CiRetired : CiUpdated, "ci"),
             (DiscoveredAsset, EntityState.Added) => (StagingCreated, "staging"),
+            // CMA-01 : une analyse lancée par un gestionnaire.
+            (AssistedCmdbAnalysis, EntityState.Added) => (AnalysisRequested, "cmdb-analysis"),
             (DiscoveryJob, EntityState.Modified) when Became(entry, "LastStatus", DiscoveryJob.Succeeded, DiscoveryJob.Failed)
                 => (DiscoveryFinished, "discovery-job"),
             _ => null
