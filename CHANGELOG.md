@@ -4,20 +4,155 @@ Les changements notables de chaque version, pour qui installe et met à jour S-A
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) ; versions selon
 le [versionnage sémantique](https://semver.org/lang/fr/).
 
-**Aucune version publiée pour l'instant** : la première sera la **1.0.0**, stable, publiée
-avec ses notes de version et leurs réserves. Les préversions 0.1.0 et 0.2.0 ont été retirées le 2026-10-23 ; leurs
-sections, conservées ci-dessous, sont devenues des étapes datées du développement. Lire la
-section **Mise à jour** de chaque étape avant de mettre à jour une installation.
+La première version publiée est la **1.0.0**, stable. Les préversions 0.1.0 et 0.2.0 ont été
+retirées le 2026-10-23 ; leurs sections, conservées ci-dessous, sont devenues des étapes datées
+du développement. Lire la section **Mise à jour** de chaque version avant de mettre à jour une
+installation.
 
 Le détail au jour le jour (sujets traités, raisons, commits) est dans les
-[journaux](docs/archives/readme.md) ; les notes complètes de chaque version, une fois
-publiée, dans les [releases](https://github.com/chrraj7/S-Aloha/releases). Les notes des
+[journaux](docs/archives/readme.md) ; les notes complètes de chaque version dans les
+[releases](https://github.com/chrraj7/S-Aloha/releases). Les notes des
 dernières fusions attendent dans [`changelog.d/`](changelog.d/readme.md) d'être versées
 ci-dessous, chaque lundi.
 
 ## Non publié
 
+## [1.0.0] — 2026-11-24
+
+Première version stable : tri assisté des tickets, CMDB assistée et serveur MCP (optionnels,
+activés par l'Admin, hors de l'API), dix pratiques ITIL 4 reliées, conformité NIS 2,
+découverte du SI vers un sas de rapprochement, intégration à l'Active Directory. Images
+`ghcr.io/chrraj7/s-aloha-{api,web,features,mcp,annuaire-demo}:v1.0.0` et `latest`.
+
+**Réserves** : calibrages de la recherche (RAG-10) et du tri assisté (TRI-12) mesurés sur des
+données fictives, à remesurer sur des données réelles ; inventaire WinRM (CFG-57) à valider sur
+un Windows réel ; évaluations sur référentiels importés (F12) et agent d'inventaire nomade
+(F13 phase 4) spécifiés, pas encore implémentés ; pas de démonstration en ligne ; `dotnet
+format` absent de la CI ; gouvernance formelle à venir avec le deuxième contributeur régulier.
+
 ### Ajouté
+
+- **Incidents** : un incident résolu sans réouverture est clos automatiquement après 10 jours
+  ouvrés, au terme de la fenêtre de réouverture ; le déclarant et l'utilisateur affecté sont
+  prévenus. Un incident cyber avec une déclaration réglementaire en cours n'est pas clos
+  (INC-10).
+
+- **Fonctionnalités optionnelles** : Administration › Fonctionnalités optionnelles montre le
+  tri assisté des tickets, la CMDB assistée et le serveur MCP, leur conteneur et leurs
+  dépendances, et les active ou les coupe ; la page Santé signale un conteneur perdu. Le
+  journal d'audit indique l'origine de chaque modification (OPT-01 à OPT-08).
+
+- **Conteneur des fonctionnalités optionnelles** : image `s-aloha-features` et profil
+  `fonctionnalites` du compose (`FEATURES_URL`, `FEATURES_TOKEN`). Il accueillera le tri
+  assisté des tickets et la CMDB assistée, que l'Admin active ensuite ; il n'en propose
+  encore aucune (OPT-01, OPT-10).
+
+- **Tri assisté des tickets, premier état** : le conteneur `features` propose désormais le tri
+  assisté, que l'Admin active dans Administration › Fonctionnalités optionnelles. Après chaque
+  enregistrement d'un incident Nouveau ou En cours, il propose une catégorie, un service et un
+  groupe responsable, d'après les incidents résolus les plus proches du même périmètre, ainsi
+  qu'un impact, d'après la criticité du service et des CI reliés. Chaque proposition porte son
+  motif. L'affichage des propositions sur la fiche et à la saisie viendra ensuite (TRI-01,
+  TRI-03, TRI-04, TRI-08).
+
+- **Tri assisté des tickets, pannes probables** : quand au moins trois incidents ouverts d'un
+  même périmètre se ressemblent, créés à moins d'une heure d'intervalle, ils forment une panne
+  probable. Ils sont liés par le même service, le même CI relié ou, avec le service
+  d'embeddings, une description proche. Les gestionnaires du périmètre en sont notifiés une
+  fois, et chaque incident du groupe reçoit l'impact Élevé proposé. Le bandeau de la fiche
+  viendra avec l'interface (TRI-05 à TRI-07).
+
+- **Tri assisté des tickets, sur la fiche incident** : un encadré « Suggestions du tri assisté »
+  montre, tant que l'incident est Nouveau ou En cours, une ligne par champ avec son motif et ses
+  sources ; l'agent l'applique, la corrige ou la rejette. Un groupe responsable suggéré
+  s'applique en escalade, au motif prérempli et modifiable. Un bandeau « Panne probable » réunit
+  les incidents liés, propose de rattacher l'incident au parent et, à un gestionnaire, de
+  déclarer ce parent incident majeur (TRI-07, TRI-09).
+
+- **Tri assisté des tickets, à la saisie** : en déclarant un incident, dès 4 caractères de titre,
+  un encadré « Suggestions » propose, sous les cas similaires, une catégorie, un service, un
+  groupe responsable ou un impact, chacun avec son motif ; « Appliquer » remplit le champ, rien
+  ne s'applique seul. Les incidents ouverts proches s'y affichent aussi, s'il y en a (TRI-02,
+  TRI-11).
+
+- **Tri assisté des tickets, réglages et mesure** : dans Administration › Fonctionnalités
+  optionnelles, le tri activé montre ses réglages (nombre de voisins, seuils, fenêtre de
+  corrélation, chaque suggestion activable à part), tracés au journal d'audit, et sa mesure
+  par champ sur 30 et 90 jours : parts acceptées, corrigées, rejetées et laissées ; un champ
+  surtout corrigé est signalé. Les suggestions appliquées à la saisie sont comptées et
+  tracées avec l'origine « Tri assisté des tickets » (TRI-09, TRI-10, TRI-13).
+
+- **Modèle de langage** (Administration › Fonctionnalités optionnelles) : réglage du modèle dont
+  se sert la CMDB assistée, dans le SI ou hébergé hors du SI, au format de complétion de
+  conversation (Ollama, vLLM, LocalAI, llama.cpp, offres hébergées). Un modèle hébergé se
+  confirme explicitement, et la page rappelle alors en permanence que les données quittent le
+  SI. Avant chaque envoi, adresses, noms d'hôte, numéros de série, comptes et courriels sont
+  remplacés par des jetons ; la réponse est validée avant toute proposition. Un essai vérifie
+  le modèle avec les réglages enregistrés, et chaque appel est tracé 90 jours, sans l'invite ni
+  la réponse (OPT-20 à OPT-28).
+
+- **CMDB assistée** (Configuration › CMDB assistée, fonctionnalité optionnelle) : un gestionnaire
+  lance une analyse sur son périmètre ; le modèle de langage propose de **renommer** des CI selon
+  la convention de nommage de leur type (Paramétrage › Convention de nommage), de **normaliser**
+  l'écriture du système, du constructeur et du modèle, et de **reclasser** un CI dans le bon type.
+  Chaque proposition se décide une à une ou par sélection, dans la file ou sur la fiche du CI,
+  par les règles habituelles des CI ; rien n'est appliqué seul. Adresses, numéros de série et
+  comptes ne sont jamais envoyés au modèle (CMA-01 à CMA-04, CMA-07, CMA-09).
+
+- **CMDB assistée, fusion des doublons** : la tâche **Fusionner** repère les CI saisis deux fois
+  (« srvpaie1 » et « SRV-PAIE-01 », par exemple). Le conteneur présélectionne lui-même les paires
+  proches d'un même environnement, et le modèle ne juge que celles-ci, jamais toute la CMDB. Une
+  paire rejetée n'est plus proposée. Dans la file, le gestionnaire garde le CI de son choix : les
+  liens, les relations et les actifs du sas de l'autre lui sont reportés, et le doublon passe
+  Retiré, motif « Fusionné dans … », tracé au journal des deux CI (CMA-05, CMA-06).
+
+- **CMDB assistée, Relier et Criticité** : la tâche **Relier** propose les relations qui manquent
+  (« Dépend de », « Héberge »…) entre des CI dont la description cite un autre CI ; la relation
+  s'accepte dans la file, au besoin avec un autre type, et jamais vers soi-même ni en double. La
+  tâche **Criticité** propose la criticité des applications qui n'en ont pas. Les six tâches de la
+  CMDB assistée sont désormais disponibles au lancement d'une analyse (CMA-02, CMA-09).
+- **CMDB assistée, aide au sas** : une tâche de découverte peut porter l'option « Analyser avec la
+  CMDB assistée ». À sa fin, chaque actif laissé au sas reçoit un CI candidat ou un type pour sa
+  création, avec son motif, sur la fiche de l'actif ; le gestionnaire le suit en un clic, en
+  décide autrement ou le rejette. La décision reste celle du rapprochement (CMA-08).
+
+- **CMDB assistée, réglages et mesure** : dans Administration › Fonctionnalités optionnelles,
+  la CMDB assistée activée montre ses réglages (tâches proposées aux gestionnaires, nombre de CI
+  au plus par analyse, paires au plus par requête, aide au sas), tracés au journal d'audit, et
+  sa mesure par tâche sur 30 et 90 jours : parts acceptées, corrigées, rejetées et expirées,
+  réponses non conformes du modèle, durée des appels et des analyses ; une tâche surtout
+  rejetée est signalée. Une tâche retirée n'est plus proposée au lancement d'une analyse
+  (CMA-10, CMA-12).
+
+- **Serveur MCP** : jetons d'accès personnels, créés et révoqués dans Mes préférences
+  (nom, durée de 7 à 90 jours, affichés une seule fois), listés et révocables par l'Admin ;
+  ils n'ouvrent que la lecture, avec les droits du moment de leur titulaire (MCP-03, MCP-04).
+
+- **Serveur MCP** : un assistant compatible MCP interroge S-Aloha en lecture, avec le jeton
+  personnel et les droits de son utilisateur, sur `https://<adresse de S-Aloha>/mcp`. Six
+  outils : recherche, fiche par sa référence (liens et commentaires compris), cas similaires,
+  « Mon travail », impact d'un CI (dépendances, services, incidents et changements ouverts),
+  propositions du tri assisté. Rien ne s'y écrit ; les textes saisis sont rendus comme des
+  données ; 60 requêtes par minute et par jeton. Conteneur `mcp` (image `s-aloha-mcp`,
+  profil `mcp` du compose), activé par l'Admin (MCP-01 à MCP-09).
+
+- **Changement créé depuis un problème** (CHG-23) : « Créer un changement » sur la fiche d'un
+  problème ouvre un changement qui reprend son titre et sa description, dans son périmètre, et
+  relié au problème.
+
+- **Conformité NIS 2** : les évaluations ouvertes dont on est le responsable apparaissent
+  dans « Mon travail » de la console, jusqu'à leur validation.
+
+- **Recherche** : le texte des pièces jointes d'un article publié, d'un problème établi ou d'un
+  incident résolu est trouvé par la recherche et les cas similaires — texte brut, PDF à couche
+  texte, Word, Excel et PowerPoint (docx, xlsx, pptx) et OpenDocument (odt, ods, odp),
+  100 000 caractères au plus par fichier (RAG-12).
+
+- **Niveaux de service** : la console des gestionnaires liste dans « Relances » les SLA en
+  vigueur qui expirent dans les 30 jours, avec leur date d'expiration (SLM-24).
+
+- **Problèmes** : l'historique du problème trace la réaffectation RACI d'une action corrective
+  (RACI avant et après, auteur, date) ; une RACI inchangée n'écrit rien (SOC-20).
 
 - **Sondes de santé de l'API** (O1) : `GET /health/live` (le processus répond) et
   `GET /health/ready` (la base aussi, 503 sinon), sans jeton et sans détail, pour Docker et
@@ -206,6 +341,22 @@ ci-dessous, chaque lundi.
 
 ### Modifié
 
+- **Image de l'API** : elle écoute aussi sur le port **8081**, port interne réservé au
+  conteneur des fonctionnalités optionnelles ; ne pas le publier (OPT-11).
+
+- **Mode démonstration** : le conteneur des fonctionnalités optionnelles démarre d'office, et
+  le tri assisté des tickets y est activé avec un jeu d'essai fictif. Des incidents résolus
+  lui servent de voisins, et une panne probable de quatre incidents ouverts montre le bandeau
+  et la notification. Docker Compose 2.24 ou plus est requis (ADR-0009).
+
+- **CMDB assistée, tâches par défaut** : mesurées sur un jeu d'essai de 55 CI avec un modèle exécutable dans le SI,
+  Renommer, Reclasser et Criticité sont proposées par défaut ; Normaliser, Fusionner et Relier, sous 70 % de précision,
+  sont coupées par défaut et s'activent dans Administration › Fonctionnalités optionnelles. Une normalisation d'un champ
+  vide est désormais écartée (CMA-09, CMA-11).
+
+- **Page de connexion** : ses quatre blocs présentent d'abord le tri assisté des tickets, la
+  CMDB assistée et le serveur MCP, puis la console par rôle.
+
 - **Demandes** : une demande approuvée ne passe En cours qu'avec un responsable désigné
   (REQ-13) ; une demande du catalogue le reçoit déjà de son modèle à l'approbation.
 
@@ -252,6 +403,36 @@ ci-dessous, chaque lundi.
   un test.
 
 ### Corrigé
+
+- **Changements, demandes, amélioration** : le responsable (ou le porteur) d'un enregistrement
+  engagé — changement autorisé, planifié ou mis en œuvre, demande en cours, amélioration
+  validée ou en cours — n'est changé que par le responsable en place, un membre de son groupe
+  ou un gestionnaire du périmètre. Un tiers ne se désigne plus pour mettre en œuvre, satisfaire
+  ou engager à l'envoi suivant ; sans responsable, c'est un gestionnaire qui le désigne (CHG-07,
+  REQ-25, CSI-11).
+
+- **Incidents** : un incident parent dont un enfant est déjà résolu ou clos peut de nouveau
+  changer de périmètre ; ses enfants terminés le suivent, avec leurs déclarations et leurs
+  notifications, et seuls les enfants ouverts sont à détacher d'abord (INC-16, PER-07).
+
+- **Incidents** : enregistrer la fiche d'un incident dont le service est hors catalogue
+  n'efface plus ce service de la fiche, de la liste ni du reporting (SLM-10, INC-20).
+
+- **Changements** : un changement Urgent mis en œuvre ne peut plus être renvoyé Normal, ce qui
+  le clôturait sans revue post-implémentation (CHG-15). Un changement Urgent planifié pendant
+  une période de gel qui devient Normal voit son créneau revérifié : le gel le refuse (CHG-25).
+
+- **Changements** : modifier le type, le risque, les plans ou le créneau d'un changement
+  Évalué efface les décisions du CAB déjà données ; une autorisation « CAB » porte toujours
+  sur le contenu que les deux gestionnaires ont vu (CHG-20).
+
+- **Amélioration continue** : une fois l'amélioration validée, sa valeur, son effort et sa
+  priorité ne changent que par un gestionnaire ; la fiche les fige pour un utilisateur
+  (CSI-12).
+
+- **Problèmes** : le changement créé depuis une action corrective et l'article d'erreur connue
+  créé depuis la fiche naissent dans le périmètre du problème ; un utilisateur de plusieurs
+  périmètres n'est plus refusé (PRB-27, PRB-30, PER-04).
 
 - **Résolution d'un incident parent** (INC-15, INC-16) : résoudre un parent résolvait aussi un
   enfant majeur sans problème relié, que sa résolution directe refusait. Cet enfant reste
@@ -385,6 +566,26 @@ ci-dessous, chaque lundi.
 
 ### Sécurité
 
+- **Audit des dépendances de l'interface** : un avis haut ou critique bloque toujours le
+  paquet livré ; sur l'outillage de build et de test, une exception datée, un avis à la
+  fois, peut attendre une version corrigée.
+
+- **Preuves d'une évaluation NIS 2** (PER-08, NIS-08) : une preuve n'est décrite (référence,
+  titre, lien) que si le lecteur voit l'enregistrement désigné dans son périmètre actuel ;
+  ailleurs, elle compte sans être décrite (« Enregistrement d'un autre périmètre »), dans le
+  questionnaire comme dans l'export, et ne se retire pas.
+
+- **Synthèse NIS 2 et service dégradé** (PER-08, NIS-14, NIS-15, CFG-18) : l'action liée à un
+  écart et le CI en cause d'un service dégradé ne sont décrits que dans les périmètres de
+  l'appelant ; ailleurs, ils comptent sans référence ni lien (« Action d'un autre
+  périmètre », « CI d'un autre périmètre »).
+
+- **Mot de passe du compte de service de l'annuaire hors de `docker-compose.yml`** (S1) : il
+  se fournit par l'environnement (`LDAP_BIND_PASSWORD`), comme les autres secrets ; hors
+  développement, l'API refuse de démarrer s'il est vide, un bind sans mot de passe étant
+  anonyme. Une installation lancée avec le seul `docker-compose.yml` doit désormais fournir
+  cette variable ; la démonstration ne change pas.
+
 - **CORS limité aux origines configurées** (S3) : l'API n'accepte plus les requêtes de
   n'importe quelle origine. `Cors:AllowedOrigins` liste les origines externes admises ; vide
   par défaut, ce qui suffit au frontend fourni (même origine, par nginx).
@@ -459,6 +660,12 @@ ci-dessous, chaque lundi.
   `font-src 'self'`).
 
 ### Mise à jour
+
+- **Images** : les fichiers compose prennent désormais la dernière version publiée (`latest`)
+  par défaut, et non plus `edge` ; `S_ALOHA_VERSION=v1.0.0` fige cette version,
+  `S_ALOHA_VERSION=edge` suit `main`. Une installation qui suivait `edge` vérifie les
+  consignes ci-dessous, celles des secrets d'abord (S1 : `POSTGRES_PASSWORD`, `JWT_KEY`,
+  `DISCOVERY_VAULT_KEY`, `LDAP_BIND_PASSWORD`).
 
 - **Image PostgreSQL** : `pgvector/pgvector:0.8.7-pg16` remplace `postgres:16-alpine`. Une
   base créée par l'ancienne image se sauvegarde puis se restaure (ou ses index se

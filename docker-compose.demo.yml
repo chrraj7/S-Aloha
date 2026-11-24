@@ -16,7 +16,7 @@ services:
       POSTGRES_PASSWORD: "ChangeMe_Str0ng!"
 
   annuaire:
-    image: ghcr.io/chrraj7/s-aloha-annuaire-demo:${S_ALOHA_VERSION:-edge}
+    image: ghcr.io/chrraj7/s-aloha-annuaire-demo:${S_ALOHA_VERSION:-latest}
     build: ./demo/annuaire
     # Nom NetBIOS du contrôleur, figé au provisionnement.
     hostname: dc01
