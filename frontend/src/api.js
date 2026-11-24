@@ -103,6 +103,14 @@ export const api = {
     mail: () => request('/me/mail-preferences'),
     saveMail: (dto) => request('/me/mail-preferences', { method: 'PUT', body: JSON.stringify(dto) })
   },
+  // MCP-03 : jetons d'accès personnels du serveur MCP (les siens ; tous pour l'Admin).
+  tokens: {
+    mine: () => request('/me/tokens'),
+    create: (dto) => request('/me/tokens', { method: 'POST', body: JSON.stringify(dto) }),
+    revoke: (id) => request(`/me/tokens/${id}`, { method: 'DELETE' }),
+    all: () => request('/admin/tokens'),
+    revokeAny: (id) => request(`/admin/tokens/${id}`, { method: 'DELETE' })
+  },
   admin: {
     health: () => request('/admin/health'),
     users: (params = {}) => request('/admin/users?' + new URLSearchParams(params)),
