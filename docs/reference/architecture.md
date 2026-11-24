@@ -72,7 +72,7 @@ backend/                              # projet SAloha.Api (namespace SAloha.Api.
 
 features/SAloha.Features/             # conteneur features, hors de l'API (ADR-0023), sans accès à la base
 ├── Host/                             # ContainerHost (jeton, /health), ApiClient (port interne de l'API), EventLoop (fil, une file par fonctionnalité), EmbeddingClient
-├── LanguageModel/                    # connecteur du modèle de langage (OPT-21 à OPT-28) : LanguageModelClient, Pseudonymizer (jetons), SchemaCheck (sortie)
+├── LanguageModel/                    # connecteur du modèle de langage (OPT-21 à OPT-28) : LanguageModelClient, Pseudonymizer (jetons), SchemaCheck (sortie), LanguageModelEssay (essai, OPT-26)
 └── TicketTriage/                     # tri assisté des tickets : TicketTriage (fil → propositions, pannes), TriageRules (vote, impact, motifs), OpenIncidents (index des ouverts, corrélation)
 ```
 
