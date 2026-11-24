@@ -21,19 +21,19 @@ public static class CmdbTasks
     public static readonly string[] CiTypes = ["Application", "Serveur", "Base de données", "Réseau", "Stockage", "Poste de travail", "Logiciel", "Autre"];
     public static readonly string[] NormalizedFields = ["operatingSystem", "vendor", "model"];
 
-    private static JsonElement Schema(object item) => JsonSerializer.SerializeToElement(new Dictionary<string, object>
+    internal static JsonElement Schema(object item) => JsonSerializer.SerializeToElement(new Dictionary<string, object>
     {
         ["type"] = "object", ["required"] = new[] { "propositions" }, ["additionalProperties"] = false,
         ["properties"] = new Dictionary<string, object> { ["propositions"] = new Dictionary<string, object> { ["type"] = "array", ["maxItems"] = 60, ["items"] = item } },
     });
 
-    private static Dictionary<string, object> Item(Dictionary<string, object> properties) => new()
+    internal static Dictionary<string, object> Item(Dictionary<string, object> properties) => new()
     {
         ["type"] = "object", ["required"] = properties.Keys.ToArray(), ["additionalProperties"] = false, ["properties"] = properties,
     };
 
-    private static readonly Dictionary<string, object> Motif = new() { ["type"] = "string", ["maxLength"] = 300 };
-    private static readonly Dictionary<string, object> CiId = new() { ["type"] = "integer" };
+    internal static readonly Dictionary<string, object> Motif = new() { ["type"] = "string", ["maxLength"] = 300 };
+    internal static readonly Dictionary<string, object> CiId = new() { ["type"] = "integer" };
 
     public static readonly JsonElement RenameSchema = Schema(Item(new()
     {
@@ -51,7 +51,7 @@ public static class CmdbTasks
         ["ci"] = CiId, ["type"] = new Dictionary<string, object> { ["type"] = "string", ["enum"] = CiTypes }, ["motif"] = Motif,
     }));
 
-    private const string Common =
+    internal const string Common =
         " Les CI sont donnés en JSON, chacun avec son identifiant « id » ; réponds par leurs identifiants. N'invente aucune information "
         + "absente des données. Le motif dit en une phrase courte, en français, ce qui justifie la proposition.";
 
@@ -87,24 +87,27 @@ public static class CmdbTasks
     /// bornée, relations existantes). Ni adresse, ni numéro de série, ni compte : ils ne sont pas envoyés, et s'ils paraissent
     /// dans une description, le pseudonymiseur les masque (ils lui sont déclarés).
     /// </summary>
-    public static string Input(IReadOnlyList<CiRecord> batch, IReadOnlyDictionary<int, string> titles, Pseudonymizer pseudo)
+    public static string Input(IReadOnlyList<CiRecord> batch, IReadOnlyDictionary<int, string> titles, Pseudonymizer pseudo) =>
+        Serialize(batch.Select(ci => Describe(ci, titles, pseudo)));
+
+    /// <summary>Un CI tel qu'il part au modèle (CMA-07) ; ses valeurs sensibles sont déclarées au pseudonymiseur.</summary>
+    public static object Describe(CiRecord ci, IReadOnlyDictionary<int, string> titles, Pseudonymizer pseudo)
     {
-        foreach (var ci in batch)
-        {
-            pseudo.Declare(Pseudonymizer.Ip, ci.IpAddress).Declare(Pseudonymizer.Mac, ci.MacAddress).Declare(Pseudonymizer.Serial, ci.SerialNumber)
-                .Declare(Pseudonymizer.Account, ci.OwnerId);
-        }
+        pseudo.Declare(Pseudonymizer.Ip, ci.IpAddress).Declare(Pseudonymizer.Mac, ci.MacAddress).Declare(Pseudonymizer.Serial, ci.SerialNumber)
+            .Declare(Pseudonymizer.Account, ci.OwnerId);
         string Name(int id) => titles.GetValueOrDefault(id, $"CI {id}");
-        var items = batch.Select(ci => new
+        return new
         {
             id = ci.Id, nom = ci.Title, type = ci.CiType, environnement = ci.Environment, systeme = ci.OperatingSystem, constructeur = ci.Vendor,
             modele = ci.Model,
             description = ci.Description is { Length: > DescriptionMax } d ? d[..DescriptionMax] : ci.Description,
             relations = (ci.Outgoing ?? []).Select(r => $"{r.Type} {Name(r.TargetId)}")
                 .Concat((ci.Incoming ?? []).Select(r => $"{Name(r.SourceId)} {r.Type} ce CI")).ToList(),
-        });
-        return JsonSerializer.Serialize(items, new JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+        };
     }
+
+    public static string Serialize(object value) =>
+        JsonSerializer.Serialize(value, new JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
 
     /// <summary>
     /// CMA-09 : les propositions d'une réponse valide. Écartée et comptée : un CI hors du lot, une valeur vide, un renommage
