@@ -79,9 +79,20 @@ public class ChangesController(AppDbContext db) : RecordController<Change, Chang
             (failed.SuspendedAt, failed.SuspendedByChangeId, failed.SuspendedByChange) = (DateTime.UtcNow, e.Id, e.Reference);
             Notify.ToManagers(e, LinkType, $"Modèle standard suspendu : {failed.Name}");
         }
-        // CHG-20 : une nouvelle évaluation repart sans décision du CAB.
-        if (!creating && e.Status == "Évalué" && Db.Entry(e).Property(x => x.Status).OriginalValue != "Évalué")
+        // CHG-20 : une nouvelle évaluation repart sans décision du CAB ; réécrire un changement
+        // Évalué aussi, car une approbation porte sur le contenu que l'approbateur a vu (#324).
+        if (!creating && e.Status == "Évalué"
+            && (Db.Entry(e).Property(x => x.Status).OriginalValue != "Évalué" || EvaluationChanged(e)))
             Db.ChangeApprovals.RemoveRange(await Db.ChangeApprovals.Where(a => a.ChangeId == e.Id).ToListAsync());
+    }
+
+    /// <summary>Type, risque, plans ou créneau changés par cet envoi (les champs de CHG-07).</summary>
+    private bool EvaluationChanged(Change e)
+    {
+        var entry = Db.Entry(e);
+        return entry.Property(x => x.ChangeType).IsModified || entry.Property(x => x.Risk).IsModified
+               || entry.Property(x => x.ImplementationPlan).IsModified || entry.Property(x => x.BackoutPlan).IsModified
+               || entry.Property(x => x.PlannedStart).IsModified || entry.Property(x => x.PlannedEnd).IsModified;
     }
 
     /// <summary>
