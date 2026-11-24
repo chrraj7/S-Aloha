@@ -60,6 +60,56 @@ public class IncidentProblemLot2Tests(ApiFixture api)
     }
 
     [Fact]
+    public async Task INC_10_un_incident_resolu_se_clot_seul_apres_la_fenetre_de_reouverture()
+    {
+        var user = api.Client("User", "user.inc10a");
+        var admin = api.Client("Admin", "admin.inc10a");
+        async Task<int> Resolved(string title, int daysAgo, bool security = false)
+        {
+            var i = await Json(await (security ? admin : user).PostAsJsonAsync("/api/incidents", new
+            {
+                title, impact = "Élevé", urgency = "Élevée", isSecurity = security,
+                ownerType = "User", ownerId = "user.inc10a", ownerDisplayName = "user.inc10a", callerId = "appelant.inc10a", callerDisplayName = "appelant"
+            }));
+            if (security)
+                await Json(await admin.PostAsJsonAsync($"/api/incidents/{Id(i)}/qualification",
+                    new { nis2Important = true, personalDataBreach = false, personalDataBreachReason = "Aucune donnée" }));
+            await Json(await (security ? admin : user).PutAsJsonAsync($"/api/incidents/{Id(i)}", new
+            {
+                title, description = "d", impact = "Élevé", urgency = "Élevée", status = "Résolu", isSecurity = security,
+                ownerType = "User", ownerId = "user.inc10a", ownerDisplayName = "user.inc10a", callerId = "appelant.inc10a", callerDisplayName = "appelant",
+                resolution = "Rétabli", resolutionCode = "Correctif appliqué"
+            }));
+            await using var db = api.Database();
+            var e = await db.Incidents.SingleAsync(x => x.Id == Id(i));
+            e.ResolvedAt = DateTime.UtcNow.AddDays(-daysAgo);
+            await db.SaveChangesAsync();
+            return Id(i);
+        }
+        var old = await Resolved("Imprimante INC-10 ancienne", 20);
+        // #335 : 8 jours calendaires, au moins 6 jours ouvrés — la réouverture d'INC-11 reste possible.
+        var recent = await Resolved("Imprimante INC-10 récente", 8);
+        // INC-43 : un incident cyber ne se clôt pas, même d'office, avec une déclaration en cours.
+        var cyber = await Resolved("Intrusion INC-10", 20, security: true);
+
+        await Json(await admin.PostAsync("/api/notifications/run", null));
+        await using var check = api.Database();
+        var states = await check.Incidents.Where(x => x.Id == old || x.Id == recent || x.Id == cyber).ToDictionaryAsync(x => x.Id);
+        Assert.Equal("Clos", states[old].Status);
+        Assert.NotNull(states[old].ClosedAt);
+        Assert.Equal("Résolu", states[recent].Status);
+        Assert.Equal("Résolu", states[cyber].Status);
+        Assert.True(await check.Notifications.AnyAsync(n => n.TargetType == "incident" && n.TargetId == old
+                                                            && n.RecipientId == "appelant.inc10a" && n.Event == "Incident clos automatiquement"));
+        // Clos, il ne se rouvre plus (INC-11) : la clôture d'office n'a lieu qu'au-delà de la fenêtre.
+        Assert.False((await user.PutAsJsonAsync($"/api/incidents/{old}", new
+        {
+            title = "Imprimante INC-10 ancienne", description = "d", impact = "Élevé", urgency = "Élevée", status = "En cours", reopenReason = "Revenu",
+            ownerType = "User", ownerId = "user.inc10a", ownerDisplayName = "user.inc10a", resolution = "Rétabli", resolutionCode = "Correctif appliqué"
+        })).IsSuccessStatusCode);
+    }
+
+    [Fact]
     public async Task INC_15_PRB_22_un_incident_majeur_se_resout_relie_a_un_probleme()
     {
         var manager = api.Client("Manager", "chef.inc15");
