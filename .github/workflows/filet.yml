@@ -16,7 +16,7 @@ permissions:
 jobs:
   issue:
     name: Main rouge
-    if: github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'failure'
+    if: (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_dispatch') && github.event.workflow_run.conclusion == 'failure'
     runs-on: ubuntu-latest
     permissions:
       contents: read

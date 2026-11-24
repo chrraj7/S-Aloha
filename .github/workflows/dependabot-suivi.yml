@@ -1,0 +1,54 @@
+# Suivi des fusions automatiques Dependabot (#325). La fusion programmée par
+# dependabot.yml se fait sous GITHUB_TOKEN : GitHub ne supprime alors pas la branche, et la
+# poussée sur main ne déclenche aucun workflow (ni CI, ni Images edge, ni Filet). Ce job
+# rattrape les deux : il supprime la branche dependabot/* d'une PR fusionnée si sa tête n'a
+# pas bougé et qu'aucune PR ouverte ne s'en sert, puis lance la CI de main si sa tête n'en a
+# aucune (workflow_dispatch est le seul déclencheur que GITHUB_TOKEN peut lancer).
+# Aucune action tierce, rien n'est extrait du dépôt : seule l'API est appelée.
+name: Suivi Dependabot
+
+on:
+  schedule:
+    - cron: '37 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  suivi:
+    name: Branches et CI après fusion
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # supprimer une branche dependabot/* fusionnée
+      actions: write    # lancer la CI de main
+      pull-requests: read
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Branches des PR Dependabot fusionnées
+        run: |
+          ouvertes=$(gh pr list -R "$REPO" --state open --limit 200 --json headRefName --jq '[.[].headRefName]')
+          gh pr list -R "$REPO" --state merged --author 'app/dependabot' --limit 50 --json number,headRefName,headRefOid \
+            --jq '.[] | select(.headRefName | startswith("dependabot/")) | "\(.number) \(.headRefName) \(.headRefOid)"' |
+          while read -r numero branche tete; do
+            if jq -e --arg b "$branche" 'any(.[]; . == $b)' <<<"$ouvertes" >/dev/null; then
+              echo "#$numero : $branche sert une PR ouverte, gardée."; continue
+            fi
+            # Déjà supprimée : rien à faire.
+            actuelle=$(gh api "repos/$REPO/git/ref/heads/$branche" --jq .object.sha 2>/dev/null) || continue
+            if [ "$actuelle" != "$tete" ]; then
+              echo "#$numero : $branche a bougé depuis la fusion, gardée."; continue
+            fi
+            gh api -X DELETE "repos/$REPO/git/refs/heads/$branche" && echo "#$numero : $branche supprimée."
+          done
+      - name: CI de la tête de main
+        run: |
+          tete=$(gh api "repos/$REPO/commits/main" --jq .sha)
+          n=$(gh api "repos/$REPO/actions/workflows/ci.yml/runs?head_sha=$tete&per_page=1" --jq .total_count)
+          if [ "$n" = 0 ]; then
+            gh workflow run ci.yml -R "$REPO" --ref main && echo "CI lancée sur ${tete:0:7}."
+          else
+            echo "main ${tete:0:7} a déjà sa CI."
+          fi
