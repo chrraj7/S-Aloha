@@ -117,6 +117,7 @@ identifiant n'est jamais réattribué : une règle abandonnée reste listée ave
 | `CSI` | [Amélioration continue](processus/amelioration-continue.md) |
 | `NIS` | [Conformité NIS 2](processus/conformite-nis2.md) |
 | `DRG` | [Déclarations réglementaires](processus/declarations-reglementaires.md) |
+| `REF` | [Évaluations sur référentiels importés](processus/evaluations-referentiels-importes.md) |
 | `RAG` | [Recherche](recherche.md) (capacité transverse) |
 | `OPT` | [Fonctionnalités optionnelles](fonctionnalites-optionnelles.md) : activation, contrat avec le conteneur des fonctionnalités, modèle de langage |
 | `TRI` | [Tri assisté des tickets](tri-assiste-des-tickets.md) (fonctionnalité optionnelle) |
