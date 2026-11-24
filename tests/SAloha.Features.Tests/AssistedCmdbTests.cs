@@ -247,6 +247,12 @@ public sealed class FakeCmdbApi : IAsyncLifetime
     public volatile object? CmdbSettings;
     /// <summary>Réponse du modèle selon la tâche (nom du schéma demandé) ; absente : panne (500).</summary>
     public readonly ConcurrentDictionary<string, string> Replies = new();
+    /// <summary>CMA-11 : un vrai modèle (adresse terminée par /v1, nom, délai) à la place du faux ; null : le faux.</summary>
+    public volatile string? ModelUrl;
+    public volatile string ModelName = "qwen2.5:7b";
+    public volatile int ModelTimeoutSeconds = 30;
+    /// <summary>Traces des appels au modèle remises par le conteneur (OPT-27).</summary>
+    public readonly ConcurrentQueue<JsonElement> Calls = new();
 
     public async Task InitializeAsync()
     {
@@ -285,9 +291,14 @@ public sealed class FakeCmdbApi : IAsyncLifetime
         });
         app.MapGet("/internal/language-model", () => Results.Json(new
         {
-            enabled = true, location = "Dans le SI", url = Url + "/v1", model = "qwen2.5:7b", key = (string?)null, timeoutSeconds = 30, maxResponseKb = 64,
+            enabled = true, location = "Dans le SI", url = ModelUrl ?? Url + "/v1", model = ModelName, key = (string?)null,
+            timeoutSeconds = ModelTimeoutSeconds, maxResponseKb = 64,
         }));
-        app.MapPost("/internal/language-model/calls", () => Results.Json(new { id = 1 }, statusCode: 201));
+        app.MapPost("/internal/language-model/calls", async (HttpContext c) =>
+        {
+            Calls.Enqueue(await JsonSerializer.DeserializeAsync<JsonElement>(c.Request.Body));
+            return Results.Json(new { id = Calls.Count }, statusCode: 201);
+        });
         app.MapPost("/v1/chat/completions", async (HttpContext c) =>
         {
             var body = await JsonSerializer.DeserializeAsync<JsonElement>(c.Request.Body);
