@@ -16,8 +16,6 @@ public class AuditEntry
     public const string Deletion = "Suppression";
     public const string LinkAdded = "Lien ajouté";
     public const string LinkRemoved = "Lien retiré";
-    /// <summary>CMA-05 : un CI fusionné dans un autre ; la ligne figure au journal des deux.</summary>
-    public const string Merge = "Fusion";
 
     /// <summary>OPT-08 : origine d'une modification ; « Saisie » sauf quand elle applique une proposition.</summary>
     public const string Saisie = "Saisie", AssistedTriage = "Tri assisté des tickets", AssistedCmdb = "CMDB assistée";

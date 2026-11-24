@@ -12,11 +12,14 @@ namespace SAloha.Api.Modules.ServiceConfigurationManagement;
 /// <summary>
 /// CMA-05 : fusion de deux CI d'un même périmètre et d'un même environnement. Les liens, les relations et les actifs du
 /// sas rapprochés du doublon sont reportés sur le CI conservé, sans lien ni relation vers lui-même ni en double ; le
-/// doublon passe Retiré, motif « Fusionné dans &lt;référence&gt; » ; une ligne « Fusion » s'écrit au journal des deux.
+/// doublon passe Retiré, motif « Fusionné dans &lt;référence&gt; » ; une ligne « Fusion » s'écrit au journal des deux, comme
+/// pour la fusion des doublons de l'Administration (ADM-41), qui ne traite pas les CI.
 /// </summary>
 public static class CiMerge
 {
     private const string Retired = "Retiré";
+    /// <summary>Action du journal d'audit, celle de la fusion des doublons de l'Administration (ADM-41).</summary>
+    public const string Fusion = "Fusion";
 
     /// <summary>Pourquoi deux CI ne se fusionnent pas : message (400), ou null.</summary>
     public static string? Refusal(ConfigurationItem a, ConfigurationItem? b) => b switch
@@ -101,15 +104,15 @@ public static class CiMerge
             (p.Status, p.DecidedAt, p.DecidedBy) = (Proposal.Expired, now, "Système");
             await ProposalDecisions.CountAsync(db, p, Proposal.Expired);
         }
-        var summary = $"{duplicate.Reference} fusionné dans {keep.Reference} : {movedLinks} lien(s), {movedRelations} relation(s), "
-                      + $"{assets.Count} actif(s) du sas reportés.";
-        foreach (var ci in new[] { keep, duplicate })
-            db.AuditEntries.Add(new AuditEntry
-            {
-                EntityType = "ci", EntityId = ci.Id, Reference = ci.Reference, Action = AuditEntry.Merge, Field = "fusion",
-                OldValue = duplicate.Reference, NewValue = keep.Reference, Reason = summary, Author = by, AuthorDisplayName = byDisplay, At = now,
-                Origin = AuditEntry.AssistedCmdb,
-            });
+        // Comme la fusion des doublons de l'Administration (ADM-41) : une ligne « Fusion » sur chacun des deux.
+        AuditEntry Trace(ConfigurationItem ci, string text) => new()
+        {
+            EntityType = "ci", EntityId = ci.Id, Reference = ci.Reference, Action = Fusion, NewValue = text, Author = by,
+            AuthorDisplayName = byDisplay, At = now, Origin = AuditEntry.AssistedCmdb,
+        };
+        db.AuditEntries.Add(Trace(keep, $"{duplicate.Reference} « {duplicate.Title} » fusionné ici : {movedLinks} lien(s), {movedRelations} relation(s), "
+                                         + $"{assets.Count} actif(s) du sas reportés."));
+        db.AuditEntries.Add(Trace(duplicate, $"Fusionné dans {keep.Reference} « {keep.Title} »."));
         await db.SaveChangesAsync();
         return new Outcome(movedLinks, movedRelations, assets.Count, open.Count);
     }
