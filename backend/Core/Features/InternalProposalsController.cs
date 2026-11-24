@@ -13,6 +13,7 @@ namespace SAloha.Api.Core.Features;
 /// une proposition identique à une proposition ouverte n'est pas recréée. La valeur « avant » est lue
 /// par l'API sur l'enregistrement, pas reprise du conteneur. Une proposition ouverte devenue périmée est
 /// recalculée en place, comme celle dont la valeur change ; une valeur rejetée ou corrigée n'est pas reproposée.
+/// Une proposition sur une paire (fusion) suit ses propres règles (<see cref="PairAsync"/>).
 /// </summary>
 [ApiController]
 [Route("internal/proposals")]
@@ -31,7 +32,8 @@ public class InternalProposalsController(AppDbContext db, IFeatureGate gate) : C
         if (target is not Record record) return NotFound(new { message = "Enregistrement introuvable." });
         var after = input.After?.Trim() ?? "";
         if (after.Length > 2000) return BadRequest(new { message = "Valeur proposée : 2 000 caractères au plus." });
-        if (await field.Validate(db, after) is { } error) return BadRequest(new { message = error });
+        if (await field.Validate(db, target, after) is { } error) return BadRequest(new { message = error });
+        if (field.Pair) return await PairAsync(feature.Key, field, record, after, input);
         var before = field.Read(target);
         if (string.Equals(before, after, StringComparison.Ordinal))
             return BadRequest(new { message = "La valeur proposée est déjà celle de l'enregistrement." });
@@ -71,6 +73,44 @@ public class InternalProposalsController(AppDbContext db, IFeatureGate gate) : C
             Feature = feature.Key, TargetType = field.TargetType, TargetId = record.Id, PerimeterId = record.PerimeterId,
             Field = field.Name, Before = before, After = after, Reasons = reasons,
             CitedJson = JsonSerializer.Serialize((input.Cited ?? []).Take(20).ToList(), JsonSerializerOptions.Web),
+            Confidence = input.Confidence is { } c ? Math.Clamp(c, 0, 1) : null,
+        };
+        db.Proposals.Add(proposal);
+        await db.SaveChangesAsync();
+        return StatusCode(StatusCodes.Status201Created, new { proposal.Id, Created = true });
+    }
+
+    /// <summary>
+    /// Proposition sur une paire (fusion, CMA-05 et CMA-06) : la paire compte dans les deux sens. Rejetée ou corrigée, elle
+    /// ne revient pas ; ouverte, elle se rafraîchit sur place (motif, date) ; sinon elle se crée, l'autre enregistrement
+    /// cité. Plusieurs paires restent ouvertes sur un même enregistrement : un CI peut avoir plusieurs doublons candidats.
+    /// </summary>
+    private async Task<IActionResult> PairAsync(string feature, ProposalFields.Field field, Record record, string after, ProposalInput input)
+    {
+        var other = int.Parse(after);
+        var reasons = input.Reasons?.Trim() ?? "";
+        if (reasons.Length > 1000) return BadRequest(new { message = "Motifs : 1 000 caractères au plus." });
+        var (mine, theirs) = (record.Id.ToString(), after);
+        var pair = await db.Proposals.Where(p => p.Feature == feature && p.TargetType == field.TargetType && p.Field == field.Name
+            && ((p.TargetId == record.Id && p.After == theirs) || (p.TargetId == other && p.After == mine))).OrderBy(p => p.Id).ToListAsync();
+        if (pair.FirstOrDefault(p => p.Status is Proposal.Rejected or Proposal.Corrected) is { } declined)
+            return Ok(new { declined.Id, Created = false });
+        if (pair.FirstOrDefault(p => p.Status == Proposal.Open) is { } open)
+        {
+            // Périmée (l'un des deux modifié depuis), elle redevient acceptable : le conteneur vient de la juger à nouveau.
+            var changed = (await ProposalFields.LoadAsync(db, field.TargetType, other) as Record)?.UpdatedAt;
+            if (open.Reasons != reasons || record.UpdatedAt > open.CreatedAt || changed > open.CreatedAt)
+            {
+                (open.Reasons, open.CreatedAt) = (reasons, DateTime.UtcNow);
+                await db.SaveChangesAsync();
+            }
+            return Ok(new { open.Id, Created = false });
+        }
+        var proposal = new Proposal
+        {
+            Feature = feature, TargetType = field.TargetType, TargetId = record.Id, PerimeterId = record.PerimeterId, Field = field.Name,
+            Before = null, After = after, Reasons = reasons,
+            CitedJson = JsonSerializer.Serialize(new List<CitedRef> { new(field.TargetType, other) }, JsonSerializerOptions.Web),
             Confidence = input.Confidence is { } c ? Math.Clamp(c, 0, 1) : null,
         };
         db.Proposals.Add(proposal);
