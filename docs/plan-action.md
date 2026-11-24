@@ -88,7 +88,7 @@ Détail : [sécurité § Points de durcissement](reference/securite.md#points-de
 
 | # | Chantier | Qui |
 |---|---|---|
-| S1 | **Secrets hors du dépôt** (`Jwt:Key`, mots de passe PostgreSQL et LDAP) | code + action |
+| S1 | **Secrets hors du dépôt** (`Jwt:Key`, mots de passe PostgreSQL et LDAP) — part code faite : `POSTGRES_PASSWORD`, `JWT_KEY` et `DISCOVERY_VAULT_KEY` le 2026-11-09 ([#289](https://github.com/chrraj7/S-Aloha/issues/289)), `LDAP_BIND_PASSWORD` le 2026-11-24, plus aucun secret d'exemple dans `docker-compose.yml` ([exploitation § Secrets](reference/exploitation.md#secrets)) ; reste à l'exploitant de fournir les siens | action |
 | S2 | ~~**LDAPS** et **HTTPS**~~ — fait le 2026-11-09 : LDAPS avec l'autorité de l'annuaire (`Ldap:CaCertificatePath`, [exploitation § LDAPS](reference/exploitation.md#ldaps)) et recette HTTPS (`docker-compose.https.yml`, Caddy, [exploitation § HTTPS](reference/exploitation.md#https)) ; reste à l'exploitant d'activer l'un et l'autre sur son installation | action |
 | S3 | ~~**CORS** restreint~~ — fait le 2026-10-29 (`Cors:AllowedOrigins`, vide par défaut, [#122](https://github.com/chrraj7/S-Aloha/issues/122)) ; API et Swagger non publiés hors de nginx | code |
 | ~~S7~~ | ~~Refus de démarrer hors développement avec les valeurs d'exemple~~ — soldé le 2026-10-16 (`SampleSecrets` ; démonstration : `Security:AllowSampleSecrets`) ([audit du 2026-10-16](archives/audit-code-2026-10-16.md) § 1) | code |

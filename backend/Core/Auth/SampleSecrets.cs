@@ -4,7 +4,7 @@ namespace SAloha.Api.Core.Auth;
 /// S7 : hors développement, l'API refuse de démarrer avec les valeurs d'exemple livrées dans
 /// <c>appsettings.json</c> et <c>docker-compose.demo.yml</c> (clé JWT, clé du coffre, jeton du conteneur
 /// <c>features</c>, mots de passe) — une clé JWT connue de tous permet de
-/// fabriquer des jetons valides. Le mode démonstration, public par construction, l'accepte
+/// fabriquer des jetons valides —, ni avec une clé JWT trop courte ou un mot de passe d'annuaire vide. Le mode démonstration, public par construction, l'accepte
 /// explicitement (<c>Security:AllowSampleSecrets</c>) et le journalise en avertissement.
 /// </summary>
 public static class SampleSecrets
@@ -27,7 +27,11 @@ public static class SampleSecrets
         if (config["Discovery:VaultKey"] == SampleVaultKey) problems.Add("Discovery:VaultKey vaut la clé d'exemple");
         // OPT-10 : le jeton d'exemple ouvrirait le port interne à quiconque lit docker-compose.demo.yml.
         if (config["Features:Token"] == SampleFeaturesToken) problems.Add("Features:Token vaut le jeton d'exemple");
-        if (config["Ldap:BindPassword"] == SampleBindPassword) problems.Add("Ldap:BindPassword vaut le mot de passe d'exemple");
+        // S1 : vide dans le compose à défaut de LDAP_BIND_PASSWORD. Un bind simple sans mot de passe est un bind
+        // anonyme (RFC 4513 § 5.1.2), que certains annuaires acceptent : il ne vaut jamais le compte de service.
+        var bindPassword = config["Ldap:BindPassword"];
+        if (bindPassword == SampleBindPassword) problems.Add("Ldap:BindPassword vaut le mot de passe d'exemple");
+        else if (string.IsNullOrEmpty(bindPassword)) problems.Add("Ldap:BindPassword est vide");
         if ((config.GetConnectionString("Default") ?? "").Contains(SampleDbPassword, StringComparison.Ordinal))
             problems.Add("ConnectionStrings:Default contient le mot de passe d'exemple");
         return problems;

@@ -32,7 +32,8 @@ services:
       Ldap__UseSsl: "false"
       Ldap__BaseDn: "DC=mondomaine,DC=local"
       Ldap__BindUser: "CN=svc-saloha,OU=Services,DC=mondomaine,DC=local"
-      Ldap__BindPassword: "MotDePasseServiceAccount"
+      # Mot de passe du compte de service, lu dans l'environnement comme les autres secrets (S1).
+      Ldap__BindPassword: "${LDAP_BIND_PASSWORD:-}"
       Ldap__UserFilter: "(&(objectClass=user)(sAMAccountName={0}))"
       # --- Mapping groupes AD -> rôles applicatifs ---
       Ldap__Groups__Admin: "GRP-SALOHA-ADMINS"
