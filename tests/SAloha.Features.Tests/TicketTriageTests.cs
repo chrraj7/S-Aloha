@@ -271,6 +271,10 @@ public class TicketTriageTests(FakeInternalApi api) : IClassFixture<FakeInternal
         var triage = container.Services.GetRequiredService<SAloha.Features.TicketTriage.TicketTriage>();
         for (var i = 0; i < 100 && !triage.Index.Built; i++) await Task.Delay(50);
         Assert.True(triage.Index.Built);
+        // Le conteneur traite le fil en tâche de fond : attendre la recherche de l'incident 52, dernier événement du fil,
+        // pour que la seule requête comptée ensuite soit celle de la saisie.
+        static bool Of52(JsonElement q) => q.GetProperty("excludeId") is { ValueKind: JsonValueKind.Number } id && id.GetInt32() == 52;
+        for (var i = 0; i < 100 && !api.SimilarQueries.Any(Of52); i++) await Task.Delay(50);
 
         var client = container.CreateClient();
         client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", FakeInternalApi.Token);

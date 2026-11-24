@@ -94,6 +94,18 @@ public class ApiClient
         return await res.Content.ReadFromJsonAsync<TriageSettingsData>(Json, ct);
     }
 
+    /// <summary>
+    /// OPT-23 : réglages du modèle de langage, clé comprise ; null si l'API les refuse (403 : aucune fonctionnalité qui
+    /// s'en sert n'est activée). Relus à chaque appel du modèle, jamais écrits.
+    /// </summary>
+    public async Task<LanguageModel.LanguageModelSettingsData?> LanguageModelSettingsAsync(CancellationToken ct)
+    {
+        using var res = await http.GetAsync("internal/language-model", ct);
+        if (res.StatusCode == HttpStatusCode.Forbidden) return null;
+        res.EnsureSuccessStatusCode();
+        return await res.Content.ReadFromJsonAsync<LanguageModel.LanguageModelSettingsData>(Json, ct);
+    }
+
     /// <summary>TRI-06 : une page des incidents ouverts, avec leurs CI reliés.</summary>
     public async Task<OpenPage> OpenIncidentsAsync(int after, CancellationToken ct) =>
         (await http.GetFromJsonAsync<OpenPage>($"internal/incidents/open?after={after}&limit=500", Json, ct))!;

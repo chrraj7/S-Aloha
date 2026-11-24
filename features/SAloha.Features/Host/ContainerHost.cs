@@ -43,6 +43,10 @@ public static class ContainerHost
         builder.Services.AddHttpClient<ApiClient>(c => c.Timeout = TimeSpan.FromSeconds(30));
         // Service d'embeddings du compose (Embeddings:Url) : le sens de la corrélation du tri (TRI-06).
         builder.Services.AddHttpClient<EmbeddingClient>();
+        // Connecteur du modèle de langage (OPT-21) : un seul client, une requête à la fois, emplacement vérifié à chaque connexion.
+        builder.Services.AddHttpClient(LanguageModel.LanguageModelClient.HttpClientName, c => c.Timeout = System.Threading.Timeout.InfiniteTimeSpan)
+            .ConfigurePrimaryHttpMessageHandler(LanguageModel.LanguageModelClient.Handler);
+        builder.Services.AddSingleton<LanguageModel.LanguageModelClient>();
         builder.Services.AddSingleton<EventLoop>();
         builder.Services.AddHostedService(sp => sp.GetRequiredService<EventLoop>());
         // Une fonctionnalité s'inscrit comme IContainerFeature (déclarée par /health) et, si elle lit le fil,
