@@ -125,7 +125,8 @@ public static class CmdbTasks
 
     /// <summary>
     /// CMA-09 : les propositions d'une réponse valide. Écartée et comptée : un CI hors du lot, une valeur vide, un renommage
-    /// d'un type sans convention, une criticité pour un CI qui n'est pas une application sans criticité. Ignorée sans compter :
+    /// d'un type sans convention, une criticité pour un CI qui n'est pas une application sans criticité, une normalisation d'un
+    /// champ vide (rien à normaliser : la consigne l'exclut, mesure CMA-11). Ignorée sans compter :
     /// une valeur égale à l'actuelle, un second avis sur le même champ.
     /// </summary>
     public static (List<CmdbProposal> Kept, int Rejected) Read(string task, JsonElement output, IReadOnlyDictionary<int, CiRecord> batch,
@@ -156,6 +157,11 @@ public static class CmdbTasks
                 "title" => ci.Title, "ciType" => ci.CiType, "operatingSystem" => ci.OperatingSystem, "vendor" => ci.Vendor, "model" => ci.Model,
                 "criticality" => ci.Criticality, _ => null,
             };
+            if (task == Normalize && string.IsNullOrWhiteSpace(current))
+            {
+                rejected++;
+                continue;
+            }
             if (value == current?.Trim() || !seen.Add((id, field))) continue;
             kept.Add(new CmdbProposal(id, field, value, p.GetProperty("motif").GetString()?.Trim() ?? ""));
         }

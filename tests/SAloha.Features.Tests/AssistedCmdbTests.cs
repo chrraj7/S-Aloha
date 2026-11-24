@@ -43,11 +43,12 @@ public class CmdbTasksTests
               { "ci": 1, "champ": "operatingSystem", "valeur": "Windows Server 2019 Standard", "motif": "Écriture normalisée." },
               { "ci": 1, "champ": "operatingSystem", "valeur": "Windows 2019", "motif": "Second avis : ignoré." },
               { "ci": 2, "champ": "vendor", "valeur": "  ", "motif": "Vide : écarté." },
-              { "ci": 99, "champ": "model", "valeur": "DL380", "motif": "Hors du lot : écarté." } ] }
+              { "ci": 99, "champ": "model", "valeur": "DL380", "motif": "Hors du lot : écarté." },
+              { "ci": 2, "champ": "operatingSystem", "valeur": "SQL Server 2019", "motif": "Champ vide : rien à normaliser, écarté." } ] }
             """).RootElement;
         var (kept, rejected) = CmdbTasks.Read(CmdbTasks.Normalize, normalize, batch, new HashSet<string>());
         Assert.Equal([new CmdbProposal(1, "operatingSystem", "Windows Server 2019 Standard", "Écriture normalisée.")], kept);
-        Assert.Equal(2, rejected);
+        Assert.Equal(3, rejected);
 
         // Renommer un type sans convention : écarté ; garder le même nom : ignoré.
         var rename = JsonDocument.Parse("""

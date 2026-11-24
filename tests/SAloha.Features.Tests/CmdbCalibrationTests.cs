@@ -86,6 +86,7 @@ public class CmdbCalibrationTests(ITestOutputHelper output)
             var (source, target) = (r.GetProperty("source").GetInt32(), r.GetProperty("cible").GetInt32());
             Assert.True(subjects.TryGetValue(source, out var cited) && cited.Contains(target), $"{source} ne cite pas {target}.");
             Assert.All(r.GetProperty("types").EnumerateArray(), t => Assert.Contains(t.GetString(), Relations.Types));
+            if (r.TryGetProperty("inverse", out var inverse)) Assert.All(inverse.EnumerateArray(), t => Assert.Contains(t.GetString(), Relations.Types));
         }
 
         // Criticité : exactement les applications sans criticité, chacune avec ses réponses admises.
@@ -129,10 +130,14 @@ public class CmdbCalibrationTests(ITestOutputHelper output)
                         if (Pairs(expected.GetProperty("merge")).Contains(pair)) key = $"{pair}";
                         break;
                     case Relations.Task:
+                        // La relation attendue, ou la même vue de la cible avec un type admis (« inverse »).
                         var (target, type) = (int.Parse(after.Split('|')[0]), after.Split('|')[1]);
-                        if (expected.GetProperty("relate").EnumerateArray().Any(r => r.GetProperty("source").GetInt32() == ci
-                                && r.GetProperty("cible").GetInt32() == target && r.GetProperty("types").EnumerateArray().Any(t => t.GetString() == type)))
-                            key = $"{ci}>{target}";
+                        static bool Has(JsonElement r, string name, string type) =>
+                            r.TryGetProperty(name, out var list) && list.EnumerateArray().Any(t => t.GetString() == type);
+                        var match = expected.GetProperty("relate").EnumerateArray().FirstOrDefault(r =>
+                            (r.GetProperty("source").GetInt32() == ci && r.GetProperty("cible").GetInt32() == target && Has(r, "types", type))
+                            || (r.GetProperty("source").GetInt32() == target && r.GetProperty("cible").GetInt32() == ci && Has(r, "inverse", type)));
+                        if (match.ValueKind == JsonValueKind.Object) key = $"{match.GetProperty("source").GetInt32()}>{match.GetProperty("cible").GetInt32()}";
                         break;
                     case CmdbTasks.Normalize:
                         if (expected.GetProperty("normalize").TryGetProperty($"{ci}", out var byField) && byField.TryGetProperty(field, out var admitted)
@@ -177,13 +182,14 @@ public class CmdbCalibrationTests(ITestOutputHelper output)
             P(2, "operatingSystem", "Windows Server 2019 Standard"), P(6, "vendor", "Dell Technologies"),
             P(2, "merge", "1"), P(25, "merge", "19"),                                          // doublon ; piège
             P(19, "relation", "15|Dépend de"), P(12, "relation", "1|Dépend de"),               // type admis ; type non admis
+            P(3, "relation", "22|Héberge"), P(15, "relation", "19|Dépend de"),                 // même relation vue de la cible ; sens faux
             P(23, "criticality", "Mineure"),
         ], [C("rename", 1, 2000), C("rename", 0, 4000)]);
         var by = scores.ToDictionary(s => s.Task);
         Assert.Equal((2, 1, 12, 1), (by["rename"].Proposed, by["rename"].Right, by["rename"].Expected, by["rename"].Found));
         Assert.Equal((2, 1, 1, 3.0), (by["rename"].Calls, by["rename"].NonConforming, by["normalize"].Right, by["rename"].AverageSeconds));
         Assert.Equal((2, 1, 0.5), (by["merge"].Proposed, by["merge"].Right, by["merge"].Precision));
-        Assert.Equal((2, 1, 17), (by["relate"].Proposed, by["relate"].Right, by["relate"].Expected));
+        Assert.Equal((4, 2, 17, 2), (by["relate"].Proposed, by["relate"].Right, by["relate"].Expected, by["relate"].Found));
         Assert.Equal((1, 1.0), (by["criticality"].Right, by["criticality"].Precision));
         Assert.Equal(0, by["reclassify"].Proposed);
     }
