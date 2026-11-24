@@ -11,7 +11,8 @@ import { getUser } from '../../api'
  * la création (donnée de proposition, comme l'enregistrement d'origine) ; `boolean` : liste
  * Oui / Non / non renseigné, envoyée en vrai, faux ou null ; `numeric`
  * envoie la valeur d'une liste comme nombre (identifiant, étape…) ; `managerOnly`
- * fige le champ pour qui n'est ni Manager ni Admin (incident majeur, INC-13).
+ * fige le champ pour qui n'est ni Manager ni Admin (incident majeur, INC-13) ; en fonction
+ * des valeurs saisies, seulement quand elle tient (note d'une amélioration validée, CSI-12).
  * `when(form)` n'affiche le champ que si la condition tient (champs du portefeuille pour une
  * application, CFG-43) ; `hint` : aide sous le champ ; `type: 'heading'` : intertitre d'un
  * bloc de champs (sans valeur), soumis au même `when`. `hint` peut dépendre des valeurs (fonction).
@@ -22,6 +23,9 @@ const valued = fields => fields.filter(fd => fd.type !== 'heading')
 
 /** Le champ s'applique-t-il aux valeurs saisies ? */
 export const applies = (fd, form) => !fd.when || fd.when(form)
+
+/** Champ réservé aux gestionnaires : toujours, ou selon les valeurs saisies. */
+const managerOnly = (fd, form) => (typeof fd.managerOnly === 'function' ? fd.managerOnly(form) : !!fd.managerOnly)
 
 /** Aide du champ : texte, ou fonction des valeurs saisies. */
 const hintOf = (fd, form) => (typeof fd.hint === 'function' ? fd.hint(form) : fd.hint)
@@ -141,7 +145,7 @@ export default function RecordForm({ fields, form, onChange, disabled, creating,
       {fields.filter(fd => !(creating && fd.create === false) && !(!creating && fd.onlyCreate) && applies(fd, form)).map(fd =>
         fd.type === 'heading'
           ? <h4 key={fd.key} className="form-heading">{fd.label}{fd.hint && <small>{fd.hint}</small>}</h4>
-          : <Field key={fd.key} fd={fd} form={form} onChange={onChange} disabled={disabled || fd.readOnly || (fd.managerOnly && !isManager)} />)}
+          : <Field key={fd.key} fd={fd} form={form} onChange={onChange} disabled={disabled || fd.readOnly || (managerOnly(fd, form) && !isManager)} />)}
     </div>
   )
 }

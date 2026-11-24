@@ -88,6 +88,10 @@ public class ImprovementsController(AppDbContext db) : RecordController<Improvem
         // CSI-11, § 4 : une amélioration s'engage avec un porteur.
         if (entering && status == "En cours" && string.IsNullOrWhiteSpace(e.OwnerId))
             return "Désigner le porteur de l'amélioration avant de l'engager.";
+        // CSI-12 (#336) : la note du gestionnaire tient — sur une amélioration validée ou en cours,
+        // valeur, effort et priorité ne changent que par un gestionnaire.
+        if (e.Status is "Validée" or "En cours" && !IsManager && Reprioritized(e))
+            return "La priorisation est une décision de gestionnaire : seul un gestionnaire change la valeur, l'effort et la priorité d'une amélioration validée.";
         // CSI-12 : valider, c'est arbitrer — valeur et effort notés. Contrôlé à l'entrée dans
         // Validée seulement : une amélioration validée avant la règle reste modifiable.
         if (status == "Validée" && e.Status != "Validée" && (e.Value is null || e.Effort is null))
@@ -105,6 +109,15 @@ public class ImprovementsController(AppDbContext db) : RecordController<Improvem
         if (status == "Réalisée" && string.IsNullOrWhiteSpace(e.Outcome))
             return "Décrire le résultat constaté avant de déclarer l'amélioration réalisée.";
         return null;
+    }
+
+    /// <summary>Valeur, effort ou priorité changés par cet envoi, par rapport à la base.</summary>
+    private bool Reprioritized(Improvement e)
+    {
+        var entry = Db.Entry(e);
+        return entry.Property(x => x.Value).OriginalValue != e.Value
+               || entry.Property(x => x.Effort).OriginalValue != e.Effort
+               || entry.Property(x => x.Priority).OriginalValue != e.Priority;
     }
 
     // CSI-23 : proposition → gestionnaires ; validation ou abandon → proposant et porteur.

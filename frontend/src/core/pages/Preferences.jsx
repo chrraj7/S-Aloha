@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { api } from '../../api'
+import { useFeatures } from '../features'
+import AccessTokens from './AccessTokens'
 
 const MODES = [
   { value: 'Aucun', label: 'Aucun courriel', hint: 'Les notifications restent dans l’application (cloche).' },
@@ -11,6 +13,7 @@ const MODES = [
 export default function Preferences() {
   const [p, setP] = useState(null)
   const [msg, setMsg] = useState(null)
+  const mcp = useFeatures().has('mcp-server')
   useEffect(() => { api.preferences.mail().then(setP).catch(e => setMsg({ ok: false, text: e.message })) }, [])
   if (!p) return msg ? <div className="error">{msg.text}</div> : <p>Chargement…</p>
   const save = () => api.preferences.saveMail({ mode: p.mode, address: p.address || null })
@@ -34,6 +37,8 @@ export default function Preferences() {
           <input id="mail-address" type="email" autoComplete="email" value={p.address ?? ''} onChange={e => setP({ ...p, address: e.target.value })} placeholder="prenom.nom@example.org" /></div>}
         <button className="btn" onClick={save} disabled={p.mode !== 'Aucun' && !p.address?.trim()}>Enregistrer</button>
       </div>
+      {/* MCP-03 : la fonctionnalité activée seulement (OPT-04). */}
+      {mcp && <AccessTokens />}
     </>
   )
 }

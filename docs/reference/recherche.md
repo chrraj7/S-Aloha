@@ -29,10 +29,11 @@ Sans service d'embeddings, elle reste lexicale.
 | Article de connaissance | Statut **Publié** | Titre, résumé, contenu | ✅ |
 | Problème | Statut **Erreur connue**, **Résolu** ou **Clos** | Titre, description, « Cause racine : … », « Contournement : … » | ✅ |
 | Incident | Statut **Résolu** ou **Clos**, avec résolution | Titre, description, « Résolution : … » | ✅ |
+| Pièce jointe ([SOC-25](regles-metier.md#9-traçabilité-commentaires-administration)) d'une des sources ci-dessus | Quand son enregistrement l'est | « Pièce jointe : <nom> », puis le texte extrait (RAG-12) | ✅ |
 
-Pas de brouillon, pas d'incident en cours, pas de fichier déposé : seul le contenu
-**validé** est proposé comme réponse. La recherche n'ajoute **aucun filtre de visibilité** :
-dans S-Aloha, tous les rôles lisent tous les enregistrements.
+Pas de brouillon, pas d'incident en cours, ni leurs pièces jointes : seul le contenu
+**validé** est proposé comme réponse. Un résultat n'est visible que de qui voit
+l'enregistrement (RAG-13) ; une pièce jointe suit le sien.
 
 ## 3. Règles
 
@@ -50,7 +51,7 @@ dans S-Aloha, tous les rôles lisent tous les enregistrements.
 | RAG-09 | Depuis les cas similaires d'un incident, **relier** l'article ou le problème retenu à l'incident en un clic (achève INC-19) : bouton « Relier » sur les articles et les problèmes des cas similaires d'un incident | ✅ | 2 |
 | RAG-10 | **Calibrage** : jeu d'au moins 30 requêtes avec leurs réponses attendues ; plancher et nombre de résultats fixés d'après la précision mesurée, consignés ici. **Mesure du 2026-11-09** (environnement d'essai, 36 enregistrements de test ; 36 requêtes formulées autrement que les titres, dont 4 sans réponse attendue ; jeu validé par le mainteneur) : bonne réponse parmi les 5 premiers résultats hybrides pour 81 % des requêtes à 0,50, **88 % à 0,47**, 91 % à 0,45 ; aucune requête sans réponse ne dépasse 0,449, d'où 0,47 (marge de 0,02). Nombre de résultats inchangé : 10 pour la recherche libre, 5 pour les cas similaires. Données synthétiques : à remesurer sur des données réelles après la première version stable | ✅ | 1 |
 | RAG-11 | **Suggestions à la saisie** : à la création d'un incident ou d'une demande, les cas similaires s'affichent dès que le titre est saisi (4 caractères au moins, après une courte pause de frappe ; 5 résultats) | ✅ | 2 |
-| RAG-12 | **Pièces jointes** indexées (texte extrait des documents déposés, SOC-25) — phase 2, hors décision actuelle | 🔜 | 3 |
+| RAG-12 | **Pièces jointes** indexées (texte extrait des documents déposés, SOC-25 ; décisions du 2026-11-09 et du 2026-11-24, #280) : texte brut (txt, log, csv, json, eml), PDF à couche texte (PdfPig, Apache-2.0), Office Open XML (docx, xlsx, pptx) et OpenDocument (odt, ods, odp) lus comme archives zip de XML, sans bibliothèque ; **100 000 caractères** au plus par fichier ; ni OCR (images, PDF numérisés), ni doc, xls, ppt, msg ou zip. Les passages, préfixés « Pièce jointe : <nom> », sont **rattachés à l'enregistrement** : mêmes statuts (RAG-01), mêmes droits (RAG-13). Réindexation au dépôt et au retrait ; stockage coupé ou fichier illisible : la pièce est passée et journalisée, l'enregistrement reste indexé (RAG-03). Le XML se lit en flux, sans DTD ni entité externe, 20 millions de caractères au plus par document | ✅ (`AttachmentText`, `SearchIndexer`) | 3 |
 
 ## 4. Interface
 
@@ -77,6 +78,7 @@ le service, reconstruction : [exploitation § Recherche](exploitation.md#recherc
 ## 7. Scénarios d'acceptation
 
 - **RAG-01** — *Étant donné* un article en Brouillon contenant « passerelle VPN », *quand* on cherche « passerelle », *alors* il n'apparaît pas ; publié, il apparaît ; archivé, il disparaît de nouveau (de même pour un problème rouvert ou un incident supprimé).
+- **RAG-12** — *Étant donné* un incident résolu dont la procédure est dans un fichier `.odt` joint, *quand* on cherche un mot de la procédure, *alors* l'incident est trouvé ; la pièce jointe d'un incident en cours ne l'est pas ; une fois la pièce retirée, le mot ne trouve plus l'incident.
 - **RAG-02** — *Étant donné* `Embeddings:Url` vide, *quand* on cherche « coupure VPN », *alors* les résultats viennent des mots seuls, sans erreur.
 - **RAG-03** — *Étant donné* un service d'embeddings en panne, *quand* on publie un article, *alors* la publication réussit ; l'article est trouvé par les mots, puis par le sens au retour du service.
 - **RAG-05** — *Étant donné* un article « Rétablir une session VPN qui coupe », *quand* on cherche « connexion à distance qui tombe », *alors* il est trouvé **par le sens** même sans mot commun.

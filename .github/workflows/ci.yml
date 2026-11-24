@@ -12,6 +12,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Lancée sur main par « Suivi Dependabot » quand sa tête n'a pas de CI : une fusion
+  # automatique faite par GITHUB_TOKEN ne déclenche pas l'événement push (#325).
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -205,7 +208,7 @@ jobs:
     # Images de développement : l'état de main, à chaque fusion. « latest » et les
     # versions restent l'affaire de publication.yml (tag vX.Y.Z).
     name: Images edge (ghcr.io)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     needs: [api, web, docs, images, recette]
     runs-on: ubuntu-latest
     # Une publication à la fois ; un commit dépassé par main ne republie pas edge.
@@ -257,6 +260,8 @@ jobs:
           BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
           HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
+          # Lancée à la main (workflow_dispatch), l'exécution n'a pas de « before » : le dernier commit.
+          : "${BASE:=$HEAD~1}"
           fail=0
           for c in $(git rev-list --no-merges "$BASE..$HEAD"); do
             email=$(git log -1 --format=%ae "$c")
@@ -271,7 +276,7 @@ jobs:
             fi
           done
           if [ "$fail" = 1 ]; then
-            if [ "$GITHUB_EVENT_NAME" = push ]; then
+            if [ "$GITHUB_EVENT_NAME" != pull_request ]; then
               echo "Fusion sans signature : main ne se réécrit pas, le noter au journal (ADR-0010)."
             else
               echo "Signez vos commits : git commit -s (voir CONTRIBUTING.md § Certificat d'origine)."

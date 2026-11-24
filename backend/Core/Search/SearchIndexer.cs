@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using SAloha.Api.Core.Data;
+using SAloha.Api.Core.Platform;
 
 namespace SAloha.Api.Core.Search;
 
 /// <summary>Met à jour les passages d'un enregistrement (ou de tous) et leurs vecteurs.</summary>
-public class SearchIndexer(AppDbContext db, IEmbeddingClient embeddings, ILogger<SearchIndexer> logger)
+public class SearchIndexer(AppDbContext db, IEmbeddingClient embeddings, ObjectStorage storage, ILogger<SearchIndexer> logger)
 {
     /// <summary>
     /// Réindexe un enregistrement : ses anciens passages sont retirés, puis
@@ -23,6 +24,7 @@ public class SearchIndexer(AppDbContext db, IEmbeddingClient embeddings, ILogger
         {
             var chunks = Chunker.Split(doc.Text);
             if (chunks.Count == 0) chunks.Add(doc.Title);
+            chunks.AddRange(await AttachmentChunksAsync(type, id, ct));
             // Le titre accompagne chaque passage dans le vecteur : un passage
             // isolé (« Relancer le service ») n'a de sens qu'avec son sujet.
             var vectors = await embeddings.EmbedAsync(chunks.Select(c => doc.Title + "\n" + c).ToList(), TimeSpan.FromSeconds(120), ct);
@@ -35,6 +37,35 @@ public class SearchIndexer(AppDbContext db, IEmbeddingClient embeddings, ILogger
             db.SearchPassages.AddRange(passages);
         }
         await db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>
+    /// RAG-12 : passages du texte des pièces jointes de l'enregistrement, chacun préfixé du nom du
+    /// fichier ; ils suivent ses statuts (RAG-01) et ses droits (RAG-13). Stockage coupé ou fichier
+    /// illisible : la pièce est passée, l'enregistrement reste indexé (RAG-03).
+    /// </summary>
+    private async Task<List<string>> AttachmentChunksAsync(string type, int id, CancellationToken ct)
+    {
+        var files = (await db.Attachments.AsNoTracking().Where(a => a.TargetType == type && a.TargetId == id)
+            .OrderBy(a => a.Id).ToListAsync(ct)).Where(a => AttachmentText.Supported(a.FileName)).ToList();
+        var chunks = new List<string>();
+        if (files.Count == 0) return chunks;
+        var settings = await storage.SettingsAsync();
+        if (!ObjectStorage.Ready(settings)) return chunks;
+        foreach (var file in files)
+        {
+            try
+            {
+                await using var content = await storage.GetAsync(settings!, file.StorageKey, ct);
+                var text = await AttachmentText.ExtractAsync(file.FileName, content, ct);
+                chunks.AddRange(Chunker.Split(text).Select(c => $"Pièce jointe : {file.FileName}\n{c}"));
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogWarning("Pièce jointe {Id} de {Type} {Record} non indexée : {Error}", file.Id, type, id, ex.Message.Split('\n')[0]);
+            }
+        }
+        return chunks;
     }
 
     /// <summary>Reconstruit tout l'index (démarrage sur un index vide, demande d'un administrateur).</summary>

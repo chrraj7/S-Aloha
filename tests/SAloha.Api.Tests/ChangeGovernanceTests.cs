@@ -58,6 +58,38 @@ public class ChangeGovernanceTests(ApiFixture api)
     }
 
     [Fact]
+    public async Task CHG_20_reecrire_un_changement_evalue_efface_les_decisions_du_CAB()
+    {
+        var requester = api.Client("User", "chg20r.demandeur");
+        var slot = DateTime.UtcNow.Date.AddDays(71).AddHours(20);
+        object Body(string plan, string title = "Gouvernance CHG-20 réécrit") => new
+        {
+            title, changeType = "Normal", risk = "Élevé", status = "Évalué",
+            plannedStart = slot, plannedEnd = slot.AddHours(2), implementationPlan = plan, backoutPlan = "Restaurer"
+        };
+        var c = await Json(await requester.PostAsJsonAsync("/api/changes", Change("Normal", "Élevé", null, slot)));
+        var url = $"/api/changes/{Id(c)}";
+        await ChangeTestData.LinkCiAsync(requester, Id(c));
+        await Json(await requester.PutAsJsonAsync(url, Body("Plan v1")));
+        var a = api.Client("Manager", "chg20r.cab.a");
+        var b = api.Client("Manager", "chg20r.cab.b");
+        await Json(await a.PostAsJsonAsync($"{url}/approvals", new { approve = true, comment = "Plan v1 solide" }));
+
+        // Témoin : le titre se modifie librement, la décision de A reste comptée.
+        await Json(await requester.PutAsJsonAsync(url, Body("Plan v1", "Gouvernance CHG-20 renommé")));
+        Assert.Equal(1, (await Json(await requester.GetAsync($"{url}/approvals"))).GetArrayLength());
+
+        // #324 : A n'a pas vu le plan v2 ; sa décision est effacée et B seul n'autorise pas.
+        var rewritten = await Json(await requester.PutAsJsonAsync(url, Body("Plan v2 tout autre")));
+        Assert.Equal("Évalué", rewritten.GetProperty("status").GetString());
+        Assert.Equal(0, (await Json(await requester.GetAsync($"{url}/approvals"))).GetArrayLength());
+        var afterB = await Json(await b.PostAsJsonAsync($"{url}/approvals", new { approve = true }));
+        Assert.Equal("Évalué", afterB.GetProperty("status").GetString());
+        var afterA = await Json(await a.PostAsJsonAsync($"{url}/approvals", new { approve = true, comment = "Plan v2 vu" }));
+        Assert.Equal("Autorisé", afterA.GetProperty("status").GetString());
+    }
+
+    [Fact]
     public async Task CHG_07_la_modification_par_un_gestionnaire_ne_contourne_ni_le_CAB_ni_la_separation_des_taches()
     {
         var requester = api.Client("Manager", "chg07.demandeur");

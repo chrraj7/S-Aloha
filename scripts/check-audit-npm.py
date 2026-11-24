@@ -28,14 +28,7 @@ FRONTEND = pathlib.Path(__file__).resolve().parents[1] / 'frontend'
 GRAVES = ('high', 'critical')
 
 # Identifiant GHSA : (dernier jour de validité, raison).
-EXCEPTIONS = {
-    'GHSA-fc5q-39xc-vjpf': (
-        '2026-12-18',
-        'picomatch <= 4.0.7, ReDoS par extglob répété ; aucune version corrigée publiée '
-        'au 2026-11-18 (4.0.7 est la dernière). Tiré par vite et vitest, absent du paquet '
-        'livré ; les motifs glob sont ceux du projet, jamais saisis par un utilisateur.',
-    ),
-}
+EXCEPTIONS = {}
 
 
 def audit(*options):

@@ -7,6 +7,9 @@ export const STEPS = [
   'Passer à l\'action', 'Y sommes-nous parvenus ?', 'Comment maintenir la dynamique ?',
 ]
 
+// CSI-12 (#336) : une fois l'amélioration validée, sa note et sa priorité sont celles du gestionnaire.
+const arbitrated = form => ['Validée', 'En cours'].includes(form.status)
+
 // Amélioration continue (ITIL 4) : aligner les services sur l'évolution des
 // besoins par l'amélioration continue des produits, services et pratiques.
 export const improvementConfig = {
@@ -25,10 +28,11 @@ export const improvementConfig = {
     { key: 'source', label: 'Source', type: 'select', required: true, default: 'Suggestion',
       options: ['Suggestion', 'Incident', 'Problème', 'SLA', 'Audit', 'Retour client'] },
     { key: 'originReference', label: 'Enregistrement d\'origine', onlyCreate: true, placeholder: 'Ex. : INC-2026-0012 (facultatif)' },
-    { key: 'priority', label: 'Priorité', type: 'select', options: ['Faible', 'Moyenne', 'Élevée'], required: true, default: 'Moyenne' },
-    { key: 'value', label: 'Valeur métier (1 à 3)', type: 'select', numeric: true, create: false,
+    { key: 'priority', label: 'Priorité', type: 'select', options: ['Faible', 'Moyenne', 'Élevée'], required: true, default: 'Moyenne',
+      managerOnly: arbitrated },
+    { key: 'value', label: 'Valeur métier (1 à 3)', type: 'select', numeric: true, create: false, managerOnly: arbitrated,
       options: [{ value: 1, label: '1 — faible' }, { value: 2, label: '2 — moyenne' }, { value: 3, label: '3 — forte' }] },
-    { key: 'effort', label: 'Effort estimé (1 à 3)', type: 'select', numeric: true, create: false,
+    { key: 'effort', label: 'Effort estimé (1 à 3)', type: 'select', numeric: true, create: false, managerOnly: arbitrated,
       options: [{ value: 1, label: '1 — faible' }, { value: 2, label: '2 — moyen' }, { value: 3, label: '3 — important' }] },
     { key: 'step', label: 'Étape du modèle', type: 'select', required: true, numeric: true, default: 1,
       options: STEPS.map((s, i) => ({ value: i + 1, label: `${i + 1}. ${s}` })) },

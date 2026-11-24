@@ -320,7 +320,12 @@ par SHA, jeton en lecture seule (écriture des paquets pour le seul job Images e
 chaque pull request, fork compris, chaque poussée de `main` et chaque semaine) et Dependabot
 ([`.github/dependabot.yml`](../../.github/dependabot.yml)) complètent ; les mises à jour
 Dependabot mineures ou correctives se fusionnent d'elles-mêmes une fois la CI au vert
-([`.github/workflows/dependabot.yml`](../../.github/workflows/dependabot.yml)). [`garde-fous.yml`](../../.github/workflows/garde-fous.yml)
+([`.github/workflows/dependabot.yml`](../../.github/workflows/dependabot.yml)). Cette fusion se fait
+sous le jeton du workflow, qui ne déclenche ni la CI de `main`, ni Images edge, ni le Filet, et
+ne supprime pas la branche : [`dependabot-suivi.yml`](../../.github/workflows/dependabot-suivi.yml),
+toutes les 6 h, supprime la branche d'une PR fusionnée dont la tête n'a pas bougé et lance la
+CI de `main` (`workflow_dispatch`) quand sa tête n'en a aucune ; Images edge, Filet et DCO
+traitent cette exécution comme une poussée. [`garde-fous.yml`](../../.github/workflows/garde-fous.yml)
 ([`scripts/garde-fous.py`](../../scripts/garde-fous.py)), rejoué quand une étiquette change,
 refuse une PR qui supprime, réduit ou désactive des tests (`Skip`, `.skip`, `.only`, moins
 d'assertions) ou qui modifie l'outillage de vérification (workflows, scripts de contrôle,

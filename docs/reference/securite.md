@@ -103,12 +103,9 @@ est toujours vérifié ; « Aucun » chiffrement ne convient qu'à un relais du 
 
 | Point | État actuel | Cible |
 |---|---|---|
-| Secrets | Valeurs **d'exemple** de `Jwt:Key`, de `Discovery:VaultKey`, du mot de passe PostgreSQL et de `BindPassword` dans `appsettings.json` et `docker-compose.yml` ; hors développement, l'API **refuse de démarrer** avec elles ou avec une clé JWT de moins de 64 caractères (S7), sauf en démonstration (`Security:AllowSampleSecrets`, avertissement au journal) | Secrets Docker ou variables d'environnement injectées, clé JWT aléatoire ≥ 64 caractères, clé du coffre aléatoire ≥ 32 caractères fixée avant le premier identifiant |
+| Secrets | ✅ `docker-compose.yml` lit le mot de passe PostgreSQL, `Jwt:Key` et `Discovery:VaultKey` dans l'environnement, vides à défaut (S1, [exploitation § Secrets](exploitation.md#secrets)) ; valeurs **d'exemple** de ces trois réglages dans `appsettings.json` et `docker-compose.demo.yml` seulement, du jeton du conteneur `features` (`Features:Token`, `FEATURES_TOKEN`) dans `docker-compose.demo.yml` seulement, et de `BindPassword` dans `appsettings.json` et `docker-compose.yml` ; hors développement, l'API **refuse de démarrer** avec elles (le conteneur `features` aussi, avec son jeton d'exemple) ou avec une clé JWT de moins de 64 caractères (S7), sauf en démonstration (`Security:AllowSampleSecrets`, avertissement au journal) | Secrets Docker ou variables d'environnement injectées, clé JWT aléatoire ≥ 64 caractères, clé du coffre aléatoire ≥ 32 caractères fixée avant le premier identifiant |
 | LDAP | ✅ LDAPS (636) pris en charge, avec l'autorité de l'annuaire (`Ldap:CaCertificatePath`) ; validation du certificat et du nom jamais désactivée ([exploitation § LDAPS](exploitation.md#ldaps)). Par défaut `UseSsl: false`, port 389 : mots de passe utilisateurs en clair sur le réseau | `UseSsl: true`, port 636 |
 | Transport | ✅ `docker-compose.https.yml` : reverse proxy TLS (Caddy), seuls 80 (redirection) et 443 publiés ([exploitation § HTTPS](exploitation.md#https)). Par défaut, HTTP sur le port 80 | Lancer avec ce fichier |
-| Secrets | ✅ `docker-compose.yml` lit le mot de passe PostgreSQL, `Jwt:Key` et `Discovery:VaultKey` dans l'environnement, vides à défaut (S1, [exploitation § Secrets](exploitation.md#secrets)) ; valeurs **d'exemple** de ces trois réglages dans `appsettings.json` et `docker-compose.demo.yml` seulement, du jeton du conteneur `features` (`Features:Token`, `FEATURES_TOKEN`) dans `docker-compose.demo.yml` seulement, et de `BindPassword` dans `appsettings.json` et `docker-compose.yml` ; hors développement, l'API **refuse de démarrer** avec elles (le conteneur `features` aussi, avec son jeton d'exemple) ou avec une clé JWT de moins de 64 caractères (S7), sauf en démonstration (`Security:AllowSampleSecrets`, avertissement au journal) | Secrets Docker ou variables d'environnement injectées, clé JWT aléatoire ≥ 64 caractères, clé du coffre aléatoire ≥ 32 caractères fixée avant le premier identifiant |
-| LDAP | `UseSsl: false`, port 389 : mots de passe utilisateurs en clair sur le réseau | LDAPS (636) |
-| Transport | HTTP sur le port 80 | HTTPS (reverse proxy TLS) |
 | CORS | ✅ Aucune origine externe par défaut ; `Cors:AllowedOrigins` les liste, sans cookie (S3) | Laisser vide si le frontend passe par nginx (même origine) |
 | Exposition | API et Swagger publiés sur 8080 | API joignable seulement via nginx ; Swagger désactivé en production |
 | Jeton côté navigateur | ✅ Cookie `HttpOnly`, `SameSite=Strict`, en-tête anti-CSRF, CSP servie par nginx ([ADR-0018](../decisions/adr-0018-jeton-en-cookie-httponly-et-csp.md)) ; non `Secure` en HTTP seul | HTTPS ([S2](exploitation.md#https)) pour un cookie `Secure` |
@@ -138,9 +135,9 @@ bloque toujours ; sur l'outillage de build et de test, il bloque sauf **exceptio
 un avis (GHSA) par exception, inscrite dans le script et donc soumise à l'étiquette
 `outillage`. Une exception attend une version corrigée ; échue, elle bloque de nouveau.
 
-| Avis | Paquet | Jusqu'au | Raison |
-|---|---|---|---|
-| [GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf) (haute, ReDoS) | picomatch ≤ 4.0.7, tiré par vite et vitest | 2026-12-18 | Aucune version corrigée publiée (4.0.7 est la dernière) ; absent du paquet livré ; motifs glob écrits par le projet, jamais saisis par un utilisateur |
+Aucune exception en cours. La dernière, GHSA-fc5q-39xc-vjpf (picomatch ≤ 4.0.7, tiré par vite
+et vitest), est retirée le 2026-11-24 : l'avis a été retiré par GitHub le 2026-11-18, et le
+script la signalait sans objet.
 
 ## Contrôles du dépôt
 
@@ -150,7 +147,7 @@ Réglages du dépôt GitHub public, en place depuis le 2026-10-06 :
 |---|---|
 | Signalement privé de vulnérabilités | Les failles arrivent hors des issues publiques ([SECURITY.md](../../SECURITY.md)) |
 | Secret scanning + push protection | Un push contenant un secret reconnu est refusé |
-| Dependabot (alertes, correctifs, versions) | Alerte et PR de correctif dès qu'un avis touche une dépendance ; mises à jour hebdomadaires groupées (npm, NuGet, Docker, Docker Compose, Actions) ; une mise à jour mineure ou corrective se fusionne d'elle-même, CI au vert, une majeure reste à la main |
+| Dependabot (alertes, correctifs, versions) | Alerte et PR de correctif dès qu'un avis touche une dépendance ; mises à jour hebdomadaires groupées (npm, NuGet, Docker, Docker Compose, Actions) ; une mise à jour mineure ou corrective se fusionne d'elle-même, CI au vert, une majeure reste à la main ; « Suivi Dependabot » ([`dependabot-suivi.yml`](../../.github/workflows/dependabot-suivi.yml), toutes les 6 h) supprime ensuite sa branche et lance la CI de `main`, que la fusion par le jeton du workflow ne déclenche pas |
 | CodeQL ([`codeql.yml`](../../.github/workflows/codeql.yml)) | Analyse statique des workflows, du C# et du JavaScript sur chaque pull request (fork compris), chaque poussée de `main` et chaque semaine ; une PR sans résultat CodeQL ne peut pas être fusionnée |
 | CI ([architecture § Intégration continue](architecture.md#intégration-continue)) | Tests, build, audit des dépendances, santé de la doc |
 | Preuve et garde-fous | Une PR prouve son changement par un test qui échoue sans lui ; elle ne peut ni retirer ni désactiver de test, ni modifier l'outillage de vérification sans l'accord du mainteneur ; sa classe de risque est calculée d'après ses chemins |

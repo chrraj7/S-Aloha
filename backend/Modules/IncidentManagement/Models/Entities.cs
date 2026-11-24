@@ -10,6 +10,9 @@ namespace SAloha.Api.Modules.IncidentManagement;
 /// </summary>
 public class Incident : Record, IServiceBound
 {
+    /// <summary>INC-11 : fenêtre de réouverture ; INC-10 : clôture automatique à son terme (#335).</summary>
+    public const int ReopenBusinessDays = 10;
+
     public static readonly string[] Statuses = ["Nouveau", "En cours", "En attente", "Résolu", "Clos"];
     /// <summary>Transitions permises (SOC-05, § 4 de la pratique) ; liste vide : statut final.</summary>
     public static readonly Dictionary<string, string[]> Transitions = new()

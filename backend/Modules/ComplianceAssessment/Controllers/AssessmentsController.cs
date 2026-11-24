@@ -254,7 +254,7 @@ public class AssessmentsController(AppDbContext db) : RecordController<Assessmen
                     NotApplicable = resp?.NotApplicable ?? false, Justification = resp?.Justification ?? "",
                     Gap = score is { } s ? Scoring.Gap(s) : (int?)null,
                     Action = action is { Hidden: true } ? HiddenAction : action?.Reference, ActionStatus = action?.Status,
-                    Evidence = string.Join(" ", (evidence.GetValueOrDefault(r.Id) ?? []).Select(x => x.Reference))
+                    Evidence = string.Join(" ", (evidence.GetValueOrDefault(r.Id) ?? []).Select(x => x.Hidden ? $"({HiddenEvidence})" : x.Reference))
                 };
             })
         });
@@ -321,12 +321,40 @@ public class AssessmentsController(AppDbContext db) : RecordController<Assessmen
         }).ToList();
     }
 
-    public record Evidence(int Id, string TargetType, int TargetId, string Reference, string Title);
+    public record Evidence(int Id, string TargetType, int TargetId, string Reference, string Title, bool Hidden = false);
 
-    private async Task<Dictionary<int, List<Evidence>>> EvidenceAsync(int id) =>
-        (await Db.AssessmentEvidences.AsNoTracking().Where(x => x.AssessmentId == id).OrderBy(x => x.Id).ToListAsync())
-            .GroupBy(x => x.RequirementId)
-            .ToDictionary(g => g.Key, g => g.Select(x => new Evidence(x.Id, x.TargetType, x.TargetId, x.Reference, x.Title)).ToList());
+    private const string HiddenEvidence = "Enregistrement d'un autre périmètre";
+
+    /// <summary>
+    /// NIS-08 : preuves par exigence. La copie (référence, titre) n'est servie que si le lecteur
+    /// voit la cible dans son périmètre actuel : vérifier l'auteur à l'ajout ne suffit pas, la cible
+    /// peut être d'un périmètre que le lecteur ne voit pas, ou y être déplacée ensuite (PER-07).
+    /// Masquée, la preuve compte toujours pour l'exigence, comme un lien masqué (PER-08).
+    /// </summary>
+    private async Task<Dictionary<int, List<Evidence>>> EvidenceAsync(int id)
+    {
+        var rows = await Db.AssessmentEvidences.AsNoTracking().Where(x => x.AssessmentId == id).OrderBy(x => x.Id).ToListAsync();
+        var hidden = await HiddenTargetsAsync(rows);
+        return rows.GroupBy(x => x.RequirementId).ToDictionary(g => g.Key, g => g.Select(x => hidden.Contains((x.TargetType, x.TargetId))
+            ? new Evidence(x.Id, "", 0, "", HiddenEvidence, true)
+            : new Evidence(x.Id, x.TargetType, x.TargetId, x.Reference, x.Title)).ToList());
+    }
+
+    /// <summary>Cibles de preuves que le lecteur ne voit pas ; une cible disparue garde sa copie.</summary>
+    private async Task<HashSet<(string, int)>> HiddenTargetsAsync(IEnumerable<AssessmentEvidence> rows)
+    {
+        var scope = await ScopeAsync();
+        var hidden = new HashSet<(string, int)>();
+        foreach (var group in rows.GroupBy(x => x.TargetType))
+        {
+            var kind = ItemLinks.ByType(group.Key);
+            if (kind is null) continue;
+            var ids = group.Select(x => x.TargetId).Distinct().ToList();
+            foreach (var t in await kind.Query(Db).Where(t => ids.Contains(t.Id)).ToListAsync())
+                if (!scope.Sees(t)) hidden.Add((group.Key, t.Id));
+        }
+        return hidden;
+    }
 
     /// <summary>
     /// NIS-08 : preuve d'une réponse — un enregistrement désigné par sa référence (changement,
@@ -372,6 +400,8 @@ public class AssessmentsController(AppDbContext db) : RecordController<Assessmen
         var e = await Db.Assessments.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
         var evidence = await Db.AssessmentEvidences.FirstOrDefaultAsync(x => x.Id == evidenceId && x.AssessmentId == id);
         if (e is null || evidence is null || !await VisibleAsync(e)) return NotFound();
+        // PER-08 : une preuve masquée ne se retire pas, comme un lien vers un autre périmètre.
+        if ((await HiddenTargetsAsync([evidence])).Count > 0) return NotFound();
         if (e.Status == "Validée")
             return BadRequest(new { message = "Une évaluation validée est figée : un gestionnaire doit la rouvrir." });
         Db.AssessmentEvidences.Remove(evidence);

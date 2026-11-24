@@ -335,6 +335,15 @@
     "updatedBy": "string",
     "username": "string"
   },
+  "PersonalTokenView": {
+    "createdAt": "string:date-time",
+    "displayName": "string",
+    "expiresAt": "string:date-time",
+    "id": "integer:int32",
+    "lastUsedAt": "string:date-time",
+    "name": "string",
+    "username": "string"
+  },
   "ProblemView": {
     "actions": "array[CorrectiveActionView]",
     "affectedService": "string",
