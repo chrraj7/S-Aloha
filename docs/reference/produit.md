@@ -13,8 +13,9 @@ qui **aide à trier les tickets**, **à tenir la CMDB à jour** et **s'ouvre aux
 de ses utilisateurs : le **tri assisté des tickets** suggère la qualification d'un incident
 dès sa saisie et signale les pannes probables ; la **CMDB assistée** propose de normaliser,
 dédoublonner et relier les CI ; le **serveur MCP** laisse l'assistant de chacun interroger
-S-Aloha en lecture seule, avec ses droits. Ces trois fonctionnalités, activées par l'Admin,
-arrivent avec la première version stable ([fonctionnalités optionnelles](fonctionnalites-optionnelles.md)). Autour d'elles,
+S-Aloha en lecture seule, avec ses droits. Ces trois fonctionnalités sont activées ou
+coupées par l'Admin ([fonctionnalités optionnelles](fonctionnalites-optionnelles.md)) ; le
+mode démonstration active le tri assisté. Autour d'elles,
 un seul outil pour les pratiques du cycle de vie du service IT — incidents, demandes,
 problèmes, changements, configuration, niveaux de service, connaissances, amélioration
 continue — avec la **conformité NIS 2** et la **gestion de projet** de la DSI sur le même
@@ -98,7 +99,7 @@ Indépendants des processus, accessibles à tous les rôles :
   l'annuaire, santé de la plateforme, journal d'audit global et export, nettoyage des
   doublons ; pour les gestionnaires et l'Admin : catégories d'incident et de problème,
   découverte du réseau ([administration](administration.md)) ;
-- **Fonctionnalités optionnelles** (à venir, chantier F14) — activées ou coupées par
+- **Fonctionnalités optionnelles** — activées ou coupées par
   l'Admin, exécutées hors de l'API, dans un conteneur à part des fonctions de base :
   **tri assisté des tickets** (suggestions et
   panne probable sur les incidents), **CMDB assistée** (propositions d'un modèle de langage,

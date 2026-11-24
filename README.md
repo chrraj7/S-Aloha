@@ -29,20 +29,20 @@ et **s'ouvre à vos assistants**, et montre à chacun **ce qui requiert son inte
 
 ## Pourquoi S-Aloha
 
-**🔀 Des tickets triés dès la saisie** — *arrive avec la première version stable*
+**🔀 Des tickets triés dès la saisie**
 Pendant qu'un agent saisit un incident, S-Aloha suggère sa catégorie, son service, son
 groupe et son impact, d'après les incidents déjà résolus qui lui ressemblent, et dit
 pourquoi. Plusieurs incidents ouverts sur le même service, ou qui décrivent la même panne :
 la **panne probable** est signalée, et le rattachement à un incident parent proposé.
 L'agent décide ; rien n'est appliqué seul.
 
-**🧹 Une CMDB qui se tient à jour avec vous** — *arrive avec la première version stable*
+**🧹 Une CMDB qui se tient à jour avec vous**
 Un modèle de langage, dans votre SI ou hébergé selon le choix de votre organisation,
 propose de renommer, normaliser, reclasser, fusionner les doublons et relier les CI, et
 aide au rapprochement de ce que la découverte trouve. Chaque proposition s'affiche avant et
 après ; un gestionnaire la décide. Les données envoyées sont pseudonymisées.
 
-**🔌 S-Aloha dans vos assistants** — *arrive avec la première version stable*
+**🔌 S-Aloha dans vos assistants**
 Par le serveur MCP, l'assistant que chacun emploie déjà interroge ses tickets, la
 connaissance et l'impact d'un CI, sans copier-coller : en **lecture seule**, avec les
 droits de l'utilisateur, par des jetons personnels révocables.
@@ -92,9 +92,10 @@ site ou entité.
 
 Activées ou coupées par l'Admin, elles tournent hors de l'API, dans un conteneur à part :
 une panne de l'une d'elles n'atteint jamais le reste. Elles **proposent** ; une personne
-décide, et le journal d'audit garde l'origine de chaque modification. Spécifiées règle par
-règle, elles arrivent avec la **première version stable**
-([fonctionnalités optionnelles](docs/reference/fonctionnalites-optionnelles.md)).
+décide, et le journal d'audit garde l'origine de chaque modification. Chacune est décrite
+règle par règle, avec ce qu'elle demande pour tourner
+([fonctionnalités optionnelles](docs/reference/fonctionnalites-optionnelles.md)) ; le
+**mode démonstration** active d'office le tri assisté.
 
 - **[Tri assisté des tickets](docs/reference/tri-assiste-des-tickets.md)** — catégorie,
   service, groupe et impact suggérés à la saisie par vote des incidents résolus les plus
@@ -225,7 +226,7 @@ règle, elles arrivent avec la **première version stable**
   </tr>
   <tr>
     <td><img src="docs/screenshots/19-notifications.png" alt="Notifications" /><br/><b>Notifications</b> — demandes en retard, actions en retard, SLA dépassés, incidents P1</td>
-    <td><img src="docs/screenshots/01-connexion.png" alt="Connexion" /><br/><b>Connexion</b> — avec le compte de l'entreprise (Active Directory)</td>
+    <td><img src="docs/screenshots/01-connexion.png" alt="Connexion" /><br/><b>Connexion</b> — les fonctionnalités assistées en tête, le compte de l'entreprise (Active Directory)</td>
   </tr>
 </table>
 
@@ -235,8 +236,10 @@ cet aperçu à leur livraison.
 ## Essayer en 5 minutes
 
 Pas besoin d'Active Directory : le **mode démonstration** démarre son propre annuaire et
-charge des données d'exemple fictives. Seul Docker est requis. Dès sa livraison, le **tri
-assisté des tickets** y sera activé.
+charge des données d'exemple fictives. Seul Docker est requis. Le **tri assisté des
+tickets** y est activé, avec des incidents qui forment une panne probable ; la CMDB assistée,
+qui demande un modèle de langage, et le serveur MCP y restent coupés, prêts à être activés
+par l'Admin.
 
 ```bash
 git clone https://github.com/chrraj7/S-Aloha.git && cd S-Aloha
@@ -271,8 +274,6 @@ appartenir à l'un des groupes `GRP-SALOHA-ADMINS`, `GRP-SALOHA-MANAGERS` ou
 La plupart des évolutions sont déjà **spécifiées règle par règle**, avec leurs scénarios
 d'acceptation ([pratiques ITIL](docs/reference/processus/readme.md)). Les prochains chantiers :
 
-- ✨ **Tri assisté des tickets**, **CMDB assistée** et **serveur MCP** en lecture seule,
-  hors de l'API, activés par l'Admin : **avant la première version stable**.
 - 📋 **Référentiels de conformité importés** par l'organisation (ISO 27002, CR-CMM…), à côté
   de NIS 2.
 - 🛰️ **Agent de découverte léger** pour les postes nomades, et **preuves NIS 2** nourries par
@@ -354,9 +355,9 @@ own assistants**, and lands each user on an action-oriented console showing what
 their attention, ranked by severity. **Assisted ticket triage, assisted CMDB, MCP server,
 10 linked ITIL 4 practices, NIS 2 built in.**
 
-- **Assisted features** (coming with the first stable release, specified rule by rule;
-  switched on or off by the administrator, run outside the API in a separate container;
-  they only propose, a person decides): **assisted ticket triage** (category, service,
+- **Assisted features** (switched on or off by the administrator, run outside the API in
+  a separate container; they only propose, a person decides; assisted triage is on in the
+  demo mode): **assisted ticket triage** (category, service,
   group and impact suggested while typing, from the closest resolved incidents, with the
   reasons; open incidents grouped by service, CI or meaning into a **probable outage**);
   **assisted CMDB** (a language model, on-premises or hosted as the organisation chooses,
@@ -392,8 +393,7 @@ their attention, ranked by severity. **Assisted ticket triage, assisted CMDB, MC
   links between records, hybrid search (keywords + semantic, local `bge-m3` model).
 - **Enterprise integration**: sign-in with the organisation's Active Directory, roles from
   its groups, no accounts to create; perimeter-scoped permissions.
-- **Roadmap**: assisted ticket triage, assisted CMDB and the MCP server before the first
-  stable release; imported compliance frameworks (ISO 27002, CR-CMM…), a lightweight discovery
+- **Roadmap**: imported compliance frameworks (ISO 27002, CR-CMM…), a lightweight discovery
   agent for remote devices and NIS 2 evidence from discovery, attachment text search,
   production hardening.
 - **Stack**: ASP.NET Core 10 (LTS), EF Core, PostgreSQL 16, React 19 + Vite, Docker Compose.

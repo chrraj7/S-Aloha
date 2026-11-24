@@ -9,8 +9,8 @@
 > Conventions (✅ / 🔜, lots) : [règles métier](regles-metier.md#3-conventions-de-ce-référentiel).
 > Décisions : [ADR-0023](../decisions/adr-0023-fonctionnalites-optionnelles-et-modele-de-langage.md),
 > [ADR-0024](../decisions/adr-0024-serveur-mcp-conteneur-separe-lecture-seule.md).
-> Chantier [F14](../plan-action.md#fonctionnalités-optionnelles-f14), à livrer avant la
-> version stable.
+> Chantier [F14](../plan-action.md#fonctionnalités-optionnelles-f14), livré le 2026-11-24,
+> avant la version stable.
 
 <sub>[← Documentation](../readme.md) · [Produit](produit.md) · [Règles métier](regles-metier.md) · [Architecture](architecture.md) · [Administration](administration.md) · [Sécurité](securite.md) · [Exploitation](exploitation.md) · [Glossaire](glossaire.md)</sub>
 
@@ -18,8 +18,8 @@
 
 | Fonctionnalité | Clé | Conteneur | Ce qu'elle fait | Dépend de | Règles | Statut |
 |---|---|---|---|---|---|---|
-| [Tri assisté des tickets](tri-assiste-des-tickets.md) | `assisted-ticket-triage` | `features` | Suggère la catégorie, le service, le groupe et l'impact d'un incident ; signale les incidents ouverts qui semblent liés | Service d'embeddings (facultatif : sans lui, règles et mots seuls) | TRI | 🔜 |
-| [CMDB assistée](cmdb-assistee.md) | `assisted-cmdb` | `features` | Propose de renommer, reclasser, fusionner et relier des CI, et d'aider au rapprochement du sas | Modèle de langage (§ 4) | CMA | 🔜 |
+| [Tri assisté des tickets](tri-assiste-des-tickets.md) | `assisted-ticket-triage` | `features` | Suggère la catégorie, le service, le groupe et l'impact d'un incident ; signale les incidents ouverts qui semblent liés | Service d'embeddings (facultatif : sans lui, règles et mots seuls) | TRI | ✅ |
+| [CMDB assistée](cmdb-assistee.md) | `assisted-cmdb` | `features` | Propose de renommer, reclasser, fusionner et relier des CI, et d'aider au rapprochement du sas | Modèle de langage (§ 4) | CMA | ✅ |
 | [Serveur MCP](serveur-mcp.md) | `mcp-server` | `mcp` | Ouvre S-Aloha en lecture aux assistants des utilisateurs, avec les droits de chacun | — | MCP | ✅ |
 
 ```mermaid
