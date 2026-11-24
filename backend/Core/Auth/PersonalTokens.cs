@@ -81,7 +81,8 @@ public class PersonalTokenHandler(IOptionsMonitor<AuthenticationSchemeOptions> o
     AppDbContext db, IUserDirectory directory, IFeatureGate features) : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
 {
     public const string SchemeName = "PersonalToken";
-    private const string DirectoryDown = "personal-token-directory-down";
+    /// <summary>Marque de la requête : l'annuaire n'a pas répondu (503, et non 401, pour <c>GET /api/me/tokens/current</c> aussi).</summary>
+    public const string DirectoryDown = "personal-token-directory-down";
 
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
