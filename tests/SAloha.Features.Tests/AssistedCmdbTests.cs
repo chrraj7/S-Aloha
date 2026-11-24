@@ -243,6 +243,8 @@ public sealed class FakeCmdbApi : IAsyncLifetime
     public volatile int[][] Declined = [];
     /// <summary>CMA-08 : la tâche de découverte et ses actifs laissés au sas.</summary>
     public volatile object? StagingRead;
+    /// <summary>CMA-12 : réglages de la CMDB assistée ; absents : 404, le conteneur garde ceux par défaut.</summary>
+    public volatile object? CmdbSettings;
     /// <summary>Réponse du modèle selon la tâche (nom du schéma demandé) ; absente : panne (500).</summary>
     public readonly ConcurrentDictionary<string, string> Replies = new();
 
@@ -275,6 +277,7 @@ public sealed class FakeCmdbApi : IAsyncLifetime
         app.MapGet("/internal/assisted-cmdb/naming", () => Results.Json(Naming));
         app.MapGet("/internal/assisted-cmdb/declined-pairs", (int perimeter) => Results.Json(Declined));
         app.MapGet("/internal/discovery/staging", (int job) => StagingRead is { } read ? Results.Json(read) : Results.NotFound());
+        app.MapGet("/internal/features/assisted-cmdb/settings", () => CmdbSettings is { } settings ? Results.Json(settings) : Results.NotFound());
         app.MapPost("/internal/proposals", async (HttpContext c) =>
         {
             Proposals.Enqueue(await JsonSerializer.DeserializeAsync<JsonElement>(c.Request.Body));
@@ -494,5 +497,51 @@ public class AssistedCmdbTests(FakeCmdbApi api) : IClassFixture<FakeCmdbApi>
         Assert.Contains("HTTP 500", report.Value.GetProperty("reason").GetString());
         await Task.Delay(300);
         Assert.DoesNotContain(api.Reports, r => r.Id == 503);
+    }
+}
+
+/// <summary>CMA-12 dans le conteneur : les réglages de l'Admin relus à chaque analyse (fixture à part : il compte les requêtes au modèle).</summary>
+public class AssistedCmdbSettingsTests(FakeCmdbApi api) : IClassFixture<FakeCmdbApi>
+{
+    [Fact]
+    public async Task CMA_12_une_tache_retiree_n_est_pas_traitee_et_les_paires_vont_par_requetes_de_la_taille_reglee()
+    {
+        object Item(int id, string title) => new
+        {
+            id, perimeterId = 7, reference = $"CI-{id}", title, description = (string?)null, status = "En service", ciType = "Serveur",
+            environment = "Production", operatingSystem = "W2k19", vendor = (string?)null, model = (string?)null, serialNumber = (string?)null,
+            ipAddress = (string?)null, macAddress = (string?)null, ownerId = "hery.rakoto", outgoing = Array.Empty<object>(), incoming = Array.Empty<object>(),
+        };
+        api.Items = [Item(21, "srvpaie1"), Item(22, "SRV-PAIE-01"), Item(23, "Serveur paie prod")];
+        api.Declined = [[22, 23]];
+        api.Replies["normalize"] = """{ "propositions": [] }""";
+        api.Replies["merge"] = """{ "propositions": [ { "conserver": 22, "doublon": 21, "motif": "Même serveur de paie." } ] }""";
+        // Normaliser retiré depuis le lancement ; une paire par requête.
+        api.CmdbSettings = new { tasks = new[] { "rename", "merge" }, maxItems = 500, pairsPerRequest = 1, stagingHelp = true };
+        api.Analyses[601] = new { id = 601, perimeterId = 7, tasks = new[] { "normalize", "merge" }, configurationItemIds = (int[]?)null, status = "En file", itemCount = 3 };
+        api.Events.Enqueue(new { id = 1L, type = "analysis.requested", entityType = "cmdb-analysis", entityId = 601, perimeterId = 7, at = DateTime.UtcNow });
+
+        using var container = new WebApplicationFactory<Program>().WithWebHostBuilder(b =>
+        {
+            b.UseSetting("Features:Token", FakeInternalApi.Token);
+            b.UseSetting("Api:Url", api.Url);
+            b.UseSetting("Events:PollMilliseconds", "50");
+            b.UseSetting("Events:IdleMilliseconds", "100");
+        });
+        container.CreateClient();
+        JsonElement report = default;
+        for (var i = 0; i < 200; i++)
+        {
+            report = api.Reports.Where(r => r.Id == 601).Select(r => r.Report).LastOrDefault();
+            if (report.ValueKind == JsonValueKind.Object && report.GetProperty("status").GetString() is "Terminée" or "En échec") break;
+            await Task.Delay(50);
+        }
+        Assert.Equal("Terminée", report.GetProperty("status").GetString());
+        // Deux requêtes de Fusionner, une paire chacune (21-22, 21-23) ; aucune de Normaliser.
+        var requests = api.ModelRequests.Select(r => (Task: r.GetProperty("response_format").GetProperty("json_schema").GetProperty("name").GetString(),
+            Pairs: JsonDocument.Parse(r.GetProperty("messages")[1].GetProperty("content").GetString()!).RootElement.GetArrayLength())).ToList();
+        Assert.Equal([("merge", 1), ("merge", 1)], requests);
+        var merge = Assert.Single(api.Proposals, p => p.GetProperty("field").GetString() == "merge");
+        Assert.Equal((21, "22"), (merge.GetProperty("targetId").GetInt32(), merge.GetProperty("after").GetString()));
     }
 }

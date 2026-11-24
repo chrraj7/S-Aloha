@@ -10,7 +10,8 @@ namespace SAloha.Features.AssistedCmdb;
 /// retenues (OPT-14), qu'un gestionnaire décide (CMA-03). Il rend compte après chaque lot ; un modèle en panne met
 /// l'analyse en échec, motif donné (OPT-28). Renommer, Normaliser, Reclasser et Criticité vont par lots de CI (CMA-02) ;
 /// Relier ne soumet que les CI dont la description cite un autre CI de l'analyse ; Fusionner, les paires candidates de toute
-/// l'analyse, présélectionnées ici, par requêtes de 50 (CMA-06).
+/// l'analyse, présélectionnées ici, par requêtes de 50 au plus (CMA-06). Les réglages de l'Admin (CMA-12) sont relus à
+/// chaque analyse.
 /// </summary>
 public class AssistedCmdb(ApiClient api, LanguageModelClient model, ILogger<AssistedCmdb> log) : IContainerFeature, IEventHandler
 {
@@ -58,7 +59,11 @@ public class AssistedCmdb(ApiClient api, LanguageModelClient model, ILogger<Assi
 
         try
         {
-            var tasks = analysis.Tasks.Where(Supported.Contains).ToList();
+            // CMA-12 : une tâche que l'Admin a retirée depuis le lancement n'est pas traitée ; les paires vont par requêtes de
+            // la taille réglée, 50 au plus (CMA-06). Sans réglages lisibles, ceux par défaut.
+            var settings = await api.CmdbSettingsAsync(ct);
+            var tasks = analysis.Tasks.Where(t => Supported.Contains(t) && (settings?.Tasks is not { } offered || offered.Contains(t))).ToList();
+            var pairsPerRequest = Math.Clamp(settings?.PairsPerRequest ?? Duplicates.PairsPerRequest, 1, Duplicates.PairsPerRequest);
             var naming = tasks.Contains(CmdbTasks.Rename) ? await api.NamingAsync(ct) : [];
             var named = naming.Select(n => n.CiType).ToHashSet();
             var items = await ItemsAsync(analysis, ct);
@@ -108,7 +113,7 @@ public class AssistedCmdb(ApiClient api, LanguageModelClient model, ILogger<Assi
                 // CMA-06 : le modèle ne juge que les paires présélectionnées, jamais une paire rejetée.
                 var declined = await api.DeclinedPairsAsync(analysis.PerimeterId, ct);
                 var byId = items.ToDictionary(c => c.Id);
-                foreach (var chunk in Duplicates.Candidates(items, declined).Chunk(Duplicates.PairsPerRequest))
+                foreach (var chunk in Duplicates.Candidates(items, declined).Chunk(pairsPerRequest))
                 {
                     var pseudo = new Pseudonymizer();
                     if (await AskAsync(Duplicates.Task, Duplicates.Instructions, Duplicates.Input(chunk, byId, titles, pseudo), Duplicates.Schema, pseudo) is { } output)

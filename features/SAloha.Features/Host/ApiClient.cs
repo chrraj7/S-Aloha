@@ -36,6 +36,8 @@ public record CiRelationRead(int SourceId, int TargetId, string? Type);
 public record CiRecord(int Id, int PerimeterId, string? Reference, string? Title, string? Description, string? Status, string? CiType,
     string? Environment, string? OperatingSystem, string? Vendor, string? Model, string? SerialNumber, string? IpAddress, string? MacAddress,
     string? OwnerId, List<CiRelationRead>? Outgoing, List<CiRelationRead>? Incoming, string? Criticality = null);
+/// <summary>CMA-12 : réglages de la CMDB assistée : tâches proposées, paires au plus par requête, aide au sas.</summary>
+public record CmdbSettingsData(List<string>? Tasks, int PairsPerRequest, bool StagingHelp);
 /// <summary>CMA-04 : convention de nommage d'un type de CI, tenue par les gestionnaires.</summary>
 public record NamingRule(string CiType, string Description, List<string>? Examples);
 
@@ -102,6 +104,14 @@ public class ApiClient
         using var res = await http.GetAsync("internal/features/assisted-ticket-triage/settings", ct);
         if (!res.IsSuccessStatusCode) return null;
         return await res.Content.ReadFromJsonAsync<TriageSettingsData>(Json, ct);
+    }
+
+    /// <summary>CMA-12 : réglages de la CMDB assistée ; null si l'API n'en sert pas (ancienne version, 403, 404).</summary>
+    public async Task<CmdbSettingsData?> CmdbSettingsAsync(CancellationToken ct)
+    {
+        using var res = await http.GetAsync("internal/features/assisted-cmdb/settings", ct);
+        if (!res.IsSuccessStatusCode) return null;
+        return await res.Content.ReadFromJsonAsync<CmdbSettingsData>(Json, ct);
     }
 
     /// <summary>
