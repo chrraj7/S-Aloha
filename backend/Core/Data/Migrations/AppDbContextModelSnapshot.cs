@@ -278,6 +278,57 @@ namespace SAloha.Api.Core.Data.Migrations
                     b.ToTable("FeatureEvents");
                 });
 
+            modelBuilder.Entity("SAloha.Api.Core.Features.LanguageModelSettings", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("EncryptedKey")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("HostedConfirmedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("HostedConfirmedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<int>("MaxResponseKb")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("TimeoutSeconds")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("LanguageModelSettings");
+                });
+
             modelBuilder.Entity("SAloha.Api.Core.Features.OptionalFeature", b =>
                 {
                     b.Property<string>("Key")

@@ -303,6 +303,20 @@
     "updatedAt": "string:date-time",
     "version": "integer:int32"
   },
+  "LanguageModelView": {
+    "dataLeavesSi": "boolean",
+    "enabled": "boolean",
+    "hasKey": "boolean",
+    "hostedConfirmedAt": "string:date-time",
+    "hostedConfirmedBy": "string",
+    "location": "string",
+    "maxResponseKb": "integer:int32",
+    "model": "string",
+    "timeoutSeconds": "integer:int32",
+    "updatedAt": "string:date-time",
+    "updatedBy": "string",
+    "url": "string"
+  },
   "MailPreferenceView": {
     "address": "string",
     "mailEnabled": "boolean",
