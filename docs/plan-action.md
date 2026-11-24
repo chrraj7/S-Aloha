@@ -18,8 +18,8 @@
 
 ## Prochaine séance
 
-*Mise à jour le 2026-11-24.* État : 413 règles ✅ ; 15 🔜, toutes en lot 3 : celles de F12,
-spécifié le 2026-11-24 ([synthèse](reference/processus/readme.md)) ; les 60 règles des fonctionnalités optionnelles
+*Mise à jour le 2026-11-24.* État : 413 règles ✅ ; 23 🔜, toutes en lot 3 : celles de F12 (15) et de
+F13 phase 4 (8), spécifiés le 2026-11-24 ([synthèse](reference/processus/readme.md)) ; les 60 règles des fonctionnalités optionnelles
 (F14) faites le 2026-11-24, [RAG-10](reference/recherche.md) (calibrage) le 2026-11-09,
 RAG-12 (indexation des pièces jointes) le 2026-11-24 ; tous les indicateurs des pratiques sont
 au tableau de bord. Le lot 3 des pratiques, F7
@@ -36,7 +36,7 @@ Windows réel (CFG-57), `dotnet format` (Q5), C8 et C9. Le tag est posé par le 
 **Reste du plan** : le chantier **F14** (fonctionnalités optionnelles : tri assisté des
 tickets, CMDB assistée, serveur MCP) est livré et mis en avant le 2026-11-24
 ([§ F14](#fonctionnalités-optionnelles-f14)) ; restent les chantiers à arbitrer
-ci-dessous (F12, F13 phase 4), l'action de l'exploitant avant mise en production (section 5 :
+ci-dessous (F12 et F13 phase 4, spécifiés, à confirmer avant de les implémenter), l'action de l'exploitant avant mise en production (section 5 :
 S1 et S2 faits côté code, S3 et O1 le 2026-10-29), la v1.0.0 et les tâches de communauté
 (section 8).
 
@@ -47,7 +47,7 @@ S1 et S2 faits côté code, S3 et O1 le 2026-10-29), la v1.0.0 et les tâches de
 | ~~F7~~ | **Décidé et fait le 2026-10-23** : pièces jointes dans un stockage objet **compatible S3 (Garage)**, courriels par un **SMTP configurable** ; le paramétrage des deux se fait dans la **console d'administration**. [ADR-0020](decisions/adr-0020-pieces-jointes-s3-et-smtp-configurables.md) ; **réglages et essais faits le 2026-10-23** (ADM-60 à ADM-63). Courriels des notifications et préférences par utilisateur faits le 2026-10-23 (SOC-22). Pièces jointes faites le 2026-10-23 (SOC-25 : types bureautiques, texte et images ; nœud Garage dans `docker-compose.yml`) |
 | ~~RAG-12 — indexation des pièces jointes~~ | **Décidé le 2026-11-09 (précisé le 2026-11-24) et fait le 2026-11-24** (#280) : texte, PDF à couche texte (PdfPig), Office Open XML et OpenDocument lus sans bibliothèque, 100 000 caractères par fichier, passages rattachés à l'enregistrement ([RAG-12](reference/recherche.md)) |
 | F12 — référentiels définis par l'Admin | **Spécifié le 2026-11-24** ([REF](reference/processus/evaluations-referentiels-importes.md), 15 règles en lot 3 ; [ADR-0025](decisions/adr-0025-referentiels-de-conformite-importes.md), proposé) : reste à confirmer ses points soumis au mainteneur (import tout ou rien, règle stricte des niveaux, registre commun avec NIS 2 et version figée, CSV seul, plafonds) avant de l'implémenter |
-| F13 phase 4 — agent nomade | Forme de l'agent (service Windows et Linux, langage, signature du binaire), jeton d'enrôlement par périmètre, fréquence d'envoi ; preuves NIS 2 nourries par la découverte |
+| F13 phase 4 — agent nomade | **Spécifié le 2026-11-24** ([CFG-58 à CFG-64](reference/processus/gestion-de-la-configuration.md#5-règles-de-gestion), [NIS-25](reference/processus/conformite-nis2.md#5-règles-de-gestion), 8 règles en lot 3 ; [ADR-0026](decisions/adr-0026-agent-d-inventaire-nomade.md), proposé) : reste à confirmer ses points soumis au mainteneur (langage .NET, aucune donnée d'utilisateur, 24 heures par défaut, exposition des seules routes de l'agent ou VPN, attestation de provenance sans certificat payant ni mise à jour automatique, Windows x64 et Linux x64 d'abord) |
 
 **Actions en attente (hors dépôt)** :
 
@@ -175,7 +175,7 @@ jamais créées seules (même logique que le sas, CFG-40). Inventaire SSH fait l
 | **Phase 1** | **Socle de données, Credentials Vault & Directory Sync** | • Identification technique (IP, MAC, système), portefeuille applicatif (CFG-43, CFG-48) et actifs matériels (CFG-44) en colonnes dédiées ; CPU, RAM et autres attributs avec CFG-16.<br/>• Coffre d'identifiants chiffré AES-256-GCM, clé hors base (`DiscoveryCredentials` : comptes de service Windows, clés SSH, communautés SNMP).<br/>• Collecteur de l'annuaire, à part de `LdapService`, pour les ordinateurs du domaine (`objectCategory=computer`, recherche paginée).<br/>• Sas de staging (`DiscoveredAssets`) et moteur de réconciliation initiale (règles de matching par n° de série, MAC, FQDN). | ✅ (attributs génériques CFG-16 : lot 3) |
 | **Phase 2** | **Découverte réseau & SNMP (Agentless)** | • Ordonnanceur de découverte (`DiscoveryJob` : plages IP / CIDR, fréquence et fenêtre hors heures de bureau).<br/>• Moteur de balayage réseau (Ping ICMP sweep, sondes TCP ciblées) et empreinte passive (OUI MAC, TTL, bannières HTTP/SSH).<br/>• Collecte SNMP v2c/v3 (MIB-II, `sysDescr`, `ifTable` pour commutateurs, routeurs, pare-feu, NAS, imprimantes). | ✅ (bannières, OUI MAC, SNMP v3 et `ifTable` : CFG-49 à CFG-51) |
 | **Phase 3** | **Inventaire approfondi & Cartographie des dépendances** | • Connecteurs d'administration authentifiés : SSH (Linux/Unix) et WMI/WinRM (Windows) pour inventaire complet (OS, logiciels installés, services actifs).<br/>• Connecteurs REST pour hyperviseurs et Cloud (VMware, Proxmox, AWS/Azure).<br/>• Cartographie automatique des dépendances (*Dependency Mapping*) : déduction des relations *« Héberge »* (hyperviseur $\rightarrow$ VM) et *« Se connecte à »* / *« Dépend de »* (analyse des flux et ports d'écoute actifs). | ✅ SSH, Proxmox VE, vCenter, « Héberge » et flux proposés, WinRM à valider sur Windows réel (CFG-52 à CFG-57) ; 🔜 cloud |
-| **Phase 4** | **Agent nomade, Alignement NIS 2 & Console de Staging** | • Agent léger autonome pour postes distants/nomades (`POST /api/discovery/agent-report` avec jeton d'enrôlement par périmètre).<br/>• Détection automatique du Shadow IT (actifs réseau non répertoriés) et de l'obsolescence (corrélation EOL) alimentant le module `ComplianceAssessment` (ReCyF Objectifs 4, 5, 6).<br/>• Interface utilisateur React : console de staging, tableau de réconciliation (diff avant/après) et validation par le Gestionnaire de configuration. | ✅ console de staging, Shadow IT, obsolescence, tableau de bord ; 🔜 agent, preuves NIS 2 |
+| **Phase 4** | **Agent nomade, Alignement NIS 2 & Console de Staging** | • Agent léger autonome pour postes distants/nomades (jeton d'enrôlement par périmètre échangé contre une identité d'agent, `POST /api/agent/report`).<br/>• Détection automatique du Shadow IT (actifs réseau non répertoriés) et de l'obsolescence (corrélation EOL) alimentant le module `ComplianceAssessment` (ReCyF Objectifs 4, 5, 6).<br/>• Interface utilisateur React : console de staging, tableau de réconciliation (diff avant/après) et validation par le Gestionnaire de configuration. | ✅ console de staging, Shadow IT, obsolescence, tableau de bord ; 🔜 agent ([CFG-58 à CFG-64](reference/processus/gestion-de-la-configuration.md#5-règles-de-gestion)) et preuves NIS 2 (NIS-25), spécifiés le 2026-11-24 ([ADR-0026](decisions/adr-0026-agent-d-inventaire-nomade.md)) |
 
 **Lot 1** : terminé le 2026-10-13 (étapes 1 à 6, périmètres compris, NIS-18) ; RAG-10
 (calibrage de la recherche) le 2026-11-09, plancher 0,47. **Lot 2** : terminé le 2026-10-21 ([déclarations réglementaires](reference/processus/declarations-reglementaires.md)

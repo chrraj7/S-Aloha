@@ -34,6 +34,7 @@ son état actuel, et pas seulement *quel* est cet état.
 | [0023](adr-0023-fonctionnalites-optionnelles-et-modele-de-langage.md) | Fonctionnalités optionnelles : un conteneur commun, à part des fonctions de base, activé par l'Admin ; modèle de langage par un connecteur unique, dans le SI ou hébergé | 2026-11-23 | accepté, revient sur l'ADR-0013 pour le modèle de langage |
 | [0024](adr-0024-serveur-mcp-conteneur-separe-lecture-seule.md) | Serveur MCP : conteneur séparé, lecture seule, jetons personnels | 2026-11-23 | accepté |
 | [0025](adr-0025-referentiels-de-conformite-importes.md) | Référentiels de conformité importés par l'organisation : rien dans le dépôt, colonnes, échelle et niveaux réglés à l'import | 2026-11-24 | proposé |
+| [0026](adr-0026-agent-d-inventaire-nomade.md) | Agent d'inventaire nomade : exécutable .NET autonome, rapport HTTPS sortant vers le sas, enrôlement par jeton de périmètre | 2026-11-24 | proposé |
 
 Les choix fondateurs antérieurs à cette base (authentification AD LDAP → JWT, analyses
 RCA stockées en JSON) sont décrits dans [`reference/architecture.md`](../reference/architecture.md)
