@@ -12,11 +12,12 @@ const OFFERED = ['rename', 'normalize', 'reclassify', 'criticality', 'relate', '
 const FIELD = { title: 'Nom', ciType: 'Type', operatingSystem: 'Système', vendor: 'Constructeur', model: 'Modèle', criticality: 'Criticité', merge: 'Fusion', relation: 'Relation' }
 const TONE = { 'En file': 't-wait', 'En cours': 't-wait', Terminée: 't-done', 'En échec': 't-bad' }
 
-/** CMA-01 : lancer une analyse sur un périmètre géré, avec ses tâches. */
-function Launch({ onLaunched }) {
+/** CMA-01 : lancer une analyse sur un périmètre géré, avec les tâches que l'Admin propose (CMA-12). */
+function Launch({ onLaunched, settings }) {
   const managed = usePerimeters().filter(p => ['Admin', 'Manager'].includes(p.role))
+  const offered = OFFERED.filter(t => settings.tasks.includes(t))
   const [perimeter, setPerimeter] = useState('')
-  const [tasks, setTasks] = useState(OFFERED)
+  const [tasks, setTasks] = useState(offered)
   const [error, setError] = useState('')
   const toggle = t => setTasks(ts => (ts.includes(t) ? ts.filter(x => x !== t) : [...ts, t]))
   const launch = () => {
@@ -27,9 +28,10 @@ function Launch({ onLaunched }) {
   return (
     <div className="card" style={{ marginBottom: 16 }}>
       <h2 className="card-title">Lancer une analyse</h2>
-      <p className="muted small">Tout le périmètre, hors CI retirés (500 CI au plus). Une analyse à la fois par périmètre ; chaque
+      <p className="muted small">Tout le périmètre, hors CI retirés ({settings.maxItems} CI au plus). Une analyse à la fois par périmètre ; chaque
         proposition se décide ensuite, ici ou sur la fiche du CI.</p>
       {error && <div className="error" role="alert">{error}</div>}
+      {offered.length === 0 && <p className="muted small">Aucune tâche n’est proposée : l’administrateur les a toutes retirées.</p>}
       {managed.length > 1 && (
         <div className="field"><label htmlFor="cma-perimeter">Périmètre</label>
           <select id="cma-perimeter" value={perimeter} onChange={e => setPerimeter(e.target.value)}>
@@ -38,7 +40,7 @@ function Launch({ onLaunched }) {
           </select></div>
       )}
       <div className="toolbar">
-        {OFFERED.map(t => (
+        {offered.map(t => (
           <label key={t} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             <input type="checkbox" style={{ width: 'auto' }} checked={tasks.includes(t)} onChange={() => toggle(t)} /> {TASKS[t]}</label>
         ))}
@@ -165,8 +167,14 @@ export default function AssistedCmdb() {
   const [analyses, setAnalyses] = useState([])
   const [version, setVersion] = useState(0)
   const [error, setError] = useState('')
+  const [settings, setSettings] = useState(null)
   const reload = () => Promise.resolve().then(() => api.assistedCmdb.analyses()).then(setAnalyses).catch(e => setError(e.message))
   useEffect(() => { reload() }, [version])
+  // CMA-12 : tâches proposées et limite réglées par l'Admin ; illisibles, celles par défaut (l'API refuse de toute façon).
+  useEffect(() => {
+    Promise.resolve().then(() => api.assistedCmdb.settings()).then(setSettings)
+      .catch(() => setSettings({ tasks: OFFERED, maxItems: 500, stagingHelp: true }))
+  }, [])
   // Une analyse active se suit d'elle-même : relue toutes les 10 secondes.
   const active = analyses.some(a => ['En file', 'En cours'].includes(a.status))
   useEffect(() => {
@@ -182,7 +190,7 @@ export default function AssistedCmdb() {
         vous : chaque proposition s’accepte, se rejette, ou se corrige depuis la fiche du CI ; une fusion garde le CI de votre choix et
         retire l’autre, ses liens, relations et actifs du sas reportés.</p>
       {error && <div className="error" role="alert">{error}</div>}
-      <Launch onLaunched={() => setVersion(v => v + 1)} />
+      {settings && <Launch settings={settings} onLaunched={() => setVersion(v => v + 1)} />}
       <div className="card" style={{ marginBottom: 16 }}>
         <h2 className="card-title">Analyses</h2>
         <Analyses list={analyses} />

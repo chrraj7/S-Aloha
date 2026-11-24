@@ -6,6 +6,7 @@ import DiscoverySettings from './DiscoverySettings'
 import { resetFeatures } from '../../../core/features'
 
 let role = 'Admin'
+let stagingHelp = true
 const importOui = vi.fn(() => Promise.resolve({ imported: 2, skipped: 1 }))
 const createCredential = vi.fn(() => Promise.resolve({}))
 const acceptKey = vi.fn(() => Promise.resolve({}))
@@ -14,6 +15,7 @@ vi.mock('../../../api', () => ({
   getUser: () => ({ role }),
   api: {
     features: () => Promise.resolve(['assisted-cmdb']),
+    assistedCmdb: { settings: () => Promise.resolve({ tasks: ['rename'], maxItems: 500, stagingHelp }) },
     perimeters: { mine: () => Promise.resolve([{ id: 1, name: 'Siège' }]), list: () => Promise.resolve([{ id: 1, name: 'Siège' }]) },
     discovery: {
       jobs: { list: () => Promise.resolve([]), create: (...a) => createJob(...a) },
@@ -27,7 +29,7 @@ vi.mock('../../../api', () => ({
     }
   }
 }))
-afterEach(() => { cleanup(); vi.clearAllMocks(); role = 'Admin' })
+afterEach(() => { cleanup(); vi.clearAllMocks(); role = 'Admin'; stagingHelp = true })
 
 const page = () => render(<MemoryRouter initialEntries={['/settings/discovery?tab=oui']}><DiscoverySettings /></MemoryRouter>)
 
@@ -92,4 +94,15 @@ it('CMA-08 : une tâche de scan porte l’option « Analyser avec la CMDB assist
   fireEvent.click(screen.getByText('Enregistrer'))
   await waitFor(() => expect(createJob).toHaveBeenCalled())
   expect(createJob.mock.calls[0][0]).toMatchObject({ name: 'Réseau du siège', assistedCmdb: true })
+})
+
+it('CMA-12 : l’aide au sas coupée par l’Admin, l’option n’est plus offerte', async () => {
+  resetFeatures()
+  stagingHelp = false
+  render(<MemoryRouter initialEntries={['/settings/discovery']}><DiscoverySettings /></MemoryRouter>)
+  fireEvent.click(await screen.findByText('+ Nouvelle tâche de scan'))
+  await waitFor(() => expect(screen.queryByLabelText('Analyser avec la CMDB assistée')).toBeNull())
+  // Le temps que les réglages arrivent : l'option ne revient pas.
+  await new Promise(r => setTimeout(r, 50))
+  expect(screen.queryByLabelText('Analyser avec la CMDB assistée')).toBeNull()
 })

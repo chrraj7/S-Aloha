@@ -50,7 +50,14 @@ function JobForm({ job, credentials, onSaved, onCancel }) {
     windowStart: job.windowStart ?? '', windowEnd: job.windowEnd ?? '' } : blankJob)
   const [perimeterId, setPerimeterId] = useState(job?.perimeterId ?? null)
   const [error, setError] = useState('')
-  const assisted = useFeatures().has('assisted-cmdb')
+  const cmdb = useFeatures().has('assisted-cmdb')
+  // CMA-12 : l'aide au sas coupée par l'Admin, l'option est masquée (sans effet) ; illisible, elle reste offerte.
+  const [stagingHelp, setStagingHelp] = useState(true)
+  useEffect(() => {
+    if (!cmdb) return
+    Promise.resolve().then(() => api.assistedCmdb.settings()).then(s => setStagingHelp(s.stagingHelp !== false)).catch(() => setStagingHelp(true))
+  }, [cmdb])
+  const assisted = cmdb && stagingHelp
   // Un seul périmètre géré (parmi d'autres consultés) : pas de choix à faire, il est retenu d'office.
   useEffect(() => { if (!job && perimeterId === null && perimeters.length === 1) setPerimeterId(perimeters[0].id) }, [perimeters.length])
   const set = patch => setF(prev => ({ ...prev, ...patch }))
