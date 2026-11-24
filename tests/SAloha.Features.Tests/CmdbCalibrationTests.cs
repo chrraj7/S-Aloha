@@ -95,7 +95,8 @@ public class CmdbCalibrationTests(ITestOutputHelper output)
     }
 
     /// <summary>Une tâche mesurée : propositions faites et justes (précision), réponses attendues et trouvées (rappel).</summary>
-    public record TaskScore(string Task, int Proposed, int Right, int Expected, int Found, int Calls, int NonConforming, double AverageSeconds)
+    public record TaskScore(string Task, int Proposed, int Right, int Expected, int Found, int Calls, int NonConforming, double AverageSeconds,
+        List<string>? Wrong = null)
     {
         public double Precision => Proposed == 0 ? 0 : (double)Right / Proposed;
         public double Recall => Expected == 0 ? 0 : (double)Found / Expected;
@@ -110,6 +111,7 @@ public class CmdbCalibrationTests(ITestOutputHelper output)
         {
             int proposed = 0, right = 0, expectedCount;
             var found = new HashSet<string>();
+            var wrong = new List<string>();
             string[] fields = task switch
             {
                 CmdbTasks.Rename => ["title"], CmdbTasks.Normalize => CmdbTasks.NormalizedFields, CmdbTasks.Reclassify => ["ciType"],
@@ -141,7 +143,11 @@ public class CmdbCalibrationTests(ITestOutputHelper output)
                         if (expected.GetProperty(task).TryGetProperty($"{ci}", out var values) && Strings(values).Contains(Norm(after))) key = $"{ci}";
                         break;
                 }
-                if (key is null) continue;
+                if (key is null)
+                {
+                    wrong.Add($"{ci} {field} → {after} ({(p.TryGetProperty("reasons", out var r) ? r.GetString() : "")})");
+                    continue;
+                }
                 right++;
                 found.Add(key);
             }
@@ -154,7 +160,7 @@ public class CmdbCalibrationTests(ITestOutputHelper output)
             };
             var traced = calls.Where(c => c.GetProperty("task").GetString() == task).ToList();
             scores.Add(new TaskScore(task, proposed, right, expectedCount, found.Count, traced.Count, traced.Sum(c => c.GetProperty("rejected").GetInt32()),
-                traced.Count == 0 ? 0 : traced.Average(c => c.GetProperty("durationMs").GetInt32()) / 1000.0));
+                traced.Count == 0 ? 0 : traced.Average(c => c.GetProperty("durationMs").GetInt32()) / 1000.0, wrong));
         }
         return scores;
     }
@@ -259,6 +265,10 @@ public class CmdbCalibrationTests(ITestOutputHelper output)
         md.AppendLine();
         var low = string.Join(", ", scores.Where(s => s.Precision < 0.7).Select(s => s.Task));
         md.AppendLine($"Sous 70 % de précision (coupées par défaut, CMA-11) : {(low.Length > 0 ? low : "aucune")}.");
+        md.AppendLine();
+        md.AppendLine("Propositions hors des réponses admises :");
+        foreach (var s in scores.Where(s => s.Wrong is { Count: > 0 }))
+            foreach (var w in s.Wrong!) md.AppendLine($"- {s.Task} : {w}");
         output.WriteLine(md.ToString());
         if (Environment.GetEnvironmentVariable("CMA_CALIBRATION_REPORT") is { Length: > 0 } file) await File.WriteAllTextAsync(file, md.ToString());
     }
