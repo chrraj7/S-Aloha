@@ -315,3 +315,54 @@ public class InternalAssistedCmdbNamingController(AppDbContext db) : ControllerB
     public async Task<IActionResult> List() =>
         Ok((await AssistedCmdbNamingController.AllAsync(db)).Select(n => new { n.CiType, n.Description, Examples = n.ExampleList }));
 }
+
+/// <summary>Une proposition ouverte de la file : son CI, sa tâche, l'avant et l'après, son motif ; périmée si le CI a changé depuis.</summary>
+public record CmdbProposalView(int Id, int CiId, string CiReference, string CiTitle, int PerimeterId, string Task, string Field, string? Before,
+    string After, string Reasons, DateTime CreatedAt, bool Stale);
+
+/// <summary>
+/// Configuration › CMDB assistée, file des propositions (CMA-03) : les propositions ouvertes de la CMDB assistée sur les CI
+/// des périmètres dont l'utilisateur est gestionnaire, filtrées par périmètre et par tâche, les plus anciennes d'abord
+/// (200). La décision passe par les routes communes des propositions (OPT-15), toutes les règles des CI comprises.
+/// </summary>
+[ApiController]
+[Route("api/assisted-cmdb/proposals")]
+[Authorize(Policy = "User")]
+[RequiresFeature(FeatureCatalog.AssistedCmdb)]
+public class AssistedCmdbProposalsController(AppDbContext db, PerimeterAccess access) : ControllerBase
+{
+    /// <summary>Tâche d'une proposition, d'après son champ (CMA-02).</summary>
+    public static readonly Dictionary<string, string> TaskOfField = new()
+    {
+        ["title"] = AssistedCmdbTasks.Rename, ["operatingSystem"] = AssistedCmdbTasks.Normalize, ["vendor"] = AssistedCmdbTasks.Normalize,
+        ["model"] = AssistedCmdbTasks.Normalize, ["ciType"] = AssistedCmdbTasks.Reclassify, ["criticality"] = AssistedCmdbTasks.Criticality,
+    };
+
+    [HttpGet]
+    public async Task<IActionResult> List([FromQuery] int? perimeter, [FromQuery] string? task)
+    {
+        var scope = await access.GetAsync();
+        if (perimeter is { } p && !scope.ManagerOn(p)) return Forbid();
+        if (task is not null && !AssistedCmdbTasks.Labels.ContainsKey(task))
+            return BadRequest(new { message = $"Tâche inconnue : « {task} ». Valeurs : {string.Join(", ", AssistedCmdbTasks.Labels.Keys)}." });
+        var query = db.Proposals.AsNoTracking().Where(x => x.Feature == FeatureCatalog.AssistedCmdb && x.TargetType == "ci" && x.Status == Proposal.Open);
+        if (perimeter is not null) query = query.Where(x => x.PerimeterId == perimeter);
+        else if (!scope.Global)
+        {
+            var managed = scope.ManagedIds.ToList();
+            query = query.Where(x => managed.Contains(x.PerimeterId));
+        }
+        if (task is not null)
+        {
+            var fields = TaskOfField.Where(f => f.Value == task).Select(f => f.Key).ToList();
+            query = query.Where(x => fields.Contains(x.Field));
+        }
+        var proposals = await query.OrderBy(x => x.Id).Take(200).ToListAsync();
+        var ids = proposals.Select(x => x.TargetId).Distinct().ToList();
+        var cis = await db.ConfigurationItems.AsNoTracking().Where(c => ids.Contains(c.Id))
+            .Select(c => new { c.Id, c.Reference, c.Title, c.UpdatedAt }).ToDictionaryAsync(c => c.Id);
+        return Ok(proposals.Where(x => cis.ContainsKey(x.TargetId)).Select(x => new CmdbProposalView(x.Id, x.TargetId, cis[x.TargetId].Reference,
+            cis[x.TargetId].Title, x.PerimeterId, TaskOfField.GetValueOrDefault(x.Field, ""), x.Field, x.Before, x.After, x.Reasons, x.CreatedAt,
+            cis[x.TargetId].UpdatedAt > x.CreatedAt)));
+    }
+}
