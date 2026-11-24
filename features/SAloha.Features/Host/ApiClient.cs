@@ -28,6 +28,16 @@ public record TriageSettingsData(int Neighbours, int MinVoters, int MinSharePerc
     double CorrelationMinSimilarity, bool SuggestCategory, bool SuggestService, bool SuggestGroup, bool SuggestImpact, bool SuggestOutage);
 public record ProposalInput(string Feature, string TargetType, int TargetId, string Field, string After, string Reasons,
     IReadOnlyList<CitedRef> Cited, double? Confidence);
+/// <summary>CMA-01 : une analyse de la CMDB assistée, telle que l'API la remet ; <c>ConfigurationItemIds</c> null : tout le périmètre.</summary>
+public record AnalysisData(int Id, int PerimeterId, List<string> Tasks, List<int>? ConfigurationItemIds, string Status, int ItemCount);
+public record AnalysisReport(string Status, string? Reason = null, int? ProposalCount = null, int? RejectedCount = null);
+public record CiRelationRead(int SourceId, int TargetId, string? Type);
+/// <summary>Un CI dans la vue publique, champs utiles à la CMDB assistée (CMA-07) et ceux qu'elle déclare au pseudonymiseur.</summary>
+public record CiRecord(int Id, int PerimeterId, string? Reference, string? Title, string? Description, string? Status, string? CiType,
+    string? Environment, string? OperatingSystem, string? Vendor, string? Model, string? SerialNumber, string? IpAddress, string? MacAddress,
+    string? OwnerId, List<CiRelationRead>? Outgoing, List<CiRelationRead>? Incoming);
+/// <summary>CMA-04 : convention de nommage d'un type de CI, tenue par les gestionnaires.</summary>
+public record NamingRule(string CiType, string Description, List<string>? Examples);
 
 /// <summary>
 /// Client du port interne de l'API (<c>Api:Url</c>, <c>http://api:8081</c>), avec le jeton du conteneur
@@ -111,6 +121,39 @@ public class ApiClient
     {
         using var res = await http.PostAsJsonAsync("internal/language-model/calls", call, Json, ct);
         return res.IsSuccessStatusCode;
+    }
+
+    /// <summary>CMA-01 : une analyse annoncée par le fil ; null si elle n'existe plus.</summary>
+    public async Task<AnalysisData?> AnalysisAsync(int id, CancellationToken ct)
+    {
+        using var res = await http.GetAsync($"internal/assisted-cmdb/analyses/{id}", ct);
+        if (res.StatusCode == HttpStatusCode.NotFound) return null;
+        res.EnsureSuccessStatusCode();
+        return await res.Content.ReadFromJsonAsync<AnalysisData>(Json, ct);
+    }
+
+    /// <summary>CMA-01 : compte rendu d'une analyse ; faux si l'API le refuse (analyse finie entre-temps).</summary>
+    public async Task<bool> ReportAnalysisAsync(int id, AnalysisReport report, CancellationToken ct)
+    {
+        using var res = await http.PutAsJsonAsync($"internal/assisted-cmdb/analyses/{id}", report, Json, ct);
+        return res.IsSuccessStatusCode;
+    }
+
+    /// <summary>CMA-01 : une page des CI d'un périmètre (hors retirés), après l'identifiant donné.</summary>
+    public async Task<List<CiRecord>> PerimeterItemsAsync(int perimeter, int after, CancellationToken ct) =>
+        (await http.GetFromJsonAsync<List<CiRecord>>($"internal/configuration-items?perimeter={perimeter}&after={after}", Json, ct))!;
+
+    /// <summary>Des CI désignés, dans la vue complète (50 par appel au plus).</summary>
+    public async Task<List<CiRecord>> CiRecordsAsync(IReadOnlyCollection<int> ids, CancellationToken ct) =>
+        ids.Count == 0 ? [] : (await http.GetFromJsonAsync<List<CiRecord>>($"internal/configuration-items?ids={string.Join(',', ids)}", Json, ct))!;
+
+    /// <summary>CMA-04 : conventions de nommage ; aucune si l'API n'en sert pas (404).</summary>
+    public async Task<List<NamingRule>> NamingAsync(CancellationToken ct)
+    {
+        using var res = await http.GetAsync("internal/assisted-cmdb/naming", ct);
+        if (res.StatusCode == HttpStatusCode.NotFound) return [];
+        res.EnsureSuccessStatusCode();
+        return await res.Content.ReadFromJsonAsync<List<NamingRule>>(Json, ct) ?? [];
     }
 
     /// <summary>TRI-06 : une page des incidents ouverts, avec leurs CI reliés.</summary>

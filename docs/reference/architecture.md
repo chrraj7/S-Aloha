@@ -71,6 +71,7 @@ backend/                              # projet SAloha.Api (namespace SAloha.Api.
         # lectures internes d'une pratique pour le conteneur features : Controllers/Internal*Controller.cs (OPT-13)
 
 features/SAloha.Features/             # conteneur features, hors de l'API (ADR-0023), sans accès à la base
+├── AssistedCmdb/                     # CMDB assistée : AssistedCmdb (analyse → lots → propositions, comptes rendus), CmdbTasks (consignes, schémas, entrée, lecture)
 ├── Host/                             # ContainerHost (jeton, /health), ApiClient (port interne de l'API), EventLoop (fil, une file par fonctionnalité), EmbeddingClient
 ├── LanguageModel/                    # connecteur du modèle de langage (OPT-21 à OPT-28) : LanguageModelClient, Pseudonymizer (jetons), SchemaCheck (sortie), LanguageModelEssay (essai, OPT-26)
 └── TicketTriage/                     # tri assisté des tickets : TicketTriage (fil → propositions, pannes), TriageRules (vote, impact, motifs), OpenIncidents (index des ouverts, corrélation)
@@ -257,7 +258,7 @@ Détails (registre des modules, thème, design) : [frontend.md](frontend.md).
 | Suite | Commande | Outillage |
 |---|---|---|
 | API (intégration) | `TESTCONTAINERS_RYUK_DISABLED=true dotnet test tests/SAloha.Api.Tests` | xUnit + `WebApplicationFactory` sur un PostgreSQL jetable (Testcontainers 4.16, image `postgres:18-alpine`) ; **Docker requis** |
-| Conteneur `features` | `dotnet test tests/SAloha.Features.Tests` | xUnit + `WebApplicationFactory` sur l'hôte (jeton du conteneur, contrôle de santé), règles du tri assisté en fonctions pures, et tri de bout en bout contre un port interne factice de l'API (fil d'événements, lectures, propositions) ; connecteur du modèle de langage contre un serveur d'inférence factice (pseudonymisation, schéma, essais, délai, une requête à la fois), sans base |
+| Conteneur `features` | `dotnet test tests/SAloha.Features.Tests` | xUnit + `WebApplicationFactory` sur l'hôte (jeton du conteneur, contrôle de santé), règles du tri assisté en fonctions pures, et tri de bout en bout contre un port interne factice de l'API (fil d'événements, lectures, propositions) ; connecteur du modèle de langage contre un serveur d'inférence factice (pseudonymisation, schéma, essais, délai, une requête à la fois) ; analyse de la CMDB assistée de bout en bout contre une API et un modèle factices, sans base |
 | Frontend | `cd frontend && npm test` | Vitest + Testing Library (jsdom) |
 
 - L'API, le conteneur `features` et leurs projets de tests ciblent **net10.0** (LTS) ; un seul SDK suffit, en local comme
