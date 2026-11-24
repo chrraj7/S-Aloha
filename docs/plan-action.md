@@ -18,21 +18,27 @@
 
 ## Prochaine séance
 
-*Mise à jour le 2026-11-04.* État : 352 règles ✅ (compte du 2026-11-16, [RAG-10](reference/recherche.md)
-comprise : calibrage fait le 2026-11-09), RAG-12 (indexation des pièces jointes, lot 3) faite
-le 2026-11-24, aucune en lot 2 ([synthèse](reference/processus/readme.md)) ;
-tous les indicateurs des pratiques sont au tableau de bord. Le lot 3 des pratiques, F7
+*Mise à jour le 2026-11-24.* État : 413 règles ✅, **aucune 🔜**
+([synthèse](reference/processus/readme.md)) : les 60 règles des fonctionnalités optionnelles
+(F14) faites le 2026-11-24, [RAG-10](reference/recherche.md) (calibrage) le 2026-11-09,
+RAG-12 (indexation des pièces jointes) le 2026-11-24 ; tous les indicateurs des pratiques sont
+au tableau de bord. Le lot 3 des pratiques, F7
 (courriels, pièces jointes) et les indicateurs ont été faits le 2026-10-23
 ([journal](archives/journal-2026-10-23.md)).
 
-**Versions** : préversions 0.1.0 et 0.2.0 retirées le 2026-10-23 (releases et tags) ; la
-première version publiée sera **stable**, à la fin de ce plan d'action.
+**Versions** : préversions 0.1.0 et 0.2.0 retirées le 2026-10-23 (releases et tags). La
+première version publiée sera la **v1.0.0**, stable, au **périmètre allégé** (décision du
+2026-11-09) : `main`, la part code de S1 et les issues et PR en cours soldées ; elle attendait
+aussi F14, livré le 2026-11-24. Ses notes de version diront les **réserves** : RAG-10 à
+remesurer sur des données réelles, F12, F13 phase 4 (agent nomade), WinRM à valider sur un
+Windows réel (CFG-57), `dotnet format` (Q5), C8 et C9. Le tag est posé par le mainteneur seul.
 
 **Reste du plan** : le chantier **F14** (fonctionnalités optionnelles : tri assisté des
 tickets, CMDB assistée, serveur MCP) est livré et mis en avant le 2026-11-24
 ([§ F14](#fonctionnalités-optionnelles-f14)) ; restent les chantiers à arbitrer
-ci-dessous, les points avant mise en production (section 5 : S1, S2 ; S3 et O1 faits le
-2026-10-29) et les tâches de communauté (section 8).
+ci-dessous (F12, F13 phase 4), l'action de l'exploitant avant mise en production (section 5 :
+S1 et S2 faits côté code, S3 et O1 le 2026-10-29), la v1.0.0 et les tâches de communauté
+(section 8).
 
 **À arbitrer avant de commencer** :
 
@@ -51,8 +57,13 @@ ci-dessous, les points avant mise en production (section 5 : S1, S2 ; S3 et O1 f
   #172 ; S3 et SMTP essayés le 2026-10-24), hors du chemin de fusion.
 - **WinRM** ([CFG-57](reference/processus/gestion-de-la-configuration.md)) à valider sur un
   Windows réel (aucun au laboratoire).
-- **Avant la production** : S1, S2 (section 5).
-- **Communauté** : [#126](https://github.com/chrraj7/S-Aloha/issues/126) (captures d'écran de la configuration) reste ouverte ; #120 à #125 sont faites.
+- **Avant la production** : S1 et S2 sont faits côté code (section 5) ; reste à l'exploitant
+  de fournir ses secrets et d'activer LDAPS et HTTPS sur son installation.
+- **Communauté** : #120 à #126 sont faites ([#126](https://github.com/chrraj7/S-Aloha/issues/126),
+  captures des pages de la configuration, le 2026-11-24).
+- **Mainteneur** : téléverser l'image de partage refaite le 2026-11-24
+  (`docs/screenshots/partage-1280x640.png`, *Settings → General → Social preview*), puis
+  publier la v1.0.0.
 
 ## 1. Bloquants fonctionnels — le processus est inutilisable
 
@@ -101,7 +112,7 @@ Détail : [sécurité § Points de durcissement](reference/securite.md#points-de
 |---|---|---|
 | ~~Q1~~ | ~~**Tests** : socle en place (API : xUnit + Testcontainers ; frontend : Vitest), B1–B3 et M1, M2, M4–M6 couverts ; étendre aux scénarios R1–R6~~ — soldé le 2026-11-21 : les scénarios R1 à R6 de la [revue du 2026-10-06](archives/revue-fonctionnelle-2026-10-06.md) ont leur test — R1 `ValidationRulesTests.PRB_02_valeurs_fermees_du_module_problemes`, R2 et R3 `ValidationRulesTests.PRB_17_18_RACI_a_la_modification_et_date_d_achevement`, R4 `ValidationRulesTests.PRB_11_12_13_14_conditions_du_cycle_de_vie` et `TransitionsTests`, R5 `AuditTests` (réaffectation RACI d'une action comprise, [SOC-20](reference/regles-metier.md#9-traçabilité-commentaires-administration)), R6 `DirectoryUnavailableTests` | code |
 | Q2 | **CI** : build backend et frontend, `python3 scripts/check-docs.py` | code |
-| Q4 | Créer les issues GitHub des sections 1 à 7 et les lier ici ; premières **good first issue** ouvertes le 2026-10-19 pour la communauté : [#120](https://github.com/chrraj7/S-Aloha/issues/120) à [#126](https://github.com/chrraj7/S-Aloha/issues/126), toutes faites sauf [#126](https://github.com/chrraj7/S-Aloha/issues/126) | action |
+| Q4 | Créer les issues GitHub des sections 1 à 7 et les lier ici ; premières **good first issue** ouvertes le 2026-10-19 pour la communauté : [#120](https://github.com/chrraj7/S-Aloha/issues/120) à [#126](https://github.com/chrraj7/S-Aloha/issues/126), toutes faites ([#126](https://github.com/chrraj7/S-Aloha/issues/126) le 2026-11-24) | action |
 | Q5 | ~~Mesure de la couverture de tests (coverlet) publiée en CI, sans seuil bloquant~~ — fait le 2026-11-03 ([#123](https://github.com/chrraj7/S-Aloha/issues/123), [architecture § 9](reference/architecture.md#9-tests)) ; reste `dotnet format` ([audit du 2026-10-16](archives/audit-code-2026-10-16.md) § 8) | code |
 | ~~Q6~~ | ~~`.dockerignore` pour `backend` et `frontend`~~ — soldé le 2026-10-26 ([audit du 2026-10-16](archives/audit-code-2026-10-16.md) § 9, [#120](https://github.com/chrraj7/S-Aloha/issues/120)) : contexte de construction limité aux sources ([exploitation](reference/exploitation.md)) | code |
 
@@ -291,6 +302,6 @@ Accueil des contributeurs et financement du projet ; canaux et contreparties pub
 | ~~C2~~ | ~~Code de conduite, `.github/FUNDING.yml`~~ — faits le 2026-10-23 (Contributor Covenant 2.1, signalement privé par « Report content » de GitHub : activer **Settings › Moderation options › Reported content** du dépôt) | code + action |
 | ~~C5~~ | ~~Tableau GitHub Projects public alimenté par ce plan~~ — fait le 2026-10-23 : [S-Aloha — feuille de route](https://github.com/users/chrraj7/projects/3) (issues ouvertes et chantiers restants) | action |
 | ~~C6~~ | ~~Activer GitHub Sponsors~~ (profil public, objectif « 5 monthly sponsors ») ; **niveaux** décidés le 2026-10-23 — Soutien 5 $, Bronze 25 $, Argent 100 $, Or 500 $ par mois ([Soutenir](soutenir.md)) — créés sur la page Sponsors le 2026-10-23 — soldé ([ADR-0011](decisions/adr-0011-financement-sponsoring-et-services.md)) | action |
-| C7 | Lancement **à la version stable** (décision du 2026-10-23) : LinuxFr, Reddit, AlternativeTo, Framalibre (textes prêts) ; aperçu social du dépôt : image de partage du langage visuel v2 ([protocole § 2](protocole-documentation.md#2-mettre-à-jour-la-référence)) ; awesome-selfhosted **4 mois après la première version stable** (première version de plus de 4 mois exigée ; les préversions retirées ne comptent plus) | action |
+| C7 | Lancement **à la version stable** (décision du 2026-10-23) : LinuxFr, Reddit, AlternativeTo, Framalibre (textes prêts) ; aperçu social du dépôt : image de partage refaite le 2026-11-24 avec les trois fonctionnalités assistées, à téléverser par le mainteneur ([protocole § 2](protocole-documentation.md#2-mettre-à-jour-la-référence)) ; awesome-selfhosted **4 mois après la première version stable** (première version de plus de 4 mois exigée ; les préversions retirées ne comptent plus) | action |
 | C8 | Démo en ligne réinitialisée chaque nuit | décision |
 | C9 | `GOVERNANCE.md` dès le deuxième contributeur régulier | décision |

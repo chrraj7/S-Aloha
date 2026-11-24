@@ -4,8 +4,8 @@ Les changements notables de chaque version, pour qui installe et met à jour S-A
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) ; versions selon
 le [versionnage sémantique](https://semver.org/lang/fr/).
 
-**Aucune version publiée pour l'instant** : la première, stable, sortira à la fin du plan
-d'action en cours. Les préversions 0.1.0 et 0.2.0 ont été retirées le 2026-10-23 ; leurs
+**Aucune version publiée pour l'instant** : la première sera la **1.0.0**, stable, publiée
+avec ses notes de version et leurs réserves. Les préversions 0.1.0 et 0.2.0 ont été retirées le 2026-10-23 ; leurs
 sections, conservées ci-dessous, sont devenues des étapes datées du développement. Lire la
 section **Mise à jour** de chaque étape avant de mettre à jour une installation.
 
