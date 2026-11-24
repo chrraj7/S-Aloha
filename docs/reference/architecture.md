@@ -75,6 +75,12 @@ features/SAloha.Features/             # conteneur features, hors de l'API (ADR-0
 ├── Host/                             # ContainerHost (jeton, /health), ApiClient (port interne de l'API), EventLoop (fil, une file par fonctionnalité), EmbeddingClient
 ├── LanguageModel/                    # connecteur du modèle de langage (OPT-21 à OPT-28) : LanguageModelClient, Pseudonymizer (jetons), SchemaCheck (sortie), LanguageModelEssay (essai, OPT-26)
 └── TicketTriage/                     # tri assisté des tickets : TicketTriage (fil → propositions, pannes), TriageRules (vote, impact, motifs), OpenIncidents (index des ouverts, corrélation)
+
+features/SAloha.Mcp/                  # conteneur mcp, serveur MCP en lecture seule (ADR-0024) : ni base, ni secret, ni port interne
+├── McpHost.cs                        # /health, puis sur /mcp : origine (403), limite par jeton (429), jeton reconnu par l'API (404, 401, 503)
+├── PublicApi.cs                      # routes publiques de lecture de l'API, avec le jeton de l'utilisateur (MCP-02)
+├── ReadTools.cs                      # les six outils (MCP-05) et leur ligne de journal (MCP-09)
+└── Shaper.cs                         # champs saisis sous « userEntered » (MCP-07), listes et textes coupés (MCP-08)
 ```
 
 ### Socle commun des processus (`Core/Records`)
@@ -173,6 +179,7 @@ les entités EF sont renvoyées avec leurs navigations (`Analysis → Problem �
 | GET `/api/<pratique>/{id}/proposals`, POST `…/{id}/proposals/{proposition}/reject` ; PUT `/api/<pratique>/{id}` avec `X-S-Aloha-Proposal` | User, droit de modifier | Propositions d'un enregistrement, rejet, acceptation par la route de la pratique (OPT-15) | Core/Records |
 | GET `/internal/events` | Jeton du conteneur `features`, port interne 8081 seulement | Fil d'événements des fonctionnalités optionnelles, curseur, purge à 7 jours (OPT-10 à OPT-12) | Core/Features |
 | GET `/api/features` | User | Clés des fonctionnalités optionnelles activées, lues par le registre de l'interface (OPT-04) | Core/Features |
+| GET, POST `/api/me/tokens`, DELETE `/api/me/tokens/{id}`, GET `/api/me/tokens/current` ; GET `/api/admin/tokens`, DELETE `/api/admin/tokens/{id}` | User ; aucune pour `current` ; Admin — serveur MCP activé (404 sinon) | Jetons d'accès personnels du serveur MCP : création, liste, révocation (MCP-03, MCP-04, MCP-09) ; le jeton présenté, pour le conteneur `mcp`, 401 sans jeton personnel valide (MCP-01) | Core/Auth |
 | GET `/api/admin/features`, PUT `/api/admin/features/{key}` | Admin | Fonctionnalités optionnelles : conteneur contrôlé, dépendances, activation et coupure tracées (OPT-01 à OPT-07, [ADR-0023](../decisions/adr-0023-fonctionnalites-optionnelles-et-modele-de-langage.md)) | Core/Features |
 | GET, PUT `/api/admin/features/{key}/settings` ; GET `/internal/features/{key}/settings` | Admin ; jeton du conteneur, port interne, fonctionnalité activée | Réglages propres d'une fonctionnalité, bornés et tracés au journal d'audit ; lus par le conteneur (OPT-02, OPT-07, TRI-13) | Core/Features |
 | GET, PUT `/api/admin/settings/language-model`, POST `…/test`, GET `…/usage` ; GET `/internal/language-model`, POST `/internal/language-model/calls` | Admin ; jeton du conteneur, port interne, CMDB assistée activée | Modèle de langage : réglages, emplacement vérifié par résolution, clé au coffre jamais renvoyée ; essai par le conteneur, compteurs ; lecture par le conteneur, traces des appels gardées 90 jours (OPT-20, OPT-22, OPT-23, OPT-26, OPT-27) | Core/Features |
@@ -189,7 +196,7 @@ les entités EF sont renvoyées avec leurs navigations (`Analysis → Problem �
 | GET/POST/PUT `/api/incidents[/{id}]` | User | Incidents (DELETE : Admin) | Modules/IncidentManagement |
 | GET/POST/PUT `/api/requests[/{id}]` | User | Demandes ; Approuvée/Rejetée : Manager (DELETE : Admin) | Modules/ServiceRequestManagement |
 | GET/POST/PUT `/api/changes[/{id}]`, GET `/api/changes/schedule`, GET `/api/changes/{id}/conflicts` | User | Changements, calendrier et conflits ; Autorisé/Rejeté : Manager (DELETE : Admin) | Modules/ChangeEnablement |
-| GET/POST/PUT `/api/configuration-items[/{id}]`, GET `/{id}/impact`, GET `/impact-of?type=&id=`, GET `/inventory`, POST `/{id}/relations`, POST `/{id}/verify`, DELETE `/relations/{id}`, GET `/attribute-types`, POST `/import` (Admin) | User | CI, attributs par type (CFG-16), import CSV (CFG-30), relations, vue d'impact transitive et services touchés, impact d'un changement (CFG-20), rapport d'inventaire (CFG-39), vérification par le propriétaire ou un gestionnaire (CFG-15) (DELETE d'un CI : Admin) | Modules/ServiceConfigurationManagement |
+| GET/POST/PUT `/api/configuration-items[/{id}]`, GET `/{id}/impact`, GET `/impact-of?type=&id=`, GET `/inventory`, POST `/{id}/relations`, POST `/{id}/verify`, DELETE `/relations/{id}`, GET `/attribute-types`, POST `/import` (Admin) | User | CI, attributs par type (CFG-16), import CSV (CFG-30), relations, vue d'impact transitive, services touchés, incidents et changements ouverts reliés (MCP-05), impact d'un changement (CFG-20), rapport d'inventaire (CFG-39), vérification par le propriétaire ou un gestionnaire (CFG-15) (DELETE d'un CI : Admin) | Modules/ServiceConfigurationManagement |
 | `/api/discovery/staging[/{id}]` (GET, `summary`, POST `reconcile`, `ignore`, `restore`, DELETE), `/api/discovery/jobs[/{id}]` (GET, POST, PUT, POST `run`, DELETE : Admin), `/api/discovery/credentials[/{id}]` (GET ; écriture : Admin), `/api/discovery/end-of-life[/{id}]` (GET ; écriture : Manager), `/api/discovery/mac-vendors` (GET ; POST `import` : Admin), `/api/discovery/ssh-host-keys[/{id}]` (GET ; POST `accept`, DELETE : Admin), `/api/discovery/relations[/{id}]` (GET, POST `accept`, `dismiss`) | User, gestionnaire du périmètre | Sas de staging, tâches de scan, coffre d'identifiants, fins de support, constructeurs par préfixe MAC, clés d'hôte et certificats, relations proposées (CFG-40 à CFG-55) ; exécution en tâche de fond (`DiscoveryWorker`, file `DiscoveryQueue`) | Modules/ServiceConfigurationManagement |
 | GET/POST `/api/changes/{id}/approvals` ; `/api/change-freezes` ; `/api/standard-changes` | User ; écriture Manager | CAB (CHG-20), périodes de gel (CHG-25), modèles standard (CHG-26), revue d'un modèle suspendu (`/api/standard-changes/{id}/review`, CHG-27) | Modules/ChangeEnablement |
 | GET `/api/request-catalog[/{id}]` ; POST/PUT (Manager) ; DELETE (Admin) | User | Catalogue de demandes (REQ-20) | Modules/ServiceRequestManagement |
@@ -258,7 +265,7 @@ Détails (registre des modules, thème, design) : [frontend.md](frontend.md).
 | Suite | Commande | Outillage |
 |---|---|---|
 | API (intégration) | `TESTCONTAINERS_RYUK_DISABLED=true dotnet test tests/SAloha.Api.Tests` | xUnit + `WebApplicationFactory` sur un PostgreSQL jetable (Testcontainers 4.16, image `postgres:18-alpine`) ; **Docker requis** |
-| Conteneur `features` | `dotnet test tests/SAloha.Features.Tests` | xUnit + `WebApplicationFactory` sur l'hôte (jeton du conteneur, contrôle de santé), règles du tri assisté en fonctions pures, et tri de bout en bout contre un port interne factice de l'API (fil d'événements, lectures, propositions) ; connecteur du modèle de langage contre un serveur d'inférence factice (pseudonymisation, schéma, essais, délai, une requête à la fois) ; analyse de la CMDB assistée de bout en bout contre une API et un modèle factices, sans base |
+| Conteneur `features` | `dotnet test tests/SAloha.Features.Tests` | xUnit + `WebApplicationFactory` sur l'hôte (jeton du conteneur, contrôle de santé), règles du tri assisté en fonctions pures, et tri de bout en bout contre un port interne factice de l'API (fil d'événements, lectures, propositions) ; connecteur du modèle de langage contre un serveur d'inférence factice (pseudonymisation, schéma, essais, délai, une requête à la fois) ; analyse de la CMDB assistée de bout en bout contre une API et un modèle factices, sans base ; serveur MCP (dossier `Mcp/`) par le client du SDK contre une API publique factice (transport, origine, jeton, outils, marquage, limites, journal) |
 | Frontend | `cd frontend && npm test` | Vitest + Testing Library (jsdom) |
 
 - L'API, le conteneur `features` et leurs projets de tests ciblent **net10.0** (LTS) ; un seul SDK suffit, en local comme
@@ -290,7 +297,7 @@ push sur `main` et sur chaque pull request, en onze jobs : **API** (tests ci-des
 `dotnet list package --vulnerable`, couverture publiée sans seuil), **Interface** (`npm ci`, tests, build,
 `npm audit` haut et critique par `scripts/check-audit-npm.py` : exception datée possible
 pour l'outillage de build et de test, jamais pour le paquet livré), **Documentation** (`scripts/check-docs.py`) et
-**Images Docker** (build des deux images, sans publication), **DCO** (chaque commit porte le
+**Images Docker** (build des images de l'API, de l'interface et des conteneurs `features` et `mcp`, sans publication), **DCO** (chaque commit porte le
 `Signed-off-by` de son auteur, bots exceptés ;
 [ADR-0010](../decisions/adr-0010-certificat-d-origine-dco.md) ; sur `main`, les commits
 arrivés par la fusion, pour repérer un squash dont le message a perdu la signature) et, sur
@@ -298,11 +305,12 @@ une pull request seulement, **Hygiène**
 (`scripts/check-hygiene.py` : trailers autres que `Signed-off-by` et termes réservés, lus dans
 le secret `HYGIENE_TERMES` ; bloquant et exigé pour fusionner depuis le 2026-11-03) ; **Recette** : la pile de démonstration construite depuis les sources sur une base
 vierge (annuaire Samba AD, API, interface, conteneur `features` du profil `fonctionnalites`,
-sans le service d'embeddings), les données
+conteneur `mcp` du profil `mcp`, sans le service d'embeddings), les données
 d'exemple chargées par l'API (`demo/donnees/charger.py`), puis
 [`scripts/recette.py`](../../scripts/recette.py) par l'interface : connexion des trois rôles,
 jeu de données complet, santé de la base, de l'annuaire et du conteneur `features` (joignable,
-jeton reconnu) ; c'est la recette avant fusion ;
+jeton reconnu), serveur MCP par nginx (`/mcp` en 404 coupé ; activé, les six outils listés et
+`search` appelé avec un jeton personnel ; de nouveau 404 une fois coupé) ; c'est la recette avant fusion ;
 sur une pull request seulement, **Preuve** ([`scripts/preuve.py`](../../scripts/preuve.py) :
 les tests ajoutés ou modifiés par la PR, rejoués sur le code de la base, doivent échouer — sinon
 ils ne prouvent pas le changement ; un code modifié sans test modifié échoue aussi ; exception

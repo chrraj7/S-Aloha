@@ -62,6 +62,48 @@ public class ConfigurationImpactTests(ApiFixture api)
     }
 
     [Fact]
+    public async Task MCP_05_l_impact_d_un_CI_rend_ses_incidents_et_changements_ouverts_visibles()
+    {
+        var (srv, _, _, m) = await Setup("mcp05");
+        async Task<JsonElement> Incident(string title)
+        {
+            var e = await Json(await m.PostAsJsonAsync("/api/incidents", new { title, impact = "Faible", urgency = "Faible" }));
+            await Json(await m.PostAsJsonAsync("/api/links", new { fromType = "incident", fromId = Id(e), toReference = Ref(srv) }));
+            return e;
+        }
+        async Task<JsonElement> Change(string title)
+        {
+            var e = await Json(await m.PostAsJsonAsync("/api/changes", new
+            {
+                title, changeType = "Normal", risk = "Faible", implementationPlan = "Plan", backoutPlan = "Retour"
+            }));
+            // Lien dans l'autre sens : du CI vers le changement.
+            await Json(await m.PostAsJsonAsync("/api/links", new { fromType = "ci", fromId = Id(srv), toReference = Ref(e) }));
+            return e;
+        }
+        var open = await Incident("Serveur lent");
+        var resolved = await Incident("Serveur arrêté");
+        var elsewhere = await Incident("Serveur d'un autre périmètre");
+        var planned = await Change("Patch noyau");
+        var closed = await Change("Ancien patch");
+        var hidden = Id(await Json(await api.Client().PostAsJsonAsync("/api/admin/perimeters", new { name = "Périmètre MCP-05" })));
+        await using (var db = api.Database())
+        {
+            (await db.Incidents.SingleAsync(i => i.Id == Id(resolved))).Status = "Résolu";
+            (await db.Incidents.SingleAsync(i => i.Id == Id(elsewhere))).PerimeterId = hidden;
+            (await db.Changes.SingleAsync(c => c.Id == Id(closed))).Status = "Clos";
+            await db.SaveChangesAsync();
+        }
+
+        var impact = await Json(await m.GetAsync($"/api/configuration-items/{Id(srv)}/impact"));
+        Assert.Equal([Ref(open)], Refs(impact.GetProperty("openIncidents")));
+        Assert.Equal([Ref(planned)], Refs(impact.GetProperty("openChanges")));
+        // L'Admin voit tous les périmètres : l'incident déplacé y figure aussi.
+        var all = await Json(await api.Client().GetAsync($"/api/configuration-items/{Id(srv)}/impact"));
+        Assert.Equal([Ref(open), Ref(elsewhere)], Refs(all.GetProperty("openIncidents")));
+    }
+
+    [Fact]
     public async Task CFG_22_CI_hors_service_les_responsables_des_services_touches_sont_notifies()
     {
         var (srv, _, svc, m) = await Setup("cfg22");

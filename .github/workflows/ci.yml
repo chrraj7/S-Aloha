@@ -1,6 +1,6 @@
 # Contrôles de chaque push sur main et de chaque pull request : tests de l'API
 # (PostgreSQL réel via Testcontainers), tests et build de l'interface, santé
-# de la documentation, build des images (API, interface, conteneur features), signature DCO de chaque commit
+# de la documentation, build des images (API, interface, conteneurs features et mcp), signature DCO de chaque commit
 # (ADR-0010), recette de la pile de démonstration sur une base vierge. Sur une pull request,
 # en plus : preuve que ses tests échouent sans son changement, dépendances ajoutées
 # (vulnérabilités, licences), analyse des workflows. Sur main, une fois tout vert, images de
@@ -42,8 +42,9 @@ jobs:
         run: dotnet test tests/SAloha.Api.Tests --collect:"XPlat Code Coverage" --results-directory couverture
         env:
           TESTCONTAINERS_RYUK_DISABLED: "true"
-      # Conteneur des fonctionnalités optionnelles (ADR-0023) : son hôte seul, sans base ni API.
-      - name: Tests du conteneur features
+      # Conteneurs des fonctionnalités optionnelles (ADR-0023) et du serveur MCP (ADR-0024, dossier Mcp/) :
+      # leurs hôtes seuls, sans base ni API.
+      - name: Tests des conteneurs features et mcp
         if: ${{ !cancelled() }}
         run: dotnet test tests/SAloha.Features.Tests --collect:"XPlat Code Coverage" --results-directory couverture
       # Q5 : la couverture se mesure et se montre, sans seuil qui bloque une PR. Les
@@ -63,7 +64,7 @@ jobs:
           retention-days: 14
       - name: Dépendances vulnérables
         run: |
-          for projet in backend/SAloha.Api.csproj features/SAloha.Features/SAloha.Features.csproj; do
+          for projet in backend/SAloha.Api.csproj features/SAloha.Features/SAloha.Features.csproj features/SAloha.Mcp/SAloha.Mcp.csproj; do
             dotnet list "$projet" package --vulnerable --include-transitive | tee -a vuln.txt
           done
           ! grep -q "has the following vulnerable packages" vuln.txt
@@ -111,29 +112,32 @@ jobs:
       - run: docker build -t s-aloha-api backend
       - run: docker build -t s-aloha-web frontend
       - run: docker build -t s-aloha-features features/SAloha.Features
+      - run: docker build -t s-aloha-mcp features/SAloha.Mcp
 
   recette:
     # Recette sur une pile neuve, à chaque PR et sur main : pile de démonstration construite
     # depuis les sources (base vierge, annuaire Samba AD, API, interface, conteneur des
-    # fonctionnalités optionnelles ; sans le service d'embeddings), données d'exemple chargées
-    # par l'API, puis scripts/recette.py par l'interface. Remplace la recette manuelle avant fusion.
+    # fonctionnalités optionnelles, serveur MCP ; sans le service d'embeddings), données d'exemple
+    # chargées par l'API, puis scripts/recette.py par l'interface. Remplace la recette manuelle avant fusion.
     name: Recette
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      COMPOSE: docker compose -p s-aloha-recette -f docker-compose.yml -f docker-compose.demo.yml --profile fonctionnalites
-      # L'API cherche le conteneur « features » du profil (jeton d'exemple de la démonstration).
+      COMPOSE: docker compose -p s-aloha-recette -f docker-compose.yml -f docker-compose.demo.yml --profile fonctionnalites --profile mcp
+      # L'API cherche le conteneur « features » du profil (jeton d'exemple de la démonstration),
+      # et le conteneur « mcp », sans jeton (ADR-0024).
       FEATURES_URL: http://features:8080
+      MCP_URL: http://mcp:8080
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Pile de démonstration
-        run: $COMPOSE up -d --build --quiet-pull db annuaire api web features
+        run: $COMPOSE up -d --build --quiet-pull db annuaire api web features mcp
       - name: Données d'exemple
         run: python3 demo/donnees/charger.py http://localhost:8080
       - name: Contrôles
-        run: python3 scripts/recette.py http://localhost --fonctionnalites
+        run: python3 scripts/recette.py http://localhost --fonctionnalites --mcp
       - name: Journaux de la pile
         if: failure()
         run: $COMPOSE logs --no-color --tail 200

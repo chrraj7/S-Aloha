@@ -53,6 +53,9 @@ services:
       # et FEATURES_TOKEN, le même secret qu'au conteneur (32 caractères au moins : openssl rand -hex 32).
       Features__Url: "${FEATURES_URL:-}"
       Features__Token: "${FEATURES_TOKEN:-}"
+      # Serveur MCP (ADR-0024) : conteneur « mcp », profil « mcp ». Vide : serveur MCP indisponible.
+      # Avec le profil : MCP_URL=http://mcp:8080 ; aucun jeton (le conteneur n'a pas de secret, MCP-02).
+      Mcp__Url: "${MCP_URL:-}"
     # 8081 (port interne des fonctionnalités, OPT-11) n'est jamais publié : le conteneur « features »
     # l'atteint sur le réseau du compose.
     ports:
@@ -68,7 +71,7 @@ services:
   embeddings:
     # Embeddings bge-m3 servis par Ollama, hors du processus de l'API (ADR-0013).
     # Premier démarrage : téléchargement du modèle (~1,2 Go), gardé dans le volume.
-    image: ollama/ollama:0.40.16
+    image: ollama/ollama:0.40.17
     entrypoint: ["/bin/sh", "-c", "ollama serve & until ollama list >/dev/null 2>&1; do sleep 1; done; ollama pull bge-m3 && wait"]
     volumes:
       - ollama:/root/.ollama
@@ -106,6 +109,24 @@ services:
     healthcheck:
       # Le contrôle de santé exige le jeton, comme pour l'API ; l'image aspnet n'a ni curl ni wget.
       test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /health HTTP/1.0\\r\\nAuthorization: Bearer %s\\r\\n\\r\\n' \"$$Features__Token\" >&3 && head -1 <&3 | grep -q ' 200 '"]
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+
+  mcp:
+    # Serveur MCP en lecture seule (ADR-0024), démarré seulement avec le profil « mcp », puis activé par
+    # l'Admin. Aucune ligne « ports: » : nginx y relaie /mcp, l'API y lit /health. Il appelle le port
+    # public de l'API avec le jeton personnel de chaque utilisateur, jamais avec le sien (MCP-02).
+    image: ghcr.io/chrraj7/s-aloha-mcp:${S_ALOHA_VERSION:-edge}
+    build: ./features/SAloha.Mcp
+    profiles: ["mcp"]
+    environment:
+      # Port public de l'API, jamais le port interne.
+      Api__Url: "http://api:8080"
+    healthcheck:
+      # Contrôle de santé sans jeton (ADR-0024) ; l'image aspnet n'a ni curl ni wget.
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /health HTTP/1.0\\r\\n\\r\\n' >&3 && head -1 <&3 | grep -q ' 200 '"]
       interval: 15s
       timeout: 5s
       start_period: 30s

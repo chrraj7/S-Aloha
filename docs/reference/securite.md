@@ -34,6 +34,12 @@
 - Le jeton porte les **groupes AD directs** de l'utilisateur (SOC-10), lus à la connexion :
   un changement d'appartenance prend effet à la connexion suivante. Les noms de groupes
   sont visibles de qui détient le jeton (son titulaire).
+- **Jetons d'accès personnels** du [serveur MCP](serveur-mcp.md) (MCP-03, MCP-04) : préfixe
+  `sat_`, empreinte SHA-256 seule gardée, routes `GET` seulement, refusés (401) quand le
+  serveur MCP est coupé ; contrairement au JWT de session, l'identité est **relue dans
+  l'annuaire** au moins toutes les 5 minutes (compte retiré : 401). `GET /api/me/tokens/current`
+  est ouverte sans authentification pour que le conteneur `mcp`, sans secret, distingue la
+  fonctionnalité coupée (404) d'un jeton refusé (401) ; elle ne rend que le jeton présenté.
 
 ## Autorisation
 
@@ -94,6 +100,7 @@ est toujours vérifié ; « Aucun » chiffrement ne convient qu'à un relais du 
 | — | `db` | Non publié hors du réseau compose |
 | sortant | `api` (découverte) | Ping, ports TCP témoins, SNMP (UDP 161) vers les réseaux des tâches de scan, LDAP vers l'annuaire : à ouvrir par le pare-feu vers les seuls réseaux à inventorier ([CFG-46](processus/gestion-de-la-configuration.md)) |
 | — | `garage` | Stockage S3 des pièces jointes (profil `pieces-jointes`) : non publié hors du réseau compose ; l'API l'atteint sur `garage:3900` ([SOC-25](regles-metier.md#8-notifications)) |
+| — | `mcp` | Serveur MCP (profil `mcp`) : non publié ; nginx relaie `/mcp` seul. Ni base, ni secret, ni port interne : il appelle le port public de l'API avec le jeton de l'utilisateur ; origine hors `Cors:AllowedOrigins` : 403, 60 requêtes par minute et par jeton ([MCP-01, MCP-02, MCP-08](serveur-mcp.md#2-règles)) |
 | — | `embeddings` | Non publié hors du réseau compose ; reçoit le texte des contenus indexés, qui **ne quitte pas le SI** (modèle exécuté localement, [ADR-0013](../decisions/adr-0013-recherche-hybride-service-embeddings-separe.md)) |
 
 ## Points de durcissement avant production

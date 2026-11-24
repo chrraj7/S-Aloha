@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <!-- Conteneur « mcp » (ADR-0024) : le serveur MCP de S-Aloha, en lecture seule, pour le compte de chaque
+       utilisateur. Ni base, ni secret, ni route interne : il appelle les routes publiques de l'API avec le jeton
+       personnel de l'utilisateur (MCP-02). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>SAloha.Mcp</RootNamespace>
+    <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- SDK C# officiel du protocole (Apache-2.0), transport « Streamable HTTP » ; protocole 2026-07-28 (MCP-01). -->
+    <PackageReference Include="ModelContextProtocol.AspNetCore" Version="2.4.0" />
+  </ItemGroup>
+</Project>
