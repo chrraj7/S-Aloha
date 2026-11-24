@@ -138,9 +138,9 @@ bloque toujours ; sur l'outillage de build et de test, il bloque sauf **exceptio
 un avis (GHSA) par exception, inscrite dans le script et donc soumise à l'étiquette
 `outillage`. Une exception attend une version corrigée ; échue, elle bloque de nouveau.
 
-| Avis | Paquet | Jusqu'au | Raison |
-|---|---|---|---|
-| [GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf) (haute, ReDoS) | picomatch ≤ 4.0.7, tiré par vite et vitest | 2026-12-18 | Aucune version corrigée publiée (4.0.7 est la dernière) ; absent du paquet livré ; motifs glob écrits par le projet, jamais saisis par un utilisateur |
+Aucune exception en cours. La dernière, GHSA-fc5q-39xc-vjpf (picomatch ≤ 4.0.7, tiré par vite
+et vitest), est retirée le 2026-11-24 : l'avis a été retiré par GitHub le 2026-11-18, et le
+script la signalait sans objet.
 
 ## Contrôles du dépôt
 
