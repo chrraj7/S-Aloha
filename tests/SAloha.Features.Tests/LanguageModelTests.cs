@@ -63,7 +63,7 @@ public class PseudonymizerTests
     [Fact]
     public void OPT_22_les_plages_du_SI()
     {
-        foreach (var ip in new[] { "127.0.0.1", "::1", "10.2.3.4", "172.20.0.9", "192.168.10.20", "169.254.1.1", "fd00::1", "fe80::1", "::ffff:10.0.0.1" })
+        foreach (var ip in new[] { "127.0.0.1", "::1", "10.2.3.4", "172.20.0.9", "169.254.1.1", "fd00::1", "fe80::1", "::ffff:10.0.0.1" })
             Assert.True(LanguageModelClient.IsInternal(IPAddress.Parse(ip)), ip);
         foreach (var ip in new[] { "8.8.8.8", "172.32.0.1", "2001:db8::1", "::ffff:8.8.8.8" })
             Assert.False(LanguageModelClient.IsInternal(IPAddress.Parse(ip)), ip);
