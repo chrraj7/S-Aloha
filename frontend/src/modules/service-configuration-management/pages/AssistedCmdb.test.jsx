@@ -13,11 +13,15 @@ const queue = [
     after: 'Windows Server 2019 Standard', reasons: 'Écriture normalisée.', createdAt: '2026-11-24T09:00:00Z', stale: false },
   { id: 3, ciId: 14, ciReference: 'CI-2026-0014', ciTitle: 'appli', perimeterId: 7, task: 'reclassify', field: 'ciType', before: 'Autre',
     after: 'Application', reasons: 'Une application.', createdAt: '2026-11-24T09:00:00Z', stale: true },
+  { id: 4, ciId: 15, ciReference: 'CI-2026-0015', ciTitle: 'Serveur paie prod', perimeterId: 7, task: 'merge', field: 'merge', before: null,
+    after: '16', reasons: 'Même serveur de paie.', createdAt: '2026-11-24T09:00:00Z', stale: false,
+    other: { id: 16, reference: 'CI-2026-0016', title: 'SRV-PAIE-01' } },
 ]
 const launch = vi.fn(dto => Promise.resolve({ id: 9, ...dto }))
 const proposals = vi.fn(() => Promise.resolve(queue))
 const apply = vi.fn((id, proposal) => (proposal === 1 ? Promise.reject(new Error('Ce nom existe déjà en Production (CFG-17).')) : Promise.resolve({})))
 const reject = vi.fn(() => Promise.resolve())
+const merge = vi.fn(() => Promise.resolve({}))
 const saveNaming = vi.fn(() => Promise.resolve({}))
 vi.mock('../../../api', () => ({
   api: {
@@ -31,6 +35,7 @@ vi.mock('../../../api', () => ({
       naming: () => Promise.resolve([{ ciType: 'Serveur', description: 'SRV-<RÔLE>-<NN>', examples: ['SRV-PAIE-01'], updatedAt: '2026-11-24T08:00:00Z',
         updatedBy: 'Hery Rakoto' }]),
       saveNaming: (t, d) => saveNaming(t, d),
+      merge: (...a) => merge(...a),
     },
     configurationItems: {
       get: () => Promise.resolve(ci),
@@ -50,7 +55,7 @@ it('CMA-01 : un gestionnaire lance une analyse avec ses tâches et suit les anal
   fireEvent.click(screen.getByLabelText('Reclasser'))
   fireEvent.click(screen.getByText('Lancer l’analyse'))
   await waitFor(() => expect(launch).toHaveBeenCalled())
-  expect(launch.mock.calls[0][0]).toEqual({ perimeterId: undefined, tasks: ['rename', 'normalize'] })
+  expect(launch.mock.calls[0][0]).toEqual({ perimeterId: undefined, tasks: ['rename', 'normalize', 'merge'] })
 })
 
 it('CMA-03 : la file se décide par sélection ; un refus des règles du CI reste affiché, la proposition reste à décider', async () => {
@@ -71,6 +76,23 @@ it('CMA-03 : la file se décide par sélection ; un refus des règles du CI rest
   await waitFor(() => expect(proposals).toHaveBeenLastCalledWith({ task: 'rename' }))
   fireEvent.click((await screen.findAllByText('Rejeter'))[0])
   await waitFor(() => expect(reject).toHaveBeenCalledWith(12, 1))
+})
+
+it('CMA-05 : une fusion garde le CI suggéré ou l’autre, au choix du gestionnaire, et ne passe pas par la modification du CI', async () => {
+  page()
+  const row = (await screen.findByText('Même serveur de paie.')).closest('tr')
+  expect(row.textContent).toContain('CI-2026-0015 retiré')
+  expect(row.textContent).toContain('fusionné dans CI-2026-0016 SRV-PAIE-01')
+  fireEvent.click(screen.getByText('Garder CI-2026-0016'))
+  await waitFor(() => expect(merge).toHaveBeenCalledWith(4, 16))
+  fireEvent.click(await screen.findByText('Garder CI-2026-0015'))
+  await waitFor(() => expect(merge).toHaveBeenLastCalledWith(4, 15))
+  // Par sélection, la fusion garde le CI suggéré.
+  fireEvent.click(screen.getByLabelText('Choisir CI-2026-0015 Fusion'))
+  fireEvent.click(screen.getByText('Appliquer la sélection'))
+  await waitFor(() => expect(merge).toHaveBeenCalledTimes(3))
+  expect(merge.mock.calls[2]).toEqual([4, 16])
+  expect(apply).not.toHaveBeenCalled()
 })
 
 it('CMA-04 : la convention de nommage se tient par type ; une description vide la retire', async () => {

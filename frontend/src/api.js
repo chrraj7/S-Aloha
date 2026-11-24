@@ -80,6 +80,8 @@ export const api = {
     analyses: (perimeter) => request('/assisted-cmdb/analyses' + (perimeter ? `?perimeter=${perimeter}` : '')),
     launch: (dto) => request('/assisted-cmdb/analyses', { method: 'POST', body: JSON.stringify(dto) }),
     proposals: (params = {}) => request('/assisted-cmdb/proposals?' + new URLSearchParams(params)),
+    // CMA-05 : fusion décidée, en gardant l'un des deux CI de la proposition.
+    merge: (id, keepId) => request(`/assisted-cmdb/proposals/${id}/merge`, { method: 'POST', body: JSON.stringify({ keepId }) }),
     naming: () => request('/assisted-cmdb/naming'),
     saveNaming: (ciType, dto) => request(`/assisted-cmdb/naming/${encodeURIComponent(ciType)}`, { method: 'PUT', body: JSON.stringify(dto) })
   },
