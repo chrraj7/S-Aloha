@@ -58,6 +58,8 @@ it('affiche le motif d’un refus et ne change rien sans confirmation (OPT-03)',
   // (sa lecture des réglages échoue ici), dans un ordre qui varie d'une exécution à l'autre.
   const card = screen.getByRole('heading', { name: /Tri assisté des tickets/ }).closest('.card')
   expect((await within(card).findByRole('alert')).textContent).toBe('Conteneur « features » injoignable.')
+  // Le refus ne change rien : la fonctionnalité reste coupée.
+  expect(within(card).getByText('Coupée')).toBeTruthy()
 })
 
 it('TRI-06 : l’état de l’index des incidents ouverts du tri s’affiche, construit ou non', async () => {
