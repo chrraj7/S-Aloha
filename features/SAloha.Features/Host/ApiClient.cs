@@ -35,7 +35,7 @@ public record CiRelationRead(int SourceId, int TargetId, string? Type);
 /// <summary>Un CI dans la vue publique, champs utiles à la CMDB assistée (CMA-07) et ceux qu'elle déclare au pseudonymiseur.</summary>
 public record CiRecord(int Id, int PerimeterId, string? Reference, string? Title, string? Description, string? Status, string? CiType,
     string? Environment, string? OperatingSystem, string? Vendor, string? Model, string? SerialNumber, string? IpAddress, string? MacAddress,
-    string? OwnerId, List<CiRelationRead>? Outgoing, List<CiRelationRead>? Incoming);
+    string? OwnerId, List<CiRelationRead>? Outgoing, List<CiRelationRead>? Incoming, string? Criticality = null);
 /// <summary>CMA-04 : convention de nommage d'un type de CI, tenue par les gestionnaires.</summary>
 public record NamingRule(string CiType, string Description, List<string>? Examples);
 

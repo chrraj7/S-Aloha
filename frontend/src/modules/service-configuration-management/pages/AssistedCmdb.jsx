@@ -6,10 +6,10 @@ import usePerimeters from '../../../core/usePerimeters'
 import { toForm, toPayload } from '../../../core/components/RecordForm'
 import { ciConfig } from '../config'
 
-/** CMA-02 : tâches que le conteneur exécute aujourd'hui (étapes 5a et 5b) ; Relier et Criticité suivront. */
+/** CMA-02 : les tâches d'une analyse, toutes exécutées par le conteneur. */
 export const TASKS = { rename: 'Renommer', normalize: 'Normaliser', reclassify: 'Reclasser', merge: 'Fusionner', relate: 'Relier', criticality: 'Criticité' }
-const OFFERED = ['rename', 'normalize', 'reclassify', 'merge']
-const FIELD = { title: 'Nom', ciType: 'Type', operatingSystem: 'Système', vendor: 'Constructeur', model: 'Modèle', criticality: 'Criticité', merge: 'Fusion' }
+const OFFERED = ['rename', 'normalize', 'reclassify', 'criticality', 'relate', 'merge']
+const FIELD = { title: 'Nom', ciType: 'Type', operatingSystem: 'Système', vendor: 'Constructeur', model: 'Modèle', criticality: 'Criticité', merge: 'Fusion', relation: 'Relation' }
 const TONE = { 'En file': 't-wait', 'En cours': 't-wait', Terminée: 't-done', 'En échec': 't-bad' }
 
 /** CMA-01 : lancer une analyse sur un périmètre géré, avec ses tâches. */
@@ -81,8 +81,13 @@ export async function applyProposal(p) {
 const decideOne = (p, how, keep) => {
   if (how === 'reject') return api.configurationItems.rejectProposal(p.ciId, p.id)
   if (p.field === 'merge') return api.assistedCmdb.merge(p.id, keep ?? p.other.id)
+  if (p.field === 'relation') return api.assistedCmdb.relate(p.id)
   return applyProposal(p)
 }
+
+/** Une fusion ou une relation porte sur deux CI : sans l'autre, visible, elle ne peut qu'être rejetée. */
+const PAIRS = ['merge', 'relation']
+const relationType = p => p.after.split('|').slice(1).join('|')
 
 /** CMA-03 : file des propositions, filtrée par tâche ; décision une à une ou par sélection. */
 function Queue({ version, onDecided }) {
@@ -106,7 +111,7 @@ function Queue({ version, onDecided }) {
     onDecided(); load()
   }
   if (!list) return <p>Chargement…</p>
-  const open = list.filter(p => !p.stale && (p.field !== 'merge' || p.other))
+  const open = list.filter(p => !p.stale && (!PAIRS.includes(p.field) || p.other))
   const chosen = open.filter(p => selected.includes(p.id))
   return (
     <div className="card">
@@ -127,21 +132,24 @@ function Queue({ version, onDecided }) {
           <tbody>{list.map(p => (
             <tr key={p.id}>
               <td><input type="checkbox" style={{ width: 'auto' }} aria-label={`Choisir ${p.ciReference} ${FIELD[p.field] ?? p.field}`}
-                disabled={p.stale || (p.field === 'merge' && !p.other)}
+                disabled={p.stale || (PAIRS.includes(p.field) && !p.other)}
                 checked={selected.includes(p.id)} onChange={() => setSelected(s => (s.includes(p.id) ? s.filter(x => x !== p.id) : [...s, p.id]))} /></td>
               <td><Link to={`/configuration/${p.ciId}`}>{p.ciReference}</Link> {p.ciTitle}</td>
               <td>{TASKS[p.task] ?? p.task} · {FIELD[p.field] ?? p.field}</td>
               {p.field === 'merge'
                 ? <><td>{p.ciReference} retiré</td>
                   <td>{p.other ? <>fusionné dans <Link to={`/configuration/${p.other.id}`}>{p.other.reference}</Link> {p.other.title}</> : '—'}</td></>
-                : <><td>{p.before ?? '—'}</td><td><b>{p.after}</b></td></>}
+                : p.field === 'relation'
+                  ? <><td>—</td><td><b>{relationType(p)}</b> {p.other ? <><Link to={`/configuration/${p.other.id}`}>{p.other.reference}</Link> {p.other.title}</> : '—'}</td></>
+                  : <><td>{p.before ?? '—'}</td><td><b>{p.after}</b></td></>}
               <td>{p.reasons}</td>
               <td>{p.stale ? <span className="small">Périmée : le CI a changé, elle se recalcule.</span> : <div className="toolbar">
-                {p.field !== 'merge' && <button className="btn small" onClick={() => decide([p], 'apply')}>Appliquer</button>}
+                {p.field !== 'merge' && (p.field !== 'relation' || p.other) &&
+                  <button className="btn small" onClick={() => decide([p], 'apply')}>Appliquer</button>}
                 {p.field === 'merge' && p.other && <>
                   <button className="btn small" onClick={() => decide([p], 'apply', p.other.id)}>Garder {p.other.reference}</button>
                   <button className="btn ghost small" onClick={() => decide([p], 'apply', p.ciId)}>Garder {p.ciReference}</button></>}
-                {p.field === 'merge' && !p.other && <span className="small">L’autre CI n’est pas visible.</span>}
+                {PAIRS.includes(p.field) && !p.other && <span className="small">L’autre CI n’est pas visible.</span>}
                 <button className="btn ghost small" onClick={() => decide([p], 'reject')}>Rejeter</button>
               </div>}</td>
             </tr>
@@ -169,7 +177,8 @@ export default function AssistedCmdb() {
   return (
     <>
       <h1 className="page-title">CMDB assistée</h1>
-      <p className="page-sub">Le modèle de langage propose de renommer, normaliser, reclasser et fusionner des CI. Rien n’est appliqué sans
+      <p className="page-sub">Le modèle de langage propose de renommer, normaliser, reclasser, fusionner et relier des CI, et la criticité des
+        applications qui n’en ont pas. Rien n’est appliqué sans
         vous : chaque proposition s’accepte, se rejette, ou se corrige depuis la fiche du CI ; une fusion garde le CI de votre choix et
         retire l’autre, ses liens, relations et actifs du sas reportés.</p>
       {error && <div className="error" role="alert">{error}</div>}

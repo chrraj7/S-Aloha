@@ -121,6 +121,63 @@ public class DuplicatesTests
     }
 }
 
+/// <summary>CMA-02, CMA-09 : Relier (CI cités par les descriptions) et Criticité (applications sans criticité), en fonctions pures.</summary>
+public class RelationsTests
+{
+    private static CiRecord Ci(int id, string title, string type = "Serveur", string? description = null, string? criticality = null,
+        List<CiRelationRead>? outgoing = null) =>
+        new(id, 7, $"CI-2026-00{id}", title, description, "En service", type, "Production", null, null, null, null, null, null, null, outgoing ?? [], [],
+            criticality);
+
+    [Fact]
+    public void CMA_02_seuls_les_CI_dont_la_description_cite_un_autre_CI_de_l_analyse_sont_soumis_avec_ces_cibles()
+    {
+        var items = new[]
+        {
+            Ci(11, "APP-PAIE", "Application", "Lit ses données dans BDD-PAIE ; tourne sur la VM CI-2026-0013."),
+            Ci(12, "BDD-PAIE", "Base de données"),
+            Ci(13, "VM-01"),
+            Ci(14, "SRV-WEB", description: "Serveur web public, sans dépendance."),
+            Ci(15, "RH", "Application", "Interface avec la paie RH."),   // « RH » : nom trop court pour être reconnu
+        };
+        var subjects = Relations.Subjects(items);
+        var subject = Assert.Single(subjects);
+        Assert.Equal(11, subject.Source.Id);
+        Assert.Equal([12, 13], subject.Targets.Select(t => t.Id));
+    }
+
+    [Fact]
+    public void CMA_09_une_relation_hors_analyse_vers_soi_ou_existante_est_ecartee_et_une_criticite_ne_vise_qu_une_application_sans_criticite()
+    {
+        var app = Ci(11, "APP-PAIE", "Application", "Lit BDD-PAIE.", outgoing: [new CiRelationRead(11, 13, "Dépend de")]);
+        var subjects = new[] { new RelationSubject(app, [Ci(12, "BDD-PAIE", "Base de données")]) };
+        var output = JsonDocument.Parse("""
+            { "propositions": [
+              { "source": 11, "cible": 12, "relation": "Dépend de", "motif": "La description cite la base." },
+              { "source": 11, "cible": 12, "relation": "Dépend de", "motif": "Deux fois : ignorée." },
+              { "source": 11, "cible": 11, "relation": "Dépend de", "motif": "Vers soi : écartée." },
+              { "source": 11, "cible": 13, "relation": "Dépend de", "motif": "Existe déjà : écartée." },
+              { "source": 11, "cible": 99, "relation": "Héberge", "motif": "Hors de l'analyse : écartée." },
+              { "source": 12, "cible": 11, "relation": "Héberge", "motif": "Source non soumise : écartée." } ] }
+            """).RootElement;
+        var (kept, rejected) = Relations.Read(output, subjects, new HashSet<int> { 11, 12, 13 });
+        Assert.Equal([new RelationProposal(11, 12, "Dépend de", "La description cite la base.")], kept);
+        Assert.Equal(4, rejected);
+        Assert.NotNull(SchemaCheck.Error(JsonDocument.Parse("""{ "propositions": [ { "source": 11, "cible": 12, "relation": "Utilise", "motif": "-" } ] }""").RootElement,
+            Relations.Schema));
+
+        var batch = new[] { Ci(21, "Paie", "Application"), Ci(22, "Messagerie", "Application", criticality: "Majeure"), Ci(23, "srv1") }.ToDictionary(c => c.Id);
+        var criticality = JsonDocument.Parse("""
+            { "propositions": [ { "ci": 21, "criticite": "Vitale", "motif": "La paie arrête l'activité." },
+              { "ci": 22, "criticite": "Vitale", "motif": "A déjà sa criticité : écartée." },
+              { "ci": 23, "criticite": "Mineure", "motif": "Pas une application : écartée." } ] }
+            """).RootElement;
+        var (critical, refused) = CmdbTasks.Read(CmdbTasks.Criticality, criticality, batch, new HashSet<string>());
+        Assert.Equal([new CmdbProposal(21, "criticality", "Vitale", "La paie arrête l'activité.")], critical);
+        Assert.Equal(2, refused);
+    }
+}
+
 /// <summary>Port interne factice de l'API et modèle factice : une analyse, ses CI, les conventions, les propositions et les comptes rendus.</summary>
 public sealed class FakeCmdbApi : IAsyncLifetime
 {
@@ -306,6 +363,32 @@ public class AssistedCmdbTests(FakeCmdbApi api) : IClassFixture<FakeCmdbApi>
         Assert.Equal([(21, 22), (21, 23)], pairs.EnumerateArray()
             .Select(p => (p.GetProperty("a").GetProperty("id").GetInt32(), p.GetProperty("b").GetProperty("id").GetInt32())));
         foreach (var absent in new[] { "SRV-MAIL-01", "10.1.2.3" }) Assert.DoesNotContain(absent, request.GetProperty("messages")[1].GetProperty("content").GetString());
+    }
+
+    [Fact]
+    public async Task CMA_02_Relier_et_Criticite_deposent_une_relation_orientee_et_la_criticite_d_une_application()
+    {
+        var app = Item(31, "APP-PAIE", "Application", description: "Lit ses données dans BDD-PAIE.");
+        api.Items = [app, Item(32, "BDD-PAIE", "Base de données"), Item(33, "SRV-WEB", "Serveur", description: "Serveur web, sans dépendance.")];
+        api.Replies["relate"] = """{ "propositions": [ { "source": 31, "cible": 32, "relation": "Dépend de", "motif": "La description cite la base." } ] }""";
+        api.Replies["criticality"] = """{ "propositions": [ { "ci": 31, "criticite": "Vitale", "motif": "La paie arrête l'activité." } ] }""";
+        Analysis(505, ["relate", "criticality"]);
+
+        using var container = Container();
+        container.CreateClient();
+        var report = await FinalReport(505);
+        Assert.NotNull(report);
+        Assert.Equal(("Terminée", 2, 0), (report!.Value.GetProperty("status").GetString(), report.Value.GetProperty("proposalCount").GetInt32(),
+            report.Value.GetProperty("rejectedCount").GetInt32()));
+        var mine = api.Proposals.Where(p => p.GetProperty("targetId").GetInt32() == 31)
+            .Select(p => (p.GetProperty("field").GetString(), p.GetProperty("after").GetString())).ToList();
+        Assert.Equal([("criticality", "Vitale"), ("relation", "32|Dépend de")], mine);
+        // Relier ne soumet que la source qui cite un autre CI ; Criticité, que l'application sans criticité.
+        var relate = Assert.Single(api.ModelRequests, r => r.GetProperty("response_format").GetProperty("json_schema").GetProperty("name").GetString() == "relate");
+        Assert.DoesNotContain("SRV-WEB", relate.GetProperty("messages")[1].GetProperty("content").GetString());
+        var critical = Assert.Single(api.ModelRequests, r => r.GetProperty("response_format").GetProperty("json_schema").GetProperty("name").GetString() == "criticality");
+        Assert.Equal([31], JsonDocument.Parse(critical.GetProperty("messages")[1].GetProperty("content").GetString()!).RootElement.EnumerateArray()
+            .Select(c => c.GetProperty("id").GetInt32()));
     }
 
     [Fact]
