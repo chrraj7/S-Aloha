@@ -17,6 +17,7 @@ const data = {
     overdueRequests: [item('request', 2, 'REQ-2026-0002', 'Badge', 'Approuvée')],
     projectAlerts: [item('project', 4, 'PRJ-2026-0004', 'Portail RH', 'délai hors tolérance')],
     cisToVerify: [item('ci', 7, 'CI-2026-0007', 'sw-coeur', 'Dernière vérification : 15/09/2025')],
+    expiringAgreements: [item('agreement', 3, 'SLA-2026-0003', 'SLA Paie', 'Expire le 12/12/2026')],
     changeFollowUps: [item('change', 8, 'CHG-2026-0008', 'Migration DNS', 'Mis en œuvre depuis plus de 2 jours ouvrés, sans clôture')],
     regulatory: [item('notification', 3, 'DRG-2026-0003', 'NIS 2 — INC-2026-0040', 'Alerte précoce : 4 h 10 restantes')]
   }
@@ -60,9 +61,18 @@ describe('Console : CI à vérifier (CFG-15)', () => {
     expect(screen.getByText('Dernière vérification : 02/10/2025')).toBeTruthy()
     expect(screen.getByText('CI à vérifier')).toBeTruthy()
     expect(screen.getByText('Dernière vérification : 15/09/2025')).toBeTruthy()
-    // Relances : demandes, projets, changements et CI à vérifier ; Mon travail : 1 dossier, 1 projet, 1 changement, 1 CI.
+    // Relances : demandes, projets, changements, CI à vérifier et SLA expirant ; Mon travail : 1 dossier, 1 projet, 1 changement, 1 CI.
     const tile = label => screen.getByText(label, { selector: '.c-tile-l' }).parentElement.querySelector('.c-tile-n').textContent
-    expect(tile('Relances')).toBe('4')
+    expect(tile('Relances')).toBe('5')
     expect(tile('Mon travail')).toBe('4')
+  })
+})
+
+describe('Console : SLA expirant (SLM-24)', () => {
+  it('montre dans Relances les SLA dont la fin de validité approche', async () => {
+    render(<MemoryRouter><Console /></MemoryRouter>)
+    expect(await screen.findByText('SLA expirant')).toBeTruthy()
+    expect(screen.getByText('SLA Paie')).toBeTruthy()
+    expect(screen.getByText('Expire le 12/12/2026')).toBeTruthy()
   })
 })

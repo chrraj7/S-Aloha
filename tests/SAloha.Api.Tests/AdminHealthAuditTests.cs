@@ -81,6 +81,7 @@ public class AdminHealthAuditTests(ApiFixture api)
         var csv = await (await api.Client("Admin", "admin.adm31")
             .GetAsync($"/api/admin/audit/export?reference={created.GetProperty("reference").GetString()}")).Content.ReadAsStringAsync();
         var line = csv.Split("\r\n").Single(l => l.Contains(";title;"));
-        Assert.EndsWith(";Formule adm31;'=1+1;", line);
+        // Motif vide, puis l'origine de la modification (OPT-08).
+        Assert.EndsWith(";Formule adm31;'=1+1;;Saisie", line);
     }
 }

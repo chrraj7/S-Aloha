@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SAloha.Api.Core.Audit;
 using SAloha.Api.Core.Auth;
 using SAloha.Api.Core.Data;
+using SAloha.Api.Core.Features;
 using SAloha.Api.Core.Links;
 using SAloha.Api.Core.Notifications;
 using SAloha.Api.Core.Perimeters;
@@ -42,6 +43,7 @@ public abstract class RecordController<T, TDto, TView>(AppDbContext db) : Contro
     /// <summary>Portée de l'utilisateur (PER-03), chargée une fois par requête.</summary>
     protected async Task<PerimeterScope> ScopeAsync() => _scope ??= await Access.GetAsync();
     protected PerimeterAccess Access => HttpContext.RequestServices.GetRequiredService<PerimeterAccess>();
+    private IFeatureGate Gate => HttpContext.RequestServices.GetRequiredService<IFeatureGate>();
     /// <summary>
     /// Référentiel partagé (ADR-0014 D2) : enregistrements visibles de tous, quel que soit
     /// leur périmètre (catalogue des services, articles publiés) ; null : aucun.
@@ -280,6 +282,8 @@ public abstract class RecordController<T, TDto, TView>(AppDbContext db) : Contro
         });
         await BeforeSaveAsync(e, true);
         await db.SaveChangesAsync();
+        // TRI-09 : suggestions d'une fonctionnalité optionnelle appliquées à la saisie, pour l'origine et la mesure.
+        await ProposalDecisions.RecordAppliedAsync(db, Gate, LinkType, e, Request.Headers[ProposalDecisions.SuggestionsHeader], Me, MyDisplay);
         await OnCreatedAsync(e);
         await NotifyAsync(e, "", (null, null));
         return CreatedAtAction(nameof(Get), new { id = e.Id }, View(e));
@@ -295,6 +299,21 @@ public abstract class RecordController<T, TDto, TView>(AppDbContext db) : Contro
         if (!scope.Sees(e.PerimeterId)) return Forbid();
         ActOn(e.PerimeterId);
         if (!CanEdit(e)) return Forbid();
+        // OPT-15 : cette modification applique une proposition d'une fonctionnalité optionnelle ;
+        // elle passe par toutes les règles de la pratique, et le journal d'audit en garde l'origine.
+        Proposal? proposal = null;
+        if (Request.Headers.TryGetValue(ProposalDecisions.Header, out var proposalHeader))
+        {
+            if (!int.TryParse(proposalHeader, out var proposalId)) return BadRequest(new { message = "Proposition invalide." });
+            proposal = await db.Proposals.FirstOrDefaultAsync(p => p.Id == proposalId && p.TargetType == LinkType && p.TargetId == id && p.Status == Proposal.Open);
+            if (proposal is null || !await Gate.IsEnabledAsync(proposal.Feature))
+                return NotFound(new { message = "Proposition introuvable ou déjà décidée." });
+            // Une proposition sur deux enregistrements (fusion, CMA-05) se décide par sa route propre.
+            if (ProposalFields.Of(proposal.TargetType, proposal.Field) is { Pair: true })
+                return BadRequest(new { message = "Cette proposition porte sur deux enregistrements : elle se décide par sa route propre." });
+            if (e.UpdatedAt > proposal.CreatedAt)
+                return Conflict(new { message = $"Proposition périmée : {e.Reference} a été modifié depuis ; elle sera recalculée." });
+        }
         // SOC-15 : un enregistrement terminé se modifie par un gestionnaire ; un User le rouvre.
         if (!IsManager && FinalStatuses.Contains(e.Status) && (dto.Status is null || dto.Status == e.Status))
             return StatusCode(403, new { message = $"{e.Reference} est {e.Status.ToLowerInvariant()} : seul un gestionnaire le modifie ; le rouvrir pour le reprendre, si la pratique le permet." });
@@ -341,13 +360,66 @@ public abstract class RecordController<T, TDto, TView>(AppDbContext db) : Contro
         if (moveTo is not null) e.PerimeterId = moveTo.Value;
         e.UpdatedAt = DateTime.UtcNow;
         await BeforeSaveAsync(e, false);
-        await db.SaveChangesAsync();
+        using (proposal is null ? null : AuditOrigin.Use(ProposalFields.OriginOf(proposal.Feature)))
+            await db.SaveChangesAsync();
+        if (proposal is not null)
+        {
+            // Valeur retenue : celle proposée (acceptée), ou une autre saisie par l'utilisateur (corrigée).
+            var final = ProposalFields.Of(proposal.TargetType, proposal.Field)?.Read(e);
+            await ProposalDecisions.DecideAsync(db, proposal, final == proposal.After ? Proposal.Accepted : Proposal.Corrected, final, MyDisplay);
+        }
         // SOC-23 : la lecture filtre sur le périmètre copié dans la notification ; il suit le déplacement.
         if (moveTo is not null)
             await db.Notifications.Where(n => n.TargetType == LinkType && n.TargetId == id)
                 .ExecuteUpdateAsync(u => u.SetProperty(n => n.PerimeterId, moveTo.Value));
         await NotifyAsync(e, left, ownerBefore);
         return Ok(View(e));
+    }
+
+    /// <summary>
+    /// OPT-15 : propositions ouvertes des fonctionnalités activées sur cet enregistrement visible ;
+    /// un motif ne cite que ce que l'utilisateur voit. Une proposition périmée (enregistrement modifié
+    /// depuis) est signalée : elle ne s'accepte plus.
+    /// </summary>
+    [HttpGet("{id:int}/proposals")]
+    public async Task<IActionResult> ListProposals(int id)
+    {
+        var e = await db.Set<T>().AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+        if (e is null || !await VisibleAsync(e)) return NotFound();
+        var enabled = (await Gate.EnabledAsync()).ToList();
+        var proposals = await db.Proposals.AsNoTracking()
+            .Where(p => p.TargetType == LinkType && p.TargetId == id && p.Status == Proposal.Open && enabled.Contains(p.Feature))
+            .OrderBy(p => p.Id).ToListAsync();
+        var scope = await ScopeAsync();
+        var cited = new Dictionary<(string, int), CitedView?>();
+        foreach (var group in proposals.SelectMany(ProposalDecisions.Cited).Distinct().GroupBy(c => c.Type))
+        {
+            var kind = ItemLinks.ByType(group.Key);
+            var ids = group.Select(c => c.Id).ToList();
+            var found = kind is null ? [] : await kind.Query(db).Where(t => ids.Contains(t.Id)).ToListAsync();
+            foreach (var c in group)
+                cited[(c.Type, c.Id)] = found.FirstOrDefault(t => t.Id == c.Id) is { } t && scope.Sees(t)
+                    ? new CitedView(c.Type, c.Id, t.Reference, t.Title) : null;
+        }
+        return Ok(proposals.Select(p => new ProposalView(p.Id, p.Feature, p.Field, p.Before, p.After, p.Reasons,
+            ProposalDecisions.Cited(p).Select(c => cited.GetValueOrDefault((c.Type, c.Id))).OfType<CitedView>().ToList(),
+            p.Confidence, p.CreatedAt, e.UpdatedAt > p.CreatedAt)));
+    }
+
+    /// <summary>OPT-15 : rejeter une proposition, avec le droit de modifier l'enregistrement.</summary>
+    [HttpPost("{id:int}/proposals/{proposalId:int}/reject")]
+    public async Task<IActionResult> RejectProposal(int id, int proposalId)
+    {
+        var e = await db.Set<T>().FindAsync(id);
+        if (e is null || !await VisibleAsync(e)) return NotFound();
+        var scope = await ScopeAsync();
+        if (!scope.Sees(e.PerimeterId)) return Forbid();
+        ActOn(e.PerimeterId);
+        if (!CanEdit(e)) return Forbid();
+        var proposal = await db.Proposals.FirstOrDefaultAsync(p => p.Id == proposalId && p.TargetType == LinkType && p.TargetId == id && p.Status == Proposal.Open);
+        if (proposal is null || !await Gate.IsEnabledAsync(proposal.Feature)) return NotFound(new { message = "Proposition introuvable ou déjà décidée." });
+        await ProposalDecisions.DecideAsync(db, proposal, Proposal.Rejected, null, MyDisplay);
+        return NoContent();
     }
 
     /// <summary>
@@ -381,6 +453,8 @@ public abstract class RecordController<T, TDto, TView>(AppDbContext db) : Contro
         if (e is null) return NotFound();
         db.Set<T>().Remove(e);
         ItemLinks.RemoveFor(db, LinkType, id);
+        // OPT-17 : ses propositions aussi.
+        db.Proposals.RemoveRange(db.Proposals.Where(p => p.TargetType == LinkType && p.TargetId == id));
         // SOC-24 : ses commentaires partent avec lui.
         db.Comments.RemoveRange(db.Comments.Where(c => c.TargetType == LinkType && c.TargetId == id));
         // SOC-25 : ses pièces jointes aussi, base puis stockage.

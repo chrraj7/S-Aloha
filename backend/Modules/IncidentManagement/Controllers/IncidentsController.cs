@@ -304,6 +304,46 @@ public class IncidentsController(AppDbContext db) : RecordController<Incident, I
     }
 
     /// <summary>INC-16 : parent et enfants d'un incident (enfants visibles seulement).</summary>
+    /// <summary>
+    /// TRI-07 : la panne probable de cet incident, pour le bandeau de sa fiche : nombre d'incidents ouverts du
+    /// groupe, depuis quand, ce qui les lie, ceux que l'utilisateur voit, le parent proposé (le plus ancien, ou
+    /// son parent s'il en a un, INC-16) et si l'utilisateur peut le déclarer majeur (gestionnaire, INC-13).
+    /// Le tri coupé, la route n'existe pas (OPT-04) ; un incident invisible répond 404.
+    /// </summary>
+    [HttpGet("{id:int}/triage")]
+    [Core.Features.RequiresFeature(Core.Features.FeatureCatalog.AssistedTriage)]
+    public async Task<IActionResult> Triage(int id)
+    {
+        var e = await db.Incidents.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+        if (e is null || !await VisibleAsync(e)) return NotFound();
+        ActOn(e.PerimeterId);
+        var outage = await db.ProbableOutages.AsNoTracking().Include(o => o.Members)
+            .Where(o => o.ClosedAt == null && o.Members.Any(m => m.IncidentId == id)).OrderBy(o => o.Id).FirstOrDefaultAsync();
+        var ids = outage?.Members.Select(m => m.IncidentId).ToList() ?? [];
+        var members = await db.Incidents.AsNoTracking().Where(i => ids.Contains(i.Id) && InternalOutagesController.Open.Contains(i.Status))
+            .OrderBy(i => i.CreatedAt).ThenBy(i => i.Id)
+            .Select(i => new { i.Id, i.Reference, i.Title, i.Status, i.CreatedAt, i.ParentId, i.PerimeterId }).ToListAsync();
+        if (outage is null || members.Count < ProbableOutage.MinMembers) return Ok(new { Outage = (object?)null });
+
+        var scope = await ScopeAsync();
+        var parentId = members[0].ParentId ?? members[0].Id;
+        var parent = await db.Incidents.AsNoTracking().Where(i => i.Id == parentId)
+            .Select(i => new { i.Id, i.Reference, i.Title, i.IsMajor, i.PerimeterId }).FirstOrDefaultAsync();
+        var service = outage.ServiceId is { } serviceId
+            ? await db.Services.AsNoTracking().Where(s => s.Id == serviceId).Select(s => new { s.Id, s.Reference, s.Title }).FirstOrDefaultAsync()
+            : null;
+        return Ok(new
+        {
+            Outage = new
+            {
+                outage.Id, Since = members[0].CreatedAt, Count = members.Count, outage.Basis, Service = service, outage.Reasons,
+                Members = members.Where(m => scope.Sees(m.PerimeterId)).Select(m => new { m.Id, m.Reference, m.Title, m.Status, m.ParentId }).ToList(),
+                Parent = parent is not null && scope.Sees(parent.PerimeterId) ? new { parent.Id, parent.Reference, parent.Title, parent.IsMajor } : null,
+                CanDeclareMajor = IsManager && parent is { IsMajor: false },
+            },
+        });
+    }
+
     [HttpGet("{id:int}/family")]
     public async Task<IActionResult> Family(int id)
     {

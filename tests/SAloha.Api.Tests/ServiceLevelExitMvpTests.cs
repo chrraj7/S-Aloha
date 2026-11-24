@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SAloha.Api.Tests;
 
-/// <summary>Niveaux de service : expiration (SLM-04), service du catalogue (SLM-10, SLM-15, INC-20), délais de prise en charge (SLM-13), heures de service et attente (SLM-14, INC-07, INC-22), respect mesuré et alerte (SLM-20, SLM-23, CSI-20), revue de SLA (SLM-22).</summary>
+/// <summary>Niveaux de service : expiration (SLM-04), service du catalogue (SLM-10, SLM-15, INC-20), délais de prise en charge (SLM-13), heures de service et attente (SLM-14, INC-07, INC-22), respect mesuré et alerte (SLM-20, SLM-23, CSI-20), revue de SLA (SLM-22), SLA expirant dans la console (SLM-24).</summary>
 [Collection("api")]
 public class ServiceLevelExitMvpTests(ApiFixture api)
 {
@@ -328,5 +328,31 @@ public class ServiceLevelExitMvpTests(ApiFixture api)
         var improvement = await Json(await m.GetAsync($"/api/improvements/{Assert.Single(links).GetProperty("id").GetInt32()}"));
         Assert.Equal("Proposée", improvement.GetProperty("status").GetString());
         Assert.Equal("SLA", improvement.GetProperty("source").GetString());
+    }
+
+    [Fact]
+    public async Task SLM_24_SLA_expirant_dans_30_jours_dans_les_relances()
+    {
+        var m = api.Client("Manager", "slm24.manager");
+        var svc = await Service(m, "Service SLM-24");
+        async Task<JsonElement> Active(string customer, DateTime? validTo)
+        {
+            var sla = await Json(await m.PostAsJsonAsync("/api/agreements", Sla(svc, customer, null)));
+            return await Json(await m.PutAsJsonAsync($"/api/agreements/{Id(sla)}", Sla(svc, customer, "En vigueur", validTo: validTo)));
+        }
+        var soon = await Active("SLM-24 proche", DateTime.UtcNow.Date.AddDays(20));
+        var later = await Active("SLM-24 lointain", DateTime.UtcNow.Date.AddDays(60));
+        var open = await Active("SLM-24 sans fin", null);
+
+        var lines = (await Json(await m.GetAsync("/api/console"))).GetProperty("management").GetProperty("expiringAgreements")
+            .EnumerateArray().ToList();
+        var line = Assert.Single(lines, l => Id(l) == Id(soon));
+        Assert.Equal("agreement", line.GetProperty("type").GetString());
+        Assert.Equal($"Expire le {DateTime.UtcNow.Date.AddDays(20):dd/MM/yyyy}", line.GetProperty("status").GetString());
+        Assert.DoesNotContain(lines, l => Id(l) == Id(later) || Id(l) == Id(open));
+
+        // Un User n'a pas de bloc de pilotage (PER-09).
+        var user = await Json(await api.Client("User", "slm24.user").GetAsync("/api/console"));
+        Assert.Equal(JsonValueKind.Null, user.GetProperty("management").ValueKind);
     }
 }

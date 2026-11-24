@@ -14,7 +14,8 @@ function NewRecord({ config, onCreated }) {
   const [error, setError] = useState('')
   const perimeters = usePerimeters()
   const merge = patch => setF(prev => ({ ...prev, ...patch }))
-  const submit = () => config.api.create({ ...toPayload(config.fields, f), status: f.status || null, perimeterId })
+  // `createOptions(form)` : en-têtes propres à la pratique (suggestions du tri appliquées, TRI-09).
+  const submit = () => config.api.create({ ...toPayload(config.fields, f), status: f.status || null, perimeterId }, config.createOptions?.(f))
     .then(onCreated).catch(e => setError(e.message))
   // PER-04 : avec plusieurs périmètres, le choix est obligatoire.
   const missing = config.fields.some(fd => fd.required && fd.create !== false && fd.type !== 'checkbox' && applies(fd, f) && !f[fd.key])
@@ -34,6 +35,8 @@ function NewRecord({ config, onCreated }) {
       <RecordForm fields={config.fields} form={f} onChange={merge} creating />
       {/* RAG-11 : cas similaires dès la saisie du titre (incidents, demandes). */}
       {config.suggestOnTyping && <TypingSuggestions text={f.title} />}
+      {/* Complément propre à la pratique, sous les cas similaires (suggestions du tri assisté, TRI-02). */}
+      {config.createExtras?.({ form: f, merge })}
       <button className="btn" onClick={submit} disabled={missing}>Enregistrer</button>
     </div>
   )

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Construit et pousse les trois images sur ghcr.io (registre déjà connecté).
+# Construit et pousse les images sur ghcr.io (registre déjà connecté).
 #   VERSION=… COMMIT=… bash scripts/publier-images.sh <tag> [<tag>…]
 # VERSION : affichée par Administration › Santé (ADM-21) et portée en étiquette OCI.
 # Appelé par .github/workflows/publication.yml (version : vX.Y.Z et latest) et par
@@ -9,7 +9,7 @@ set -euo pipefail
 [ $# -gt 0 ] || { echo "Usage : $0 <tag> [<tag>…]" >&2; exit 2; }
 prefixe=ghcr.io/chrraj7/s-aloha
 source=https://github.com/chrraj7/S-Aloha
-for image in api:backend web:frontend annuaire-demo:demo/annuaire; do
+for image in api:backend web:frontend annuaire-demo:demo/annuaire features:features/SAloha.Features; do
   nom=${image%%:*}; dossier=${image#*:}
   etiquettes=()
   for tag in "$@"; do etiquettes+=(-t "$prefixe-$nom:$tag"); done

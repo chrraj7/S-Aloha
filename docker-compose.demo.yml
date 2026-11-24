@@ -49,7 +49,19 @@ services:
       ConnectionStrings__Default: "Host=db;Database=saloha;Username=saloha;Password=ChangeMe_Str0ng!"
       Jwt__Key: "CHANGEZ-CETTE-CLE-SECRETE-DE-64-CARACTERES-MINIMUM-0123456789ab"
       Discovery__VaultKey: "CHANGEZ-CETTE-CLE-DU-COFFRE-DE-32-CARACTERES-MINIMUM-0123456789"
+      # Conteneur « features » (OPT-10) : démarré d'office en démonstration, le tri assisté activé par
+      # les données d'exemple (demo/donnees/charger.py) ; la CMDB assistée et le serveur MCP restent coupés.
+      Features__Url: "http://features:8080"
+      Features__Token: "CHANGEZ-CE-JETON-DU-CONTENEUR-FEATURES-DE-32-CARACTERES-MINIMUM"
       # S7 : clé JWT et mot de passe de base d'exemple acceptés ici, et seulement ici (démonstration).
+      Security__AllowSampleSecrets: "true"
+
+  # Même jeton d'exemple qu'à l'API, accepté ici seulement (S7). En démonstration, le conteneur démarre sans
+  # le profil « fonctionnalites » (« !reset » : Docker Compose 2.24 ou plus).
+  features:
+    profiles: !reset []
+    environment:
+      Features__Token: "CHANGEZ-CE-JETON-DU-CONTENEUR-FEATURES-DE-32-CARACTERES-MINIMUM"
       Security__AllowSampleSecrets: "true"
 
   # Charge une seule fois des données d'exemple fictives, par l'API (demo/donnees/).

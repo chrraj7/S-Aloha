@@ -55,16 +55,34 @@ const forced = (opts) => (opts?.force ? `?force=true&reason=${encodeURIComponent
 const records = (path) => ({
   list: (params = {}) => request(path + '?' + new URLSearchParams(params)),
   get: (id) => request(`${path}/${id}`),
-  create: (dto) => request(path, { method: 'POST', body: JSON.stringify(dto) }),
+  // `opts.headers` : en-têtes propres à la création (suggestions appliquées à la saisie, TRI-09).
+  create: (dto, opts = {}) => request(path, { method: 'POST', body: JSON.stringify(dto), headers: opts.headers }),
   update: (id, dto, opts) => request(`${path}/${id}${forced(opts)}`, { method: 'PUT', body: JSON.stringify(dto) }),
   remove: (id) => request(`${path}/${id}`, { method: 'DELETE' }),
   // SOC-14 : ce que la suppression emporterait (Admin).
   deletion: (id) => request(`${path}/${id}/deletion`),
-  transitions: () => request(`${path}/transitions`)
+  transitions: () => request(`${path}/transitions`),
+  // OPT-15 : propositions ouvertes des fonctionnalités optionnelles ; accepter passe par la modification,
+  // avec l'en-tête X-S-Aloha-Proposal (acceptée si la valeur retenue est la proposée, corrigée sinon).
+  proposals: (id) => request(`${path}/${id}/proposals`),
+  applyProposal: (id, proposal, dto) => request(`${path}/${id}`, { method: 'PUT', body: JSON.stringify(dto), headers: { 'X-S-Aloha-Proposal': String(proposal) } }),
+  rejectProposal: (id, proposal) => request(`${path}/${id}/proposals/${proposal}/reject`, { method: 'POST' })
 })
 
 export const api = {
   audit: { list: (type, id) => request(`/audit?type=${type}&id=${id}`) },
+  // OPT-04 : clés des fonctionnalités optionnelles activées.
+  features: () => request('/features'),
+  // TRI-02 : suggestions du tri assisté à la saisie d'un incident.
+  triage: { suggest: draft => request('/triage/suggest', { method: 'POST', body: JSON.stringify(draft) }) },
+  // CMA-01, CMA-03, CMA-04 : CMDB assistée — analyses, file des propositions, convention de nommage.
+  assistedCmdb: {
+    analyses: (perimeter) => request('/assisted-cmdb/analyses' + (perimeter ? `?perimeter=${perimeter}` : '')),
+    launch: (dto) => request('/assisted-cmdb/analyses', { method: 'POST', body: JSON.stringify(dto) }),
+    proposals: (params = {}) => request('/assisted-cmdb/proposals?' + new URLSearchParams(params)),
+    naming: () => request('/assisted-cmdb/naming'),
+    saveNaming: (ciType, dto) => request(`/assisted-cmdb/naming/${encodeURIComponent(ciType)}`, { method: 'PUT', body: JSON.stringify(dto) })
+  },
   // Administration (ADM, Admin) : santé, journal d'audit global.
   // SOC-25 : pièces jointes d'un enregistrement (le téléchargement est un simple lien).
   attachments: {
@@ -96,7 +114,19 @@ export const api = {
     testMail: (to) => request('/admin/settings/mail/test', { method: 'POST', body: JSON.stringify({ to }) }),
     storage: () => request('/admin/settings/storage'),
     saveStorage: (dto) => request('/admin/settings/storage', { method: 'PUT', body: JSON.stringify(dto) }),
-    testStorage: () => request('/admin/settings/storage/test', { method: 'POST' })
+    testStorage: () => request('/admin/settings/storage/test', { method: 'POST' }),
+    // OPT-01 à OPT-03 : fonctionnalités optionnelles, activation et coupure.
+    features: () => request('/admin/features'),
+    switchFeature: (key, enabled) => request(`/admin/features/${key}`, { method: 'PUT', body: JSON.stringify({ enabled }) }),
+    // TRI-13 : réglages propres d'une fonctionnalité ; TRI-10 : mesure du tri assisté.
+    featureSettings: key => request(`/admin/features/${key}/settings`),
+    saveFeatureSettings: (key, settings) => request(`/admin/features/${key}/settings`, { method: 'PUT', body: JSON.stringify(settings) }),
+    triageMetrics: () => request('/admin/triage/metrics'),
+    // OPT-20 à OPT-27 : modèle de langage, essai et compteurs des appels.
+    languageModel: () => request('/admin/settings/language-model'),
+    saveLanguageModel: (dto) => request('/admin/settings/language-model', { method: 'PUT', body: JSON.stringify(dto) }),
+    testLanguageModel: () => request('/admin/settings/language-model/test', { method: 'POST' }),
+    languageModelUsage: (days = 30) => request(`/admin/settings/language-model/usage?days=${days}`)
   },
   login: (username, password) =>
     request('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }), quiet: true }),
@@ -132,7 +162,9 @@ export const api = {
     qualify: (id, dto) => request(`/incidents/${id}/qualification`, { method: 'POST', body: JSON.stringify(dto) }),
     // INC-16 : parent et enfants (même panne).
     family: id => request(`/incidents/${id}/family`),
-    setParent: (id, parentReference) => request(`/incidents/${id}/parent`, { method: 'PUT', body: JSON.stringify({ parentReference }) })
+    setParent: (id, parentReference) => request(`/incidents/${id}/parent`, { method: 'PUT', body: JSON.stringify({ parentReference }) }),
+    // TRI-07 : panne probable de l'incident (bandeau de la fiche).
+    triage: id => request(`/incidents/${id}/triage`)
   },
   regulatoryNotifications: records('/regulatory-notifications'),
   requests: {

@@ -71,6 +71,8 @@ export const MODULES = [
       { href: '/configuration/inventory', label: 'Inventaire' },
       // CFG-40 : file de travail des gestionnaires, pas un réglage (docs/reference/frontend.md).
       { href: '/configuration/staging', label: 'Sas de staging', roles: ['Manager', 'Admin'] },
+      // CMA-01, CMA-03 : analyses et file des propositions, la CMDB assistée activée (OPT-04).
+      { href: '/configuration/assisted', label: 'CMDB assistée', roles: ['Manager', 'Admin'], feature: 'assisted-cmdb' },
     ],
   },
   {
@@ -122,12 +124,15 @@ export const groupOf = (module) => module.group ?? 'practices'
  * - Administration : la plateforme elle-même (utilisateurs et rôles, santé,
  *   journal d'audit) — Admin seul.
  * Une entrée : { href, label, description, icon (clé de SECTION_ICONS, propre à
- * l'entrée), roles? }.
+ * l'entrée), roles?, feature? }. `feature` : clé d'une fonctionnalité optionnelle ;
+ * l'entrée n'apparaît que si l'Admin l'a activée (OPT-04).
  */
 export const SECTIONS = [
   {
     id: 'settings', label: 'Paramétrage', roles: ['Manager', 'Admin'], entries: [
       { href: '/settings/categories', label: 'Catégories', description: 'Incidents et problèmes', icon: 'categories' },
+      { href: '/settings/naming', label: 'Convention de nommage', description: 'Noms des CI, pour la CMDB assistée', icon: 'naming',
+        feature: 'assisted-cmdb' },
       { href: '/settings/discovery', label: 'Découverte du réseau', description: 'Tâches de scan, coffre, fins de support',
         icon: 'discovery' },
       { href: '/settings/nis2', label: 'Référentiel NIS 2', description: 'Structure et texte des exigences',
@@ -140,6 +145,7 @@ export const SECTIONS = [
       { href: '/admin/perimeters', label: 'Périmètres', description: 'Directions, sites, affectations', icon: 'perimeters' },
       { href: '/admin/search', label: 'Index de recherche', description: 'État et reconstruction', icon: 'search-index' },
       { href: '/admin/platform', label: 'Messagerie et stockage', description: 'SMTP des courriels, stockage S3 des pièces jointes', icon: 'platform' },
+      { href: '/admin/features', label: 'Fonctionnalités optionnelles', description: 'Tri assisté, CMDB assistée, serveur MCP', icon: 'features' },
       { href: '/admin/health', label: 'Santé', description: 'Base, annuaire, services, version', icon: 'health' },
       { href: '/admin/audit', label: "Journal d'audit", description: 'Toutes pratiques, export', icon: 'audit' },
       { href: '/admin/duplicates', label: 'Nettoyage des doublons', description: 'Détection et fusion', icon: 'duplicates' },
@@ -147,5 +153,10 @@ export const SECTIONS = [
   },
 ]
 
-/** L'entrée (module, sous-entrée, section) est-elle visible pour ce rôle ? */
-export const visibleFor = (entry, role) => !entry.roles || entry.roles.includes(role)
+/**
+ * L'entrée (module, sous-entrée, section) est-elle visible pour ce rôle ? Une entrée
+ * liée à une fonctionnalité optionnelle (`feature`) exige aussi qu'elle soit activée
+ * (`features` : ensemble des clés activées, core/features.js).
+ */
+export const visibleFor = (entry, role, features) =>
+  (!entry.roles || entry.roles.includes(role)) && (!entry.feature || !!features?.has(entry.feature))

@@ -4,6 +4,8 @@
 > `backend/Modules/ServiceConfigurationManagement`,
 > `frontend/src/modules/service-configuration-management`. Préfixe des règles : **CFG**.
 > Socle commun et conventions (✅ / 🔜, lots) : [règles métier](../regles-metier.md).
+> Fonctionnalité optionnelle qui s'y greffe : [CMDB assistée](../cmdb-assistee.md)
+> (propositions de renommage, normalisation, type, fusion et relations, aide au sas ; règles CMA).
 
 <sub>[← Règles métier](../regles-metier.md) · [Toutes les pratiques](readme.md)</sub>
 
@@ -217,7 +219,9 @@ Le moteur de découverte est un service d'arrière-plan de l'API, asynchrone et 
 (une tâche à la fois, concurrence limitée, CFG-46), qui puise ses secrets dans le coffre
 d'identifiants (CFG-45). Aucune donnée découverte n'entre directement dans la CMDB : chaque
 actif transite par le sas de **staging** (`DiscoveredAssets`), où le moteur de
-réconciliation le rapproche des CI existants (CFG-41).
+réconciliation le rapproche des CI existants (CFG-41). La [CMDB assistée](../cmdb-assistee.md),
+optionnelle, y ajoute des propositions pour les actifs que les règles exactes n'ont pas
+rapprochés ([CMA-08](../cmdb-assistee.md)) ; la décision reste celle de CFG-40.
 
 ```mermaid
 flowchart TD

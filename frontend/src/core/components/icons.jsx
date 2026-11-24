@@ -60,6 +60,8 @@ export const IconRail = (p) => <Svg size={15} {...p}><rect x="3.5" y="4.5" width
 // une icône commune à toute la section (on ne distinguerait plus les entrées
 // dans la barre réduite).
 export const IconTag = (p) => <Svg {...p}><path d="M3.5 3.5h8l9 9-8 8-9-9v-8Z" /><circle cx="8" cy="8" r="1.4" /></Svg>
+// CMA-04 : convention de nommage des CI — une étiquette qui porte un nom.
+export const IconNaming = (p) => <Svg {...p}><rect x="3" y="6" width="18" height="12" /><path d="M7 15l2-6 2 6M7.7 13h2.6M14 9v6M14 9h2.5a1.5 1.5 0 0 1 0 3H14M14 12h3a1.5 1.5 0 0 1 0 3h-3" /></Svg>
 export const IconRadar = (p) => <Svg {...p}><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="4.5" /><path d="m12 12 6-6" /></Svg>
 export const IconFramework = (p) => <Svg {...p}><path d="M9 6h11M9 12h11M9 18h11" /><path d="m3.5 6 1.3 1.3L7 5M3.5 12l1.3 1.3L7 11M3.5 18l1.3 1.3L7 17" /></Svg>
 export const IconUsers = (p) => <Svg {...p}><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c.6-3.6 3.1-5.5 6.5-5.5s5.9 1.9 6.5 5.5M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.8c2 .7 3.2 2.4 3.5 5.2" /></Svg>
@@ -68,6 +70,7 @@ export const IconIndex = (p) => <Svg {...p}><ellipse cx="12" cy="5.5" rx="7.5" r
 export const IconMail = (p) => <Svg {...p}><rect x="3" y="5" width="18" height="14" /><path d="m3 6 9 7 9-7" /></Svg>
 export const IconHealth = (p) => <Svg {...p}><path d="M2.5 12h4l2.5-6 4 12 2.5-6h6" /></Svg>
 export const IconAudit = (p) => <Svg {...p}><path d="M8 4H5v17h14V4h-3" /><rect x="8" y="2.5" width="8" height="3.5" /><path d="M8.5 11h7M8.5 15h7M8.5 19h4" /></Svg>
+export const IconFeatures = (p) => <Svg {...p}><rect x="3" y="5" width="18" height="6" /><circle cx="15" cy="8" r="1.5" /><rect x="3" y="13" width="18" height="6" /><circle cx="9" cy="16" r="1.5" /></Svg>
 export const IconDuplicates = (p) => <Svg {...p}><rect x="8.5" y="8.5" width="12" height="12" /><path d="M15.5 8.5v-5h-12v12h5" /></Svg>
 
 // Sections entières, dans le rail (une icône par section, menu volant des entrées).
@@ -77,12 +80,14 @@ export const IconAdmin = (p) => <Svg {...p}><rect x="3" y="4" width="18" height=
 /** Icône de chaque entrée de section (Paramétrage, Administration) du registre. */
 export const SECTION_ICONS = {
   categories: IconTag,
+  naming: IconNaming,
   discovery: IconRadar,
   'nis2-framework': IconFramework,
   users: IconUsers,
   perimeters: IconPerimeter,
   'search-index': IconIndex,
   platform: IconMail,
+  features: IconFeatures,
   health: IconHealth,
   audit: IconAudit,
   duplicates: IconDuplicates,

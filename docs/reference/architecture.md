@@ -49,6 +49,7 @@ backend/                              # projet SAloha.Api (namespace SAloha.Api.
 │   ├── Data/                         # AppDbContext, References (XXX-AAAA-NNNN), DatabaseSchema + Migrations/
 │   ├── Comments/                     # Comment, CommentsController (fil de commentaires, SOC-24)
 │   ├── Directory/                    # DirectoryController, DirectoryEntry (recherche AD)
+│   ├── Features/                     # fonctionnalités optionnelles (ADR-0023) : FeatureCatalog, FeatureGate et [RequiresFeature], ContainerProbe, FeaturesClient (appels vers le conteneur, OPT-16), FeatureStatus, FeaturesController ; port interne et jeton du conteneur (InternalContract), fil d'événements (FeatureEvents), propositions (Proposals, InternalProposalsController)
 │   ├── Itil/                         # Priority (matrice impact × urgence → P1–P4)
 │   ├── Links/                        # ItemLink, registre ItemLinks, LinksController (liens inter-processus)
 │   ├── Notifications/                # Notification, NotificationRead, Notifier (émission), DatedEvents (événements datés), NotificationsController (SOC-21)
@@ -67,6 +68,13 @@ backend/                              # projet SAloha.Api (namespace SAloha.Api.
     ├── ComplianceAssessment/         # Conformité NIS 2 : Assessments, référentiel
     └── ProjectManagement/            # Projets : Projects et ses composants (phases, sprints, éléments de travail…)
         # chaque module : Controllers/ et Models/ (Entities.cs : entités et DTO d'entrée ; Views.cs : DTO de réponse)
+        # lectures internes d'une pratique pour le conteneur features : Controllers/Internal*Controller.cs (OPT-13)
+
+features/SAloha.Features/             # conteneur features, hors de l'API (ADR-0023), sans accès à la base
+├── AssistedCmdb/                     # CMDB assistée : AssistedCmdb (analyse → lots → propositions, comptes rendus), CmdbTasks (consignes, schémas, entrée, lecture)
+├── Host/                             # ContainerHost (jeton, /health), ApiClient (port interne de l'API), EventLoop (fil, une file par fonctionnalité), EmbeddingClient
+├── LanguageModel/                    # connecteur du modèle de langage (OPT-21 à OPT-28) : LanguageModelClient, Pseudonymizer (jetons), SchemaCheck (sortie), LanguageModelEssay (essai, OPT-26)
+└── TicketTriage/                     # tri assisté des tickets : TicketTriage (fil → propositions, pannes), TriageRules (vote, impact, motifs), OpenIncidents (index des ouverts, corrélation)
 ```
 
 ### Socle commun des processus (`Core/Records`)
@@ -94,6 +102,11 @@ Les processus autres que les problèmes héritent d'un même socle :
   Les longueurs `[MaxLength]` sont contrôlées avant l'enregistrement (`Lengths`).
 - **`References.CreateAsync`** — référence annuelle `XXX-AAAA-NNNN` (plus grand numéro + 1,
   nouvelle tentative sur collision de l'index unique) ; utilisée aussi par les problèmes.
+- **Propositions des fonctionnalités optionnelles** ([OPT-15](fonctionnalites-optionnelles.md#3-contrat-entre-lapi-et-le-conteneur-des-fonctionnalités)) — chaque
+  registre sert `GET …/{id}/proposals` et `POST …/{id}/proposals/{proposition}/reject` ; un `PUT`
+  qui porte `X-S-Aloha-Proposal` applique la proposition par le chemin normal (droits, `Fill`,
+  transitions, conflits), sous l'origine de la fonctionnalité au journal d'audit
+  (`AuditOrigin.Use`), puis la marque acceptée ou corrigée. La suppression emporte les propositions.
 
 **Portée par périmètre** (`Core/Perimeters/PerimeterAccess`, [PER-03 à PER-07](perimetres.md)) :
 rôle effectif de l'utilisateur sur chaque périmètre, chargé une fois par requête. Le socle
@@ -151,6 +164,18 @@ les entités EF sont renvoyées avec leurs navigations (`Analysis → Problem �
 | Méthode / Route | Policy | Rôle métier | Emplacement |
 |---|---|---|---|
 | GET `/api/admin/users`, GET `/api/admin/health`, GET `/api/admin/audit`, GET `/api/admin/audit/export`, GET `/api/admin/duplicates`, POST `…/duplicates/merge`, POST `…/duplicates/dismiss` | Admin | Utilisateurs et rôles (annuaire, ADM-10 à ADM-13), doublons (détection, fusion, ADM-40 à ADM-42), santé de la plateforme, journal d'audit global et export CSV (ADM-20 à ADM-31) | Core/Administration |
+| POST `/internal/proposals` | Jeton du conteneur `features`, port interne | Dépôt d'une proposition, vérifiée (OPT-14) | Core/Features |
+| GET, PUT `/internal/assisted-cmdb/analyses/{id}` ; GET `/internal/configuration-items?perimeter=&after=` | Jeton du conteneur `features`, port interne, CMDB assistée activée | Analyse de la CMDB assistée : lecture par le conteneur, comptes rendus (En cours, Terminée, En échec avec motif) ; CI d'un périmètre, page après page (CMA-01, OPT-13) | Modules/ServiceConfigurationManagement |
+| POST `/internal/outages` | Jeton du conteneur `features`, port interne, tri activé | Signalement d'une panne probable par le tri assisté : groupe formé (gestionnaires notifiés une fois), mis à jour ou fermé ; un seul périmètre (TRI-07, TRI-11) | Modules/IncidentManagement |
+| GET `/api/incidents/{id}/triage` | User, incident visible, tri activé (404 sinon) | Panne probable de l'incident pour le bandeau : nombre, depuis, lien, membres visibles, parent proposé, déclaration majeure possible (TRI-07) | Modules/IncidentManagement |
+| POST `/api/triage/suggest` | User, tri activé (404 sinon) | Suggestions à la saisie d'un incident, relayées au conteneur `features` en 2 s au plus (OPT-16), dans les périmètres de l'agent ; sources et incidents proches visibles seulement (TRI-02, TRI-11) | Modules/IncidentManagement |
+| GET `/internal/incidents/{id}`, `/internal/incidents/open`, POST `/internal/search/similar` ; GET `/internal/configuration-items?ids=`, `/internal/services`, `/internal/categories?practice=` | Jeton du conteneur `features`, port interne, fonctionnalité qui s'en sert activée (403 sinon : `[InternalFeature]`) | Lectures du tri assisté dans les vues de l'API publique : incident et CI reliés, voisins résolus dans les périmètres donnés, CI, services, catégories (OPT-13, [tri § 5](tri-assiste-des-tickets.md#5-api)) | Modules/IncidentManagement, Modules/ServiceConfigurationManagement, Modules/ServiceLevelManagement, Core/Itil |
+| GET `/api/<pratique>/{id}/proposals`, POST `…/{id}/proposals/{proposition}/reject` ; PUT `/api/<pratique>/{id}` avec `X-S-Aloha-Proposal` | User, droit de modifier | Propositions d'un enregistrement, rejet, acceptation par la route de la pratique (OPT-15) | Core/Records |
+| GET `/internal/events` | Jeton du conteneur `features`, port interne 8081 seulement | Fil d'événements des fonctionnalités optionnelles, curseur, purge à 7 jours (OPT-10 à OPT-12) | Core/Features |
+| GET `/api/features` | User | Clés des fonctionnalités optionnelles activées, lues par le registre de l'interface (OPT-04) | Core/Features |
+| GET `/api/admin/features`, PUT `/api/admin/features/{key}` | Admin | Fonctionnalités optionnelles : conteneur contrôlé, dépendances, activation et coupure tracées (OPT-01 à OPT-07, [ADR-0023](../decisions/adr-0023-fonctionnalites-optionnelles-et-modele-de-langage.md)) | Core/Features |
+| GET, PUT `/api/admin/features/{key}/settings` ; GET `/internal/features/{key}/settings` | Admin ; jeton du conteneur, port interne, fonctionnalité activée | Réglages propres d'une fonctionnalité, bornés et tracés au journal d'audit ; lus par le conteneur (OPT-02, OPT-07, TRI-13) | Core/Features |
+| GET, PUT `/api/admin/settings/language-model`, POST `…/test`, GET `…/usage` ; GET `/internal/language-model`, POST `/internal/language-model/calls` | Admin ; jeton du conteneur, port interne, CMDB assistée activée | Modèle de langage : réglages, emplacement vérifié par résolution, clé au coffre jamais renvoyée ; essai par le conteneur, compteurs ; lecture par le conteneur, traces des appels gardées 90 jours (OPT-20, OPT-22, OPT-23, OPT-26, OPT-27) | Core/Features |
 | GET/PUT `/api/admin/settings/mail`, POST `…/mail/test`, GET/PUT `/api/admin/settings/storage`, POST `…/storage/test` | Admin | Messagerie (SMTP) et stockage S3 des pièces jointes, réglés et essayés depuis la console (ADM-60 à ADM-63, [ADR-0020](../decisions/adr-0020-pieces-jointes-s3-et-smtp-configurables.md)) | Core/Platform |
 | GET `/api/categories?practice=`, POST, PUT `/{id}`, DELETE `/{id}` | User (lecture), Manager (écriture) | Catégories d'incident et de problème (ADM-50 à ADM-52, SOC-27) | Core/Itil |
 | GET `/health/live`, GET `/health/ready` | — (anonyme) | Sondes de l'orchestrateur (O1) : vie du processus ; disponibilité, base comprise (503 sinon). Réponse réduite à l'état (`Healthy`, `Unhealthy`) | Program.cs, Core/Observability |
@@ -233,9 +258,10 @@ Détails (registre des modules, thème, design) : [frontend.md](frontend.md).
 | Suite | Commande | Outillage |
 |---|---|---|
 | API (intégration) | `TESTCONTAINERS_RYUK_DISABLED=true dotnet test tests/SAloha.Api.Tests` | xUnit + `WebApplicationFactory` sur un PostgreSQL jetable (Testcontainers 4.16, image `postgres:18-alpine`) ; **Docker requis** |
+| Conteneur `features` | `dotnet test tests/SAloha.Features.Tests` | xUnit + `WebApplicationFactory` sur l'hôte (jeton du conteneur, contrôle de santé), règles du tri assisté en fonctions pures, et tri de bout en bout contre un port interne factice de l'API (fil d'événements, lectures, propositions) ; connecteur du modèle de langage contre un serveur d'inférence factice (pseudonymisation, schéma, essais, délai, une requête à la fois) ; analyse de la CMDB assistée de bout en bout contre une API et un modèle factices, sans base |
 | Frontend | `cd frontend && npm test` | Vitest + Testing Library (jsdom) |
 
-- L'API et le projet de tests ciblent **net10.0** (LTS) ; un seul SDK suffit, en local comme
+- L'API, le conteneur `features` et leurs projets de tests ciblent **net10.0** (LTS) ; un seul SDK suffit, en local comme
   en CI.
 - Les jetons sont signés par la fixture (`ApiFixture`) avec la clé de configuration :
   l'Active Directory n'est pas sollicité.
@@ -271,10 +297,12 @@ arrivés par la fusion, pour repérer un squash dont le message a perdu la signa
 une pull request seulement, **Hygiène**
 (`scripts/check-hygiene.py` : trailers autres que `Signed-off-by` et termes réservés, lus dans
 le secret `HYGIENE_TERMES` ; bloquant et exigé pour fusionner depuis le 2026-11-03) ; **Recette** : la pile de démonstration construite depuis les sources sur une base
-vierge (annuaire Samba AD, API, interface, sans le service d'embeddings), les données
+vierge (annuaire Samba AD, API, interface, conteneur `features` du profil `fonctionnalites`,
+sans le service d'embeddings), les données
 d'exemple chargées par l'API (`demo/donnees/charger.py`), puis
 [`scripts/recette.py`](../../scripts/recette.py) par l'interface : connexion des trois rôles,
-jeu de données complet, santé de la base et de l'annuaire ; c'est la recette avant fusion ;
+jeu de données complet, santé de la base, de l'annuaire et du conteneur `features` (joignable,
+jeton reconnu) ; c'est la recette avant fusion ;
 sur une pull request seulement, **Preuve** ([`scripts/preuve.py`](../../scripts/preuve.py) :
 les tests ajoutés ou modifiés par la PR, rejoués sur le code de la base, doivent échouer — sinon
 ils ne prouvent pas le changement ; un code modifié sans test modifié échoue aussi ; exception
@@ -288,7 +316,8 @@ sur un push sur `main` seulement, une fois les quatre premiers et la Recette ver
 la fois et seulement si le commit est encore la tête de `main`. Sur une pull request, une
 nouvelle poussée annule l'exécution en cours ; sur `main`, chaque commit garde la sienne
 jusqu'au bout, si bien que des fusions rapprochées sont toutes contrôlées. Actions épinglées
-par SHA, jeton en lecture seule (écriture des paquets pour le seul job Images edge). CodeQL (C#, JavaScript) et Dependabot
+par SHA, jeton en lecture seule (écriture des paquets pour le seul job Images edge). CodeQL ([`codeql.yml`](../../.github/workflows/codeql.yml) : workflows, C# et JavaScript, sur
+chaque pull request, fork compris, chaque poussée de `main` et chaque semaine) et Dependabot
 ([`.github/dependabot.yml`](../../.github/dependabot.yml)) complètent ; les mises à jour
 Dependabot mineures ou correctives se fusionnent d'elles-mêmes une fois la CI au vert
 ([`.github/workflows/dependabot.yml`](../../.github/workflows/dependabot.yml)). [`garde-fous.yml`](../../.github/workflows/garde-fous.yml)
@@ -307,5 +336,10 @@ retire des textes du compte du mainteneur (commentaires, descriptions et revues 
 pied de page ajouté automatiquement par un outil, dont le motif est lu dans le secret
 `PIED_A_RETIRER` ; [`fusion-office.yml`](../../.github/workflows/fusion-office.yml) repose
 l'étiquette `fusion-office` sur une PR fusionnée qui ne la porte pas, quand le compte du
-mainteneur y commente « Fusion d'office ». Voir
+mainteneur y commente « Fusion d'office ». Une PR venue d'un fork a un jeton en lecture
+seule : [`contributions.yml`](../../.github/workflows/contributions.yml) lui pose depuis la
+branche par défaut `contribution-externe`, sa classe de risque et `a-verifier` (reposée à
+chaque poussée), sans exécuter son code, et remercie l'auteur à la fusion. Une telle PR se
+fusionne par rebase : ses commits arrivent tels quels, avec leur auteur et leur
+`Signed-off-by`, que le job DCO de `main` contrôle. Voir
 [sécurité § Contrôles du dépôt](securite.md#contrôles-du-dépôt).

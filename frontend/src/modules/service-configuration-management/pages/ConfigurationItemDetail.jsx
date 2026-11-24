@@ -7,6 +7,8 @@ import useManagerOn from '../../../core/useManagerOn'
 import useManagesPerimeter from '../../../core/useManagesPerimeter'
 import { ciConfig, RELATION_TYPES } from '../config'
 import { Sources, StagingBadge } from '../components/Discovery'
+import { useFeatures } from '../../../core/features'
+import Proposals from '../../../core/components/Proposals'
 
 /** Dépendances du CI : relations sortantes (ce CI → autre) et entrantes (autre → ce CI). */
 function Relations({ ci, onChanged }) {
@@ -194,12 +196,14 @@ export function DiscoveryTrace({ ci }) {
 }
 
 export default function ConfigurationItemDetail() {
+  // CMA-03 : l'encadré des propositions, la CMDB assistée activée seulement (OPT-04).
+  const assisted = useFeatures().has('assisted-cmdb')
   return (
     <RecordDetail config={ciConfig} tab={{
       label: 'Relations et impact',
       render: (r, reload) => <><Relations ci={r} onChanged={reload} /><Impact ci={r} /></>
     }}>
-      {(r, reload) => <><Attributes ci={r} onSaved={reload} /><Verification ci={r} onSaved={reload} /><DiscoveryTrace ci={r} /></>}
+      {(r, reload) => <>{assisted && <Proposals config={ciConfig} record={r} reload={reload} title="Propositions de la CMDB assistée" />}<Attributes ci={r} onSaved={reload} /><Verification ci={r} onSaved={reload} /><DiscoveryTrace ci={r} /></>}
     </RecordDetail>
   )
 }

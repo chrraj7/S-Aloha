@@ -105,6 +105,28 @@ public class ChangeLifecycleTests(ApiFixture api)
     }
 
     [Fact]
+    public async Task CHG_15_un_changement_urgent_mis_en_oeuvre_ne_quitte_pas_Urgent_pour_eviter_la_revue()
+    {
+        object Body(string type, string status, DateTime? end = null, string? pir = null) =>
+            Change(type, status, Slot, end, end is null ? null : "Réussi", pir, "User", "resp.chg15t");
+        var (_, url) = await Planned("Urgent", "chg15t", "User", "resp.chg15t");
+        var owner = api.Client("User", "resp.chg15t");
+        await Json(await owner.PutAsJsonAsync(url, Body("Urgent", "Mis en œuvre")));
+
+        // En un envoi : clore en le disant Normal, sans revue, est refusé.
+        Assert.Contains("reste Urgent", await Refused(await owner.PutAsJsonAsync(url, Body("Normal", "Clos", Slot.AddHours(1)))));
+        // En deux envois : le type seul ne change pas non plus.
+        Assert.Contains("reste Urgent", await Refused(await owner.PutAsJsonAsync(url, Body("Normal", "Mis en œuvre"))));
+        // Un gestionnaire non plus.
+        Assert.Contains("reste Urgent", await Refused(await api.Client("Manager", "gest.chg15t").PutAsJsonAsync(url, Body("Normal", "Mis en œuvre"))));
+        var kept = await Json(await owner.GetAsync(url));
+        Assert.Equal(("Urgent", "Mis en œuvre"), (kept.GetProperty("changeType").GetString(), kept.GetProperty("status").GetString()));
+        // Témoin : toujours Urgent, la revue est exigée, puis la clôture passe avec elle.
+        Assert.Contains("revue post-implémentation", await Refused(await owner.PutAsJsonAsync(url, Body("Urgent", "Clos", Slot.AddHours(1)))));
+        await Json(await owner.PutAsJsonAsync(url, Body("Urgent", "Clos", Slot.AddHours(1), "Correctif d'urgence appliqué ; supervision à renforcer.")));
+    }
+
+    [Fact]
     public async Task CHG_14_seuls_le_responsable_et_un_gestionnaire_mettent_en_oeuvre_et_closent()
     {
         object Body(string status, string? ownerId = "resp.chg259", string ownerType = "User", DateTime? end = null) =>

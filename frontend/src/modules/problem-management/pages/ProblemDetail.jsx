@@ -38,7 +38,8 @@ const badge = s => s.replace(/[ é]/g, m => (m === ' ' ? '' : 'e'))
 /**
  * PRB-30, KB-12 : une erreur connue se documente dans la base de connaissances.
  * L'article (type Erreur connue, brouillon) reprend le titre, les symptômes et le
- * contournement, et se relie au problème ; s'il existe déjà, la fiche y renvoie.
+ * contournement, et se relie au problème ; s'il existe déjà, la fiche y renvoie. Son brouillon
+ * naît dans le périmètre du problème (PER-04), comme le changement de CHG-23.
  */
 export function KnownErrorArticle({ p }) {
   const [article, setArticle] = useState(undefined)
@@ -53,7 +54,7 @@ export function KnownErrorArticle({ p }) {
   const create = async () => {
     try {
       const a = await api.knowledge.create({
-        title: p.title, articleType: 'Erreur connue',
+        title: p.title, articleType: 'Erreur connue', perimeterId: p.perimeterId,
         description: `Erreur connue documentée depuis le problème ${p.reference}.`,
         content: `## Symptômes\n\n${p.description || '—'}\n\n## Contournement\n\n${p.knownErrorWorkaround || '—'}\n\n## Problème\n\n${p.reference}`,
         keywords: [p.category, p.affectedService].filter(Boolean).join(', ')
@@ -328,11 +329,12 @@ function ActionsTab({ p, isManager, onSaved }) {
       .then(onSaved).catch(e => setMsg(e.message))
   // PRB-25 : le R demande à l'A d'approuver l'action ; seul l'A (ou un gestionnaire) la termine.
   const askApproval = a => api.actions.requestApproval(a.id).then(onSaved).catch(e => setMsg(e.message))
-  // PRB-27 : le changement reprend le titre et la description de l'action, puis lui est rattaché (et relié au problème).
+  // PRB-27 : le changement reprend le titre et la description de l'action, puis lui est rattaché (et relié au problème) ;
+  // il naît dans le périmètre du problème, sans quoi l'API refuse pour un utilisateur de plusieurs périmètres (PER-04).
   const createChange = async a => {
     try {
       const c = await api.changes.create({
-        title: a.title, changeType: 'Normal', risk: 'Moyen',
+        title: a.title, changeType: 'Normal', risk: 'Moyen', perimeterId: p.perimeterId,
         description: `${a.description ? a.description + '\n\n' : ''}Correctif de l'action « ${a.title} » du problème ${p.reference}.`
       })
       await api.actions.setChange(a.id, c.reference)

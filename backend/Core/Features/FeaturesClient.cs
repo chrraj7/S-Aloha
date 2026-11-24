@@ -1,0 +1,104 @@
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text.Json;
+
+namespace SAloha.Api.Core.Features;
+
+/// <summary>
+/// OPT-16 : appels de l'API vers le conteneur <c>features</c>, réservés aux réponses qu'un écran attend
+/// (suggestions à la saisie, TRI-02). Délai de 2 secondes au plus ; un échec, un délai dépassé ou un
+/// conteneur absent rendent une réponse vide (<c>null</c>), journalisée, jamais une erreur à l'écran.
+/// Le reste du travail du conteneur passe par le fil d'événements (OPT-12), jamais par ces appels.
+/// </summary>
+public class FeaturesClient(HttpClient client, IConfiguration config, IFeatureGate gate, ILogger<FeaturesClient> logger)
+{
+    // Chaque appel borne son délai : 2 s pour un écran (OPT-16), celui du modèle pour l'essai (OPT-26). Le client
+    // HTTP, propre à chaque instance, ne borne plus rien lui-même (100 s par défaut).
+    private readonly HttpClient http = Unbounded(client);
+
+    private static HttpClient Unbounded(HttpClient c)
+    {
+        c.Timeout = System.Threading.Timeout.InfiniteTimeSpan;
+        return c;
+    }
+
+    public static readonly TimeSpan Timeout = TimeSpan.FromSeconds(2);
+
+    /// <summary>Taille maximale d'une réponse du conteneur (réglée sur le client HTTP).</summary>
+    public const int MaxResponseBytes = 1 << 20;
+
+    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
+
+    /// <summary>
+    /// <c>POST {Features:Url}{path}</c> pour la fonctionnalité <paramref name="feature"/>, avec le jeton du
+    /// conteneur. Fonctionnalité coupée ou d'un autre conteneur : aucun appel (OPT-04). Le corps et le jeton
+    /// ne sont jamais journalisés, seulement le chemin et la cause.
+    /// </summary>
+    public async Task<T?> PostAsync<T>(string feature, string path, object body, CancellationToken ct = default) where T : class
+    {
+        if (FeatureCatalog.ByKey(feature)?.Container != FeatureCatalog.FeaturesContainer)
+            throw new ArgumentException($"Fonctionnalité inconnue du conteneur features : {feature}", nameof(feature));
+        if (!await gate.IsEnabledAsync(feature, ct)) return null;
+        var (result, failure, elapsed) = await SendAsync<T>(path, body, Timeout, ct);
+        if (result is null && failure is not null)
+            logger.LogWarning("Conteneur features : appel {Path} ({Feature}) sans réponse, {Failure}, après {Elapsed} ms ; réponse vide rendue.",
+                path, feature, failure, elapsed);
+        return result;
+    }
+
+    /// <summary>
+    /// OPT-26 : l'essai du modèle de langage, qu'un écran attend aussi, mais sans fonctionnalité activée (l'Admin essaie
+    /// avant d'activer) et avec le délai du modèle. Rend la réponse, ou la cause de l'échec, sans secret.
+    /// </summary>
+    public async Task<(T? Result, string? Failure)> EssayAsync<T>(string path, object body, TimeSpan timeout, CancellationToken ct) where T : class
+    {
+        var (result, failure, elapsed) = await SendAsync<T>(path, body, timeout, ct);
+        if (failure is not null) logger.LogWarning("Conteneur features : essai {Path} sans réponse, {Failure}, après {Elapsed} ms.", path, failure, elapsed);
+        return (result, failure);
+    }
+
+    private async Task<(T? Result, string? Failure, int ElapsedMs)> SendAsync<T>(string path, object body, TimeSpan limit, CancellationToken ct) where T : class
+    {
+        var url = config["Features:Url"]?.Trim().TrimEnd('/');
+        if (string.IsNullOrEmpty(url) || !Uri.TryCreate(url + path, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https"))
+            return (null, "adresse absente ou invalide (Features:Url)", 0);
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, uri) { Content = JsonContent.Create(body, options: Json) };
+        var token = config["Features:Token"];
+        if (!string.IsNullOrEmpty(token)) request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeout.CancelAfter(limit);
+        var started = DateTime.UtcNow;
+        int Elapsed() => (int)(DateTime.UtcNow - started).TotalMilliseconds;
+        string? failure;
+        try
+        {
+            using var response = await http.SendAsync(request, timeout.Token);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<T>(Json, timeout.Token);
+                if (result is not null) return (result, null, Elapsed());
+                failure = "réponse vide";
+            }
+            else failure = $"réponse {(int)response.StatusCode}";
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            // L'écran a renoncé (nouvelle frappe, page quittée) : rien à signaler.
+            return (null, null, Elapsed());
+        }
+        catch (OperationCanceledException)
+        {
+            failure = $"délai de {limit.TotalSeconds:0} s dépassé";
+        }
+        catch (HttpRequestException ex)
+        {
+            failure = $"injoignable ({ex.HttpRequestError})";
+        }
+        catch (JsonException)
+        {
+            failure = "réponse illisible";
+        }
+        return (null, failure, Elapsed());
+    }
+}

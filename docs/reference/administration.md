@@ -20,6 +20,7 @@
 | Administration | Périmètres | Admin | [PER-01 à PER-12](perimetres.md) | ✅ |
 | Administration | Index de recherche | Admin | [RAG-08](recherche.md) | ✅ |
 | Administration | Messagerie et stockage | Admin | ADM-60 à ADM-63 | ✅ |
+| Administration | Fonctionnalités optionnelles (tri assisté des tickets, CMDB assistée, serveur MCP, modèle de langage) | Admin | [OPT-01 à OPT-28](fonctionnalites-optionnelles.md), [TRI-10, TRI-13](tri-assiste-des-tickets.md), [CMA-10, CMA-12](cmdb-assistee.md), [MCP-03](serveur-mcp.md) | ✅ activation, conteneurs, dépendances (OPT-01 à OPT-08), modèle de langage (OPT-20 à OPT-28), réglages du tri (TRI-10, TRI-13) ; 🔜 réglages de la CMDB assistée (CMA-10, CMA-12) et du serveur MCP (MCP-03) |
 | Paramétrage | Catégories (incidents, problèmes) | Manager, Admin | ADM-50 à ADM-53 | ✅ |
 
 ## 2. Utilisateurs et rôles
@@ -81,8 +82,9 @@ deux sont désactivés tant que l'Admin ne les a pas réglés.
 |---|---|---|
 | `GET /api/admin/users` (`q`, `role`) | Admin | Utilisateurs et rôles (ADM-10, ADM-11) |
 | `GET /api/admin/health` | Admin | Santé (ADM-20, ADM-21) |
-| `GET /api/admin/audit` (`author`, `type`, `action`, `reference`, `from`, `to`, `page`), `GET …/audit/export` | Admin | Journal global, export (ADM-30, ADM-31) |
+| `GET /api/admin/audit` (`author`, `type`, `action`, `reference`, `origin`, `from`, `to`, `page`), `GET …/audit/export` | Admin | Journal global, export (ADM-30, ADM-31 ; origine : [OPT-08](fonctionnalites-optionnelles.md)) |
 | `GET /api/admin/duplicates`, `POST /api/admin/duplicates/merge`, `POST /api/admin/duplicates/dismiss` | Admin | Doublons, fusion, « pas un doublon » (ADM-40 à ADM-42) |
 | `GET/PUT /api/admin/settings/mail`, `POST …/mail/test` (`to`) | Admin | SMTP, courriel d'essai (ADM-60, ADM-62, ADM-63) |
 | `GET/PUT /api/admin/settings/storage`, `POST …/storage/test` | Admin | Stockage S3, essai de dépôt (ADM-61 à ADM-63) |
+| `GET /api/admin/features`, `PUT /api/admin/features/{key}` | Admin | Fonctionnalités optionnelles : état, activation, coupure ([OPT-01 à OPT-03](fonctionnalites-optionnelles.md)) |
 | `GET /api/categories?practice=`, `POST`, `PUT /{id}`, `DELETE /{id}` | User (lecture), gestionnaire d'un périmètre ([PER-13](perimetres.md)) (écriture) | Catégories (ADM-50 à ADM-52) |

@@ -18,7 +18,7 @@ namespace SAloha.Api.Core.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.14")
+                .HasAnnotation("ProductVersion", "10.0.15")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "vector");
@@ -176,6 +176,11 @@ namespace SAloha.Api.Core.Data.Migrations
                     b.Property<string>("OldValue")
                         .HasColumnType("text");
 
+                    b.Property<string>("Origin")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
                     b.Property<string>("Reason")
                         .HasColumnType("text");
 
@@ -237,6 +242,288 @@ namespace SAloha.Api.Core.Data.Migrations
                     b.HasIndex("TargetType", "TargetId");
 
                     b.ToTable("Comments");
+                });
+
+            modelBuilder.Entity("SAloha.Api.Core.Features.FeatureEvent", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("At")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("EntityId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<int?>("PerimeterId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("At");
+
+                    b.ToTable("FeatureEvents");
+                });
+
+            modelBuilder.Entity("SAloha.Api.Core.Features.LanguageModelCall", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("At")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("DurationMs")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Error")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Feature")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("InputHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Outcome")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("PromptVersion")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<int>("Rejected")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Task")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("At");
+
+                    b.HasIndex("Feature", "At");
+
+                    b.ToTable("LanguageModelCalls");
+                });
+
+            modelBuilder.Entity("SAloha.Api.Core.Features.LanguageModelSettings", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("EncryptedKey")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("HostedConfirmedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("HostedConfirmedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<int>("MaxResponseKb")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("TimeoutSeconds")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("LanguageModelSettings");
+                });
+
+            modelBuilder.Entity("SAloha.Api.Core.Features.OptionalFeature", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("SettingsJson")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("OptionalFeatures");
+                });
+
+            modelBuilder.Entity("SAloha.Api.Core.Features.Proposal", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("After")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("Before")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CitedJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<double?>("Confidence")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DecidedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DecidedBy")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Feature")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<string>("Field")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<string>("FinalValue")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PerimeterId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Reasons")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<int>("TargetId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TargetType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TargetType", "TargetId", "Status");
+
+                    b.ToTable("Proposals");
+                });
+
+            modelBuilder.Entity("SAloha.Api.Core.Features.ProposalCount", b =>
+                {
+                    b.Property<string>("Month")
+                        .HasMaxLength(7)
+                        .HasColumnType("character varying(7)");
+
+                    b.Property<string>("Feature")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<string>("Field")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<int>("Accepted")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Corrected")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Expired")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Rejected")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Month", "Feature", "Field");
+
+                    b.ToTable("ProposalCounts");
                 });
 
             modelBuilder.Entity("SAloha.Api.Core.Itil.Category", b =>
@@ -1557,6 +1844,68 @@ namespace SAloha.Api.Core.Data.Migrations
                     b.ToTable("Incidents");
                 });
 
+            modelBuilder.Entity("SAloha.Api.Modules.IncidentManagement.ProbableOutage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Basis")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Feature")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<int>("PerimeterId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Reasons")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int?>("ServiceId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClosedAt");
+
+                    b.HasIndex("PerimeterId");
+
+                    b.ToTable("ProbableOutages");
+                });
+
+            modelBuilder.Entity("SAloha.Api.Modules.IncidentManagement.ProbableOutageMember", b =>
+                {
+                    b.Property<int>("OutageId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("IncidentId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("OutageId", "IncidentId");
+
+                    b.HasIndex("IncidentId");
+
+                    b.ToTable("ProbableOutageMembers", (string)null);
+                });
+
             modelBuilder.Entity("SAloha.Api.Modules.KnowledgeManagement.KnowledgeArticle", b =>
                 {
                     b.Property<int>("Id")
@@ -2704,6 +3053,76 @@ namespace SAloha.Api.Core.Data.Migrations
                     b.ToTable("RegulatoryNotifications");
                 });
 
+            modelBuilder.Entity("SAloha.Api.Modules.ServiceConfigurationManagement.AssistedCmdbAnalysis", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("FinishedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ItemCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ItemIds")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PerimeterId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProposalCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("RejectedCount")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("RequestedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RequestedBy")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("RequestedByDisplayName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime?>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Tasks")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PerimeterId")
+                        .IsUnique()
+                        .HasFilter("\"Status\" IN ('En file', 'En cours')");
+
+                    b.HasIndex("PerimeterId", "Id");
+
+                    b.ToTable("AssistedCmdbAnalyses");
+                });
+
             modelBuilder.Entity("SAloha.Api.Modules.ServiceConfigurationManagement.CiRelationship", b =>
                 {
                     b.Property<int>("Id")
@@ -3267,6 +3686,45 @@ namespace SAloha.Api.Core.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("EndOfLifeRules");
+                });
+
+            modelBuilder.Entity("SAloha.Api.Modules.ServiceConfigurationManagement.NamingConvention", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CiType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Examples")
+                        .IsRequired()
+                        .HasMaxLength(600)
+                        .HasColumnType("character varying(600)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CiType")
+                        .IsUnique();
+
+                    b.ToTable("NamingConventions");
                 });
 
             modelBuilder.Entity("SAloha.Api.Modules.ServiceConfigurationManagement.RelationProposal", b =>
@@ -4050,6 +4508,30 @@ namespace SAloha.Api.Core.Data.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
                 });
 
+            modelBuilder.Entity("SAloha.Api.Modules.IncidentManagement.ProbableOutage", b =>
+                {
+                    b.HasOne("SAloha.Api.Core.Perimeters.Perimeter", null)
+                        .WithMany()
+                        .HasForeignKey("PerimeterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("SAloha.Api.Modules.IncidentManagement.ProbableOutageMember", b =>
+                {
+                    b.HasOne("SAloha.Api.Modules.IncidentManagement.Incident", null)
+                        .WithMany()
+                        .HasForeignKey("IncidentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SAloha.Api.Modules.IncidentManagement.ProbableOutage", null)
+                        .WithMany("Members")
+                        .HasForeignKey("OutageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("SAloha.Api.Modules.KnowledgeManagement.KnowledgeArticle", b =>
                 {
                     b.HasOne("SAloha.Api.Core.Perimeters.Perimeter", null)
@@ -4225,6 +4707,15 @@ namespace SAloha.Api.Core.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Incident");
+                });
+
+            modelBuilder.Entity("SAloha.Api.Modules.ServiceConfigurationManagement.AssistedCmdbAnalysis", b =>
+                {
+                    b.HasOne("SAloha.Api.Core.Perimeters.Perimeter", null)
+                        .WithMany()
+                        .HasForeignKey("PerimeterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("SAloha.Api.Modules.ServiceConfigurationManagement.CiRelationship", b =>
@@ -4434,6 +4925,11 @@ namespace SAloha.Api.Core.Data.Migrations
             modelBuilder.Entity("SAloha.Api.Modules.ComplianceAssessment.SecurityObjective", b =>
                 {
                     b.Navigation("Requirements");
+                });
+
+            modelBuilder.Entity("SAloha.Api.Modules.IncidentManagement.ProbableOutage", b =>
+                {
+                    b.Navigation("Members");
                 });
 
             modelBuilder.Entity("SAloha.Api.Modules.ProblemManagement.CorrectiveAction", b =>

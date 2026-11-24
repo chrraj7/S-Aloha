@@ -1,0 +1,117 @@
+# 🔀 Tri assisté des tickets
+
+> [Fonctionnalité optionnelle](fonctionnalites-optionnelles.md) (clé `assisted-ticket-triage`,
+> conteneur commun `features`). À la saisie et à chaque enregistrement d'un incident,
+> S-Aloha suggère sa catégorie, son service, son groupe responsable et son impact, avec
+> leurs motifs, et signale les incidents ouverts qui semblent relever de la même panne.
+> Aucune suggestion n'est appliquée seule : l'agent décide. Sans modèle de langage :
+> le tri s'appuie sur la [recherche](recherche.md) et sur des règles. Préfixe des règles :
+> **TRI**. Décision : [ADR-0023](../decisions/adr-0023-fonctionnalites-optionnelles-et-modele-de-langage.md).
+
+<sub>[← Fonctionnalités optionnelles](fonctionnalites-optionnelles.md) · [Gestion des incidents](processus/gestion-des-incidents.md) · [Recherche](recherche.md) · [Règles métier](regles-metier.md)</sub>
+
+## 1. Objectif
+
+Réduire le temps passé à qualifier et aiguiller un incident (catégorisation, priorisation,
+affectation, ITIL 4 *Incident management*), et repérer tôt une panne qui touche plusieurs
+utilisateurs. Le tri **propose** ; la décision, et la responsabilité, restent à l'agent.
+
+Ce qui existe déjà, et que le tri ne refait pas :
+
+| Existant | Règle |
+|---|---|
+| Priorité calculée par la matrice impact × urgence | [SOC-16](regles-metier.md#6-priorité), [INC-02](processus/gestion-des-incidents.md) |
+| Cas similaires, dès la saisie | [RAG-06, RAG-11](recherche.md) |
+| Doublons probables, fusion par l'Admin | [ADM-40, ADM-41](administration.md#5-nettoyage-des-doublons) |
+| Incident parent et incidents enfants | [INC-16](processus/gestion-des-incidents.md) |
+| Incident majeur, déclaré par un Manager | [INC-13](processus/gestion-des-incidents.md) |
+| SLA en risque | [INC-24](processus/gestion-des-incidents.md) |
+| Escalade vers un autre groupe, avec motif | [INC-17](processus/gestion-des-incidents.md) |
+
+Le tri suggère l'**impact**, jamais la priorité : celle-ci reste calculée par la matrice.
+
+## 2. Fonctionnement
+
+```mermaid
+sequenceDiagram
+    actor Agent
+    participant A as API
+    participant T as features
+    participant E as embeddings
+    Agent->>A: saisit le titre d'un incident
+    A->>T: brouillon + périmètres de l'agent (délai 2 s)
+    T->>A: cas similaires (port interne, dans ces périmètres)
+    T->>E: vecteur du brouillon
+    T-->>A: suggestions, motifs, incidents ouverts proches
+    A-->>Agent: encadré « Suggestions »
+    Agent->>A: enregistre l'incident
+    A-)T: événement « incident créé » (lu par le conteneur)
+    T->>A: propositions (catégorie, service, groupe, impact, panne probable)
+    Agent->>A: accepte, corrige ou rejette
+```
+
+## 3. Règles
+
+| ID | Règle | Statut | Lot |
+|---|---|---|---|
+| TRI-01 | **Portée** : les incidents, à la création et tant qu'ils sont Nouveau ou En cours. Les demandes de service n'entrent pas dans cette version (§ 7) | ✅ | |
+| TRI-02 | **Deux moments** : à la **saisie**, dans le formulaire de création, dès 4 caractères de titre après une courte pause de frappe (comme [RAG-11](recherche.md)), par un appel de l'API au conteneur borné à 2 secondes ([OPT-16](fonctionnalites-optionnelles.md#3-contrat-entre-lapi-et-le-conteneur-des-fonctionnalités)) ; après chaque **enregistrement**, par le fil d'événements ([OPT-12](fonctionnalites-optionnelles.md#3-contrat-entre-lapi-et-le-conteneur-des-fonctionnalités)), en propositions sur la fiche. Une panne du conteneur ne bloque jamais la saisie ni l'enregistrement | ✅ | |
+| TRI-03 | **Catégorie, service et groupe par vote des voisins** : les 10 incidents résolus ou clos les plus proches ([RAG-06](recherche.md), au-dessus du plancher de [RAG-10](recherche.md)) votent, chacun pour sa catégorie (active, [ADM-51](administration.md#6-catégories-paramétrage)), son service (en service au catalogue) et son groupe responsable (un responsable de type Groupe AD ; un voisin confié à une personne ne vote pas pour le groupe). Une valeur n'est suggérée que si elle réunit au moins 3 votants et la moitié des votants au moins, et si elle diffère de la valeur saisie ; deux valeurs à égalité en tête ne départagent rien, aucune suggestion. Sans service d'embeddings, les voisins viennent des mots seuls ([RAG-02](recherche.md)), et le motif le dit | ✅ | |
+| TRI-04 | **Impact** : la plus haute des deux valeurs suivantes est suggérée, si elle diffère de la valeur saisie. Criticité du **service** : Élevée → Élevé, Moyenne → Moyen, Faible → Faible. Criticité d'un **CI relié** ([CFG-43](processus/gestion-de-la-configuration.md)) : Vitale ou Majeure → Élevé, Standard → Moyen, Mineure → Faible. Une **panne probable** (TRI-07) suggère Élevé. La priorité suit la matrice, si l'agent accepte. Le motif nomme le service, partagé par toute l'organisation ; un CI y est cité sans être nommé (« CI relié de criticité Vitale », TRI-11) | ✅ | |
+| TRI-05 | **Corrélation par règles** : deux incidents ouverts (Nouveau, En cours, En attente) d'un même périmètre sont **liés probables** s'ils portent le même service ou sont reliés au même CI, et ont été créés à moins de 60 minutes d'intervalle (`Triage:CorrelationWindowMinutes`) | ✅ | |
+| TRI-06 | **Corrélation par le sens** : le conteneur `features` tient, pour le tri, un **index propre des incidents ouverts** (titre et description, 2 000 caractères au plus, vecteurs du service d'embeddings), en mémoire, reconstruit à son démarrage depuis l'API et tenu à jour par le fil d'événements ; un incident résolu, clos ou supprimé en sort. Deux incidents ouverts d'un même périmètre, créés dans la même fenêtre que TRI-05, sont liés probables si leur similarité cosinus atteint le seuil (`Triage:CorrelationMinSimilarity`, 0,60, calibré : TRI-12). Cet index ne sert **jamais** la recherche ni les cas similaires : l'index de la recherche ne contient toujours que du contenu validé ([RAG-01](recherche.md)). Sans service d'embeddings, seule TRI-05 joue | ✅ | |
+| TRI-07 | **Panne probable** : au moins 3 incidents liés probables (`Triage:OutageThreshold`), par TRI-05 ou TRI-06, forment une panne probable : des incidents liés de proche en proche, du plus ancien au plus récent. Chaque fiche du groupe affiche un bandeau (« 4 incidents ouverts sur Messagerie depuis 09:12 ») qui propose de les **rattacher à un parent** (le plus ancien du groupe, ou son parent s'il en a un, [INC-16](processus/gestion-des-incidents.md)) ; aux Managers du périmètre, il propose aussi de **déclarer le parent majeur** ([INC-13](processus/gestion-des-incidents.md)). Les gestionnaires du périmètre reçoivent une notification ([SOC-21](regles-metier.md#8-notifications)) à la formation du groupe, une seule fois par groupe. Le conteneur, qui calcule le groupe, le signale à l'API (`POST /internal/outages`, § 5) ; l'API le garde, en vérifie les règles, notifie et sert le bandeau, même conteneur arrêté (décision du 2026-11-23) | ✅ | |
+| TRI-08 | **Motifs** : chaque suggestion dit pourquoi, en clair, et cite ses sources visibles : « 7 des 10 incidents résolus les plus proches portent la catégorie Messagerie », « service Messagerie, criticité Élevée », « 4 incidents ouverts sur le service Messagerie depuis 09:12 », « par les mots seuls » | ✅ | |
+| TRI-09 | **Décision** ([OPT-15](fonctionnalites-optionnelles.md#3-contrat-entre-lapi-et-le-conteneur-des-fonctionnalités)) : l'agent accepte, corrige ou rejette. À la saisie, accepter remplit le champ du formulaire ; l'enregistrement porte alors les suggestions retenues, pour l'origine du journal d'audit ([OPT-08](fonctionnalites-optionnelles.md#2-activation)) et la mesure (TRI-10). Sur une fiche, accepter un **groupe** change le responsable : c'est une escalade ([INC-17](processus/gestion-des-incidents.md)), dont le motif est prérempli (« Tri assisté : 7 des 10 incidents proches traités par GRP-RESEAU »), modifiable. Rattacher à un parent et déclarer majeur suivent leurs propres règles | ✅ | |
+| TRI-10 | **Mesure** : pour chaque champ, sur 30 et 90 jours, la part des suggestions acceptées, corrigées (autre valeur retenue), rejetées et laissées (aucune décision avant que l'incident quitte « Nouveau ») ; affichée dans Administration › Fonctionnalités optionnelles › Tri assisté. Un champ dont les suggestions sont surtout corrigées se coupe (TRI-13) | ✅ | |
+| TRI-11 | **Visibilité** : à la saisie, les voisins et les incidents proches sont cherchés dans les périmètres visibles de l'agent ; en tâche de fond, dans le périmètre de l'incident ([OPT-13](fonctionnalites-optionnelles.md#3-contrat-entre-lapi-et-le-conteneur-des-fonctionnalités)). Une panne probable ne regroupe jamais deux périmètres. Un utilisateur ne voit les suggestions que d'un incident qu'il voit, et les motifs ne citent que ce qu'il voit | ✅ | |
+| TRI-12 | **Calibrage** : avant la version stable, un jeu d'essai fictif d'au moins 30 incidents, dont des pannes à plusieurs incidents et des incidents isolés, mesure la précision du vote (TRI-03) et de la corrélation (TRI-06) ; le seuil de similarité et le nombre de voisins sont fixés d'après la mesure, consignée ici (même démarche que [RAG-10](recherche.md)). **Mesure du 2026-11-23** (pile de démonstration, bge-m3 ; jeu fictif `demo/donnees/tri-assiste.json` : 32 incidents résolus, 30 essais formulés autrement, 8 incidents ouverts dont une panne de 4 ; script `demo/donnees/calibrer-tri.py`) : vote juste à 87 % pour 5 voisins (couverture 77 %), **95 à 96 % pour 10** (couverture 73 à 77 %), 100 % pour 15 (couverture 53 à 57 %) : **10 voisins**. Similarité entre incidents d'une même panne de 0,56 à 0,74, entre incidents sans rapport jusqu'à 0,56 (ouverts) et 0,67 (résolus de thèmes différents) ; à 0,60, 4 paires de la panne sur 6, aucune paire d'ouverts sans rapport, 5 paires de résolus sur 384 ; à 0,55, les 6 paires mais 22 fausses liaisons : **0,60 maintenu**, les liens de proche en proche, la fenêtre et les règles rattrapant les paires manquées. Données synthétiques : à remesurer sur des données réelles après la première version stable | ✅ | |
+| TRI-13 | **Réglages** (Admin) : nombre de voisins (5 à 20, 10), votants minimaux (2 à 10, 3), part minimale (50 à 100 %, 50), fenêtre de corrélation (15 à 240 minutes, 60), seuil de panne probable (2 à 20, 3), seuil de similarité (0,40 à 0,95), et chaque suggestion (catégorie, service, groupe, impact, panne probable) activable à part | ✅ | |
+| TRI-14 | **Conservation** : celle des propositions ([OPT-17](fonctionnalites-optionnelles.md#3-contrat-entre-lapi-et-le-conteneur-des-fonctionnalités)) ; l'index des incidents ouverts n'existe que dans la mémoire du conteneur | ✅ (une panne probable fermée se purge comme une proposition décidée, à 13 mois) | |
+
+## 4. Interface
+
+| Endroit | Contenu | Statut |
+|---|---|---|
+| Formulaire de création d'un incident | Encadré « **Suggestions** » sous les cas similaires : une ligne par champ (« Catégorie : Messagerie — 7 des 10 incidents proches »), bouton « Appliquer », qui remplit le champ du formulaire (un groupe en responsable de type groupe) ; une suggestion déjà portée par le formulaire n'est plus proposée ; incidents ouverts proches, s'il y en a, en liens. Rien ne s'affiche tri coupé, conteneur arrêté ou lent (`modules/incident-management/TriageSuggestions.jsx`, point d'extension `createExtras` du formulaire de création) | ✅ |
+| Fiche incident, onglet Informations | Même encadré tant que l'incident est Nouveau ou En cours : une ligne par champ, valeur lisible, motif et sources ; accepter, corriger (autre valeur), rejeter ; un groupe accepté s'enregistre en escalade au motif prérempli (TRI-09) ; une proposition périmée ne s'applique plus. Bandeau « **Panne probable** » (TRI-07) : « 4 incidents ouverts sur Messagerie depuis 09:12 », membres, « Rattacher à INC-… » (le parent proposé, INC-16), « Déclarer INC-… incident majeur » pour un gestionnaire (INC-13) | ✅ |
+| Onglet Historique | Origine « Tri assisté des tickets » des modifications acceptées ([OPT-08](fonctionnalites-optionnelles.md#2-activation)) | ✅ |
+| Administration › Fonctionnalités optionnelles › Tri assisté | Réglages (TRI-13) : chaque nombre dans ses bornes, chaque suggestion activable, enregistrés et tracés ; mesure (TRI-10) par champ sur 30 et 90 jours, un champ surtout corrigé signalé ; tri activé seulement (`core/pages/admin/TriageSettings.jsx`). État de l'index des incidents ouverts (nombre, dernier rattrapage), rendu par le contrôle de santé du conteneur (`status`) | ✅ |
+
+## 5. API
+
+| Route | Policy | Rôle |
+|---|---|---|
+| `POST /api/triage/suggest` (titre, description, service, CI reliés, catégorie, impact, responsable saisis) | User, tri activé (404 sinon) | Suggestions à la saisie (TRI-02), relayées au conteneur dans les 2 secondes (OPT-16) avec les périmètres visibles de l'agent (tous pour l'Admin, TRI-11) : `{ "suggestions": [{ "field", "value", "label", "reasons", "cited" }], "related": [{ "id", "reference", "title", "status" }] }` ; `label` : le nom d'un service plutôt que son identifiant ; `cited` et `related` (incidents ouverts proches) ne gardent que ce que l'agent voit. Titre de moins de 4 caractères, échec, délai ou conteneur absent : réponse vide, jamais une erreur |
+| `GET /api/incidents/{id}/triage` | User, incident visible (404 sinon), tri activé (404 sinon, OPT-04) | Panne probable de l'incident, pour le bandeau de sa fiche (TRI-07) : `{ "outage": { "id", "since", "count", "basis", "service", "reasons", "members", "parent", "canDeclareMajor" } }` ou `{ "outage": null }` ; `since` : création du plus ancien incident ouvert du groupe ; `members` : ceux que l'utilisateur voit ; `parent` : le plus ancien, ou son parent (INC-16) ; `canDeclareMajor` : gestionnaire du périmètre et parent pas encore majeur (INC-13). Les propositions : `GET /api/incidents/{id}/proposals` (OPT-15) |
+| Décision | — | Routes communes des propositions ([OPT-15](fonctionnalites-optionnelles.md#6-api)) |
+| `GET`, `PUT /api/admin/features/assisted-ticket-triage/settings` | Admin | Réglages (TRI-13) : `neighbours`, `minVoters`, `minSharePercent`, `correlationWindowMinutes`, `outageThreshold`, `correlationMinSimilarity`, et `suggestCategory`, `suggestService`, `suggestGroup`, `suggestImpact`, `suggestOutage` ; valeurs par défaut tant que l'Admin n'a rien réglé ; hors des bornes : 400 ; chaque réglage changé tracé au journal d'audit (OPT-07) |
+| `GET /api/admin/triage/metrics` | Admin, tri activé (404 sinon) | Mesure (TRI-10) : `{ "windows": [{ "days": 30 | 90, "fields": [{ "field", "label", "decided", "accepted", "corrected", "rejected", "left", "pending", "acceptedShare", "correctedShare", "rejectedShare", "leftShare" }] }] }` ; laissée : expirée, ou sans décision quand l'incident a quitté « Nouveau » ; en attente (`pending`) : incident encore Nouveau, hors des parts ; les suggestions appliquées à la saisie comptent acceptées |
+| `POST /api/incidents` avec l'en-tête `X-S-Aloha-Suggestions` | User | Suggestions appliquées à la saisie (TRI-09) : `[{ "feature", "field", "value" }]` en JSON encodé pour l'URL, 10 au plus ; chacune encore portée par l'incident devient une proposition acceptée et une ligne du journal d'audit d'origine « Tri assisté des tickets » (OPT-08) ; valeur changée, tri coupé ou en-tête illisible : ignorés |
+| `GET /internal/features/assisted-ticket-triage/settings` | Jeton du conteneur `features`, port interne, tri activé (403 sinon) | Réglages du tri, lus par le conteneur (TRI-13) |
+| `GET /internal/incidents/{id}` | Jeton du conteneur `features`, port interne, tri activé (403 sinon) | Un incident dans sa vue publique, et les identifiants des CI qui lui sont reliés, dans un sens ou dans l'autre (OPT-13, TRI-04) : `{ "incident", "configurationItemIds" }` ; 404 s'il n'existe pas |
+| `POST /internal/search/similar` (titre, description, périmètres, incident exclu, nombre : 10 par défaut, 20 au plus) | Jeton du conteneur `features`, port interne, tri activé | Voisins du vote (TRI-03) : les incidents résolus ou clos les plus proches, par la recherche des cas similaires (RAG-06, plancher de RAG-10), dans les seuls périmètres donnés, ceux de l'agent à la saisie et celui de l'incident en tâche de fond (TRI-11) ; `{ "semantic", "neighbours": [{ "score", "lexical", "semantic", "incident" }] }`, où `semantic` faux signale les mots seuls (RAG-02). Titre et périmètres requis (400) |
+| `GET /internal/configuration-items?ids=<50 au plus>`, `GET /internal/services` | Jeton du conteneur `features`, port interne, tri ou CMDB assistée activés | CI et services dans leur vue publique : criticité (TRI-04), statut d'un service voté (TRI-03) |
+| `GET /internal/categories?practice=incident` | Jeton du conteneur `features`, port interne, tri activé | Catégories dans leur vue publique : un voisin ne vote que pour une catégorie active (TRI-03, ADM-51) |
+| `GET /internal/incidents/open?after=<identifiant>&limit=<500 au plus>` | Jeton du conteneur `features`, port interne, tri activé | Incidents ouverts (Nouveau, En cours, En attente) par identifiant croissant, avec leurs CI reliés, pour reconstruire l'index propre du conteneur (TRI-06) : `{ "items": [{ "incident", "configurationItemIds" }], "next" }`, `next` nul à la dernière page |
+| `POST /internal/outages` (fonctionnalité, membres, lien : `service`, `ci` ou `sens`, service, motif, `closed`) | Jeton du conteneur `features`, port interne, tri activé (403 sinon) | Signalement d'une panne probable (TRI-07) : un groupe qui partage un incident avec un groupe ouvert le met à jour (200), deux groupes qui se rejoignent n'en font qu'un, sinon il se forme (201) et les gestionnaires du périmètre sont notifiés, une fois. Incidents non ouverts écartés ; sous deux ouverts, ou sur `closed`, le groupe se ferme. Deux périmètres : 400 (TRI-11) |
+| `POST /triage/suggest` (brouillon et périmètres de l'agent), `GET /health` (conteneur `features`) | Jeton du conteneur | Appelées par l'API (OPT-16, OPT-01) : suggestions du brouillon (vote dans les périmètres donnés, impact, panne probable si les incidents ouverts proches l'atteignent avec lui) et incidents ouverts proches de l'index (TRI-05, TRI-06), 5 au plus |
+
+## 6. Scénarios d'acceptation
+
+- **TRI-02** — *Étant donné* le conteneur `features` arrêté, *quand* un agent crée un incident, *alors* le formulaire n'affiche aucune suggestion, l'incident s'enregistre, et au redémarrage du conteneur ses propositions apparaissent sur la fiche.
+- **TRI-03** — *Étant donné* 10 incidents résolus proches, dont 7 en catégorie Messagerie et 3 en Réseau, *quand* un agent saisit « Outlook ne reçoit plus les courriels », *alors* le tri suggère « Messagerie — 7 des 10 incidents proches » ; avec 2 votants seulement, il ne suggère rien.
+- **TRI-05** — *Étant donné* trois incidents ouverts sur le service Messagerie créés en 20 minutes dans le périmètre Siège, *alors* chacun affiche le bandeau « Panne probable » et les gestionnaires du Siège reçoivent une notification, une seule ; un quatrième incident du même service dans le périmètre Usine n'entre pas dans le groupe.
+- **TRI-06** — *Étant donné* deux incidents ouverts « VPN injoignable depuis le site de Lyon » et « impossible de me connecter au VPN », sans service commun, *quand* leur similarité dépasse le seuil, *alors* ils sont liés probables ; *quand* l'un est résolu, *alors* il sort de l'index du conteneur, et la recherche ne l'a jamais servi tant qu'il était ouvert.
+- **TRI-09** — *Étant donné* une suggestion de groupe GRP-RESEAU sur un incident confié à GRP-SUPPORT, *quand* l'agent l'accepte, *alors* l'escalade est tracée avec le motif prérempli et l'origine « Tri assisté des tickets ».
+- **TRI-11** — *Étant donné* un agent du seul périmètre Usine, *quand* il saisit un incident, *alors* aucun voisin ni motif ne cite un incident du Siège.
+
+## 7. Hors de cette version
+
+- **Demandes de service** : suggérer le modèle du catalogue et le groupe d'une demande
+  demande d'indexer les demandes réalisées, ce que la recherche ne fait pas
+  ([recherche § 2](recherche.md#2-contenu-indexé)) ; à spécifier.
+- **Modèle de langage** (extraire d'un texte libre le service ou le CI concernés) :
+  envisagé seulement si la mesure de TRI-10 montre un manque que les voisins ne comblent
+  pas ; nouvelle décision.
+- **Application sans décision humaine** : jamais ([ADR-0023](../decisions/adr-0023-fonctionnalites-optionnelles-et-modele-de-langage.md)).

@@ -1,0 +1,49 @@
+# Analyse CodeQL en configuration avancée : actions, C# et JavaScript/TypeScript, sans
+# construction (build-mode none), suite de requêtes par défaut. La configuration par défaut
+# de GitHub n'analysait pas les pull requests venues d'un fork, que la règle « résultats de
+# code scanning » de `main` bloquait alors sans fin (#346). Celle-ci analyse chaque pull
+# request vers `main`, fork compris (code scanning accepte les résultats d'une exécution
+# déclenchée par `pull_request`), chaque poussée sur `main` et `main` chaque semaine.
+# La configuration par défaut doit être désactivée : elle bloque le dépôt des résultats de
+# tout workflow CodeQL.
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '41 6 * * 4'
+
+permissions:
+  contents: read
+
+# Sur une pull request, une nouvelle poussée annule l'analyse en cours ; sur `main`, chaque
+# commit garde la sienne.
+concurrency:
+  group: codeql-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  analyse:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [actions, csharp, javascript-typescript]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: github/codeql-action/init@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4.39.4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+      - uses: github/codeql-action/analyze@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4.39.4
+        with:
+          category: /language:${{ matrix.language }}

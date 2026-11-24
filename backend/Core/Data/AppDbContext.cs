@@ -32,9 +32,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Administration.LastLogin> LastLogins => Set<Administration.LastLogin>();
     public DbSet<Administration.DuplicateDismissal> DuplicateDismissals => Set<Administration.DuplicateDismissal>();
     public DbSet<Platform.MailSettings> MailSettings => Set<Platform.MailSettings>();
+    public DbSet<Features.LanguageModelSettings> LanguageModelSettings => Set<Features.LanguageModelSettings>();
+    public DbSet<Features.LanguageModelCall> LanguageModelCalls => Set<Features.LanguageModelCall>();
+    public DbSet<AssistedCmdbAnalysis> AssistedCmdbAnalyses => Set<AssistedCmdbAnalysis>();
+    public DbSet<NamingConvention> NamingConventions => Set<NamingConvention>();
     public DbSet<Notifications.MailPreference> MailPreferences => Set<Notifications.MailPreference>();
     public DbSet<Attachments.Attachment> Attachments => Set<Attachments.Attachment>();
     public DbSet<Platform.StorageSettings> StorageSettings => Set<Platform.StorageSettings>();
+    public DbSet<Features.OptionalFeature> OptionalFeatures => Set<Features.OptionalFeature>();
+    public DbSet<Features.FeatureEvent> FeatureEvents => Set<Features.FeatureEvent>();
+    public DbSet<Features.Proposal> Proposals => Set<Features.Proposal>();
+    public DbSet<Modules.IncidentManagement.ProbableOutage> ProbableOutages => Set<Modules.IncidentManagement.ProbableOutage>();
+    public DbSet<Features.ProposalCount> ProposalCounts => Set<Features.ProposalCount>();
     public DbSet<Itil.Category> Categories => Set<Itil.Category>();
     // Gestion des problèmes
     public DbSet<Problem> Problems => Set<Problem>();
@@ -230,7 +239,27 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         b.Entity<Attachments.Attachment>().HasIndex(a => new { a.TargetType, a.TargetId });
         // ADM-60, ADM-61 : une seule ligne de réglages chacun, saisie par l'Admin.
         b.Entity<Platform.MailSettings>().Property(s => s.Id).ValueGeneratedNever();
+        // OPT-20 : une seule ligne de réglages du modèle de langage.
+        b.Entity<Features.LanguageModelSettings>().Property(s => s.Id).ValueGeneratedNever();
+        // OPT-27 : purge par date, compteurs par fonctionnalité sur une période.
+        b.Entity<Features.LanguageModelCall>().HasIndex(c => c.At);
+        b.Entity<Features.LanguageModelCall>().HasIndex(c => new { c.Feature, c.At });
+        // CMA-01 : une seule analyse active (en file ou en cours) par périmètre, même sous deux lancements simultanés.
+        b.Entity<AssistedCmdbAnalysis>().HasIndex(a => a.PerimeterId).IsUnique().HasFilter("\"Status\" IN ('En file', 'En cours')");
+        b.Entity<AssistedCmdbAnalysis>().HasIndex(a => new { a.PerimeterId, a.Id });
+        // CMA-04 : une convention par type de CI.
+        b.Entity<NamingConvention>().HasIndex(n => n.CiType).IsUnique();
         b.Entity<Platform.StorageSettings>().Property(s => s.Id).ValueGeneratedNever();
+        b.Entity<Features.FeatureEvent>().HasIndex(e => e.At);   // OPT-12 : purge par date
+        b.Entity<Features.Proposal>().HasIndex(p => new { p.TargetType, p.TargetId, p.Status });
+        b.Entity<Features.ProposalCount>().HasKey(c => new { c.Month, c.Feature, c.Field });
+        // TRI-07 : membres d'une panne probable ; supprimés avec leur incident ou leur groupe.
+        b.Entity<Modules.IncidentManagement.ProbableOutageMember>().ToTable("ProbableOutageMembers").HasKey(m => new { m.OutageId, m.IncidentId });
+        b.Entity<Modules.IncidentManagement.ProbableOutageMember>().HasIndex(m => m.IncidentId);
+        b.Entity<Modules.IncidentManagement.ProbableOutage>().HasMany(o => o.Members).WithOne().HasForeignKey(m => m.OutageId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<Modules.IncidentManagement.ProbableOutageMember>().HasOne<Modules.IncidentManagement.Incident>().WithMany()
+            .HasForeignKey(m => m.IncidentId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<Modules.IncidentManagement.ProbableOutage>().HasIndex(o => o.ClosedAt);
         b.Entity<Itil.Category>().HasIndex(c => new { c.Practice, c.Name }).IsUnique();
         b.Entity<ItemLink>().HasIndex(l => new { l.FromType, l.FromId });
         b.Entity<ItemLink>().HasIndex(l => new { l.ToType, l.ToId });

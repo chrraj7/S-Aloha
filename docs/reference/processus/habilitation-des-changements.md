@@ -118,7 +118,7 @@ les conditions de statut.
 | CHG-12 | Passer à **Évalué** exige un plan de mise en œuvre et un plan de retour arrière renseignés (Normal et Urgent) | ✅ | 1 |
 | CHG-13 | **Planifié** exige aussi une fin planifiée | ✅ | 1 |
 | CHG-14 | **Dates réelles** : `ActualStart` exigé à Mis en œuvre, `ActualEnd` à Clos ; un dépassement de la fin planifiée est signalé | ✅ (vérifiés à l'entrée du statut ; dépassement affiché sur la fiche) | |
-| CHG-15 | **Revue post-implémentation** exigée avant Clos pour tout changement **Urgent** ou de résultat **Échoué** (`PirNotes` : ce qui s'est passé, causes, enseignements) | ✅ | |
+| CHG-15 | **Revue post-implémentation** exigée avant Clos pour tout changement **Urgent** ou de résultat **Échoué** (`PirNotes` : ce qui s'est passé, causes, enseignements) | ✅ (un changement Urgent ne quitte plus ce type une fois Mis en œuvre ou Clos, ni dans l'envoi qui le met en œuvre ou le clôt, 400 : le renvoyer Normal, en un envoi ou en deux, éviterait la revue, et le gel depuis Planifié) | |
 | CHG-16 | Un changement **Normal** ou **Urgent** doit être relié à au moins un **CI** avant d'être Évalué (analyse d'impact, CFG-20) | ✅ (à l'évaluation, Demandé → Évalué ; le retour automatique à Évalué d'un changement autorisé puis modifié n'est pas bloqué) | |
 | CHG-17 | Un **rejet** exige un motif, communiqué au demandeur | ✅ | 1 |
 
@@ -136,7 +136,7 @@ les conditions de statut.
 
 | ID | Règle | Statut | Lot |
 |---|---|---|---|
-| CHG-25 | **Périodes de gel** (début, fin, motif) définies par les gestionnaires : planifier un créneau qui les chevauche est refusé, sauf changement **Urgent** ; elles apparaissent sur le calendrier | ✅ (périodes communes à l'organisation ; vérifiées à la planification et à tout déplacement d'un changement planifié ; affichées sur le calendrier) | |
+| CHG-25 | **Périodes de gel** (début, fin, motif) définies par les gestionnaires : planifier un créneau qui les chevauche est refusé, sauf changement **Urgent** ; elles apparaissent sur le calendrier | ✅ (périodes communes à l'organisation ; vérifiées à la planification, à tout déplacement d'un changement planifié et quand un changement planifié quitte le type Urgent ; affichées sur le calendrier) | |
 | CHG-26 | **Modèles de changement standard** (F4) : nom, plan de mise en œuvre et de retour arrière types, risque, CI concernés ; un changement Standard se crée depuis un modèle actif dont il reprend les plans | ✅ (modèle obligatoire pour un Standard — décision du 2026-10-16 ; page « Modèles standard » ; désactivé plutôt que supprimé) / 🔜 (CI concernés du modèle) | |
 | CHG-27 | Un modèle standard dont un changement a échoué est **suspendu** jusqu'à revue par un Manager | ✅ (résultat Échoué d'un changement Standard : modèle suspendu, gestionnaires notifiés ; un nouveau changement Standard depuis ce modèle est refusé ; revue motivée par un gestionnaire — remise en service ou désactivation, conclusion gardée sur le modèle ; console « Décisions » ; badge « Suspendu » et bouton « Revoir » sur la page des modèles) | 3 |
 
@@ -153,7 +153,7 @@ les conditions de statut.
 |---|---|---|---|
 | Changement → CI | CI modifiés | CHG-09, CHG-16 ; onglet « Impact » de la fiche : CI reliés, CI touchés en aval, services touchés (CFG-20) | ✅ |
 | Problème → Changement | Correctif | CHG-23 | ✅ (lien manuel, ou créé depuis le problème ou son action) |
-| Demande → Changement | Besoin non standard | REQ-12 | ✅ (lien) / 🔜 |
+| Demande → Changement | Besoin non standard | REQ-12 | ✅ (requalification de la demande : changement créé et relié, ou lien manuel) |
 | Changement → Incident | Incident causé par le changement | CHG-33 | ✅ (lien, indicateur) |
 | Changement → Article | Procédure | Lien manuel | ✅ |
 
@@ -193,6 +193,6 @@ et de l'équipe (Relances, gestionnaires), avec une notification au responsable 
 - **CHG-05** — *Étant donné* un changement Rejeté, *quand* on le passe Planifié, *alors* 400.
 - **CHG-07** — *Étant donné* un changement Normal Planifié, *quand* un User change son risque, *alors* il revient à Évalué et `AuthorizedAt` est vide ; si c'est un Manager autre que le demandeur, il reste Planifié, autorisé à son nom. *Quand* ce Manager passe le risque à Élevé, ou *quand* le demandeur, même Manager, réécrit ses plans, *alors* il revient à Évalué (CHG-20, CHG-21).
 - **CHG-09** — *Étant donné* deux changements liés au CI `VPN-GW-01`, de 10 h à 12 h et de 11 h à 13 h le même jour, *alors* chacun signale un conflit avec l'autre ; de 10 h à 11 h et de 11 h à 12 h, aucun.
-- **CHG-15** — *Étant donné* un changement Urgent Mis en œuvre avec résultat Réussi et sans revue, *quand* on le clôt, *alors* 400 « revue post-implémentation requise ».
+- **CHG-15** — *Étant donné* un changement Urgent Mis en œuvre avec résultat Réussi et sans revue, *quand* on le clôt, *alors* 400 « revue post-implémentation requise ». *Quand* on le renvoie Normal, avec ou sans la clôture dans le même envoi, *alors* 400 et il reste Urgent.
 - **CHG-20** — *Étant donné* un changement Normal à risque Élevé, *quand* un premier Manager l'approuve, *alors* il reste Évalué (1 approbation sur 2) ; au second Manager distinct, il passe Autorisé.
-- **CHG-25** — *Étant donné* une période de gel du 20 au 31 décembre, *quand* on planifie un changement Normal le 22, *alors* 400 ; Urgent, accepté.
+- **CHG-25** — *Étant donné* une période de gel du 20 au 31 décembre, *quand* on planifie un changement Normal le 22, *alors* 400 ; Urgent, accepté ; ce changement Urgent planifié le 22, renvoyé Normal par un gestionnaire sans toucher au créneau, *alors* 400 et il reste Urgent.

@@ -79,6 +79,8 @@ public class ConsoleController(AppDbContext db, PerimeterAccess access) : Contro
         myAssignments.AddRange(await Mine(db.Improvements, "improvement", meKey, groups, Improvement.Done, all, seen));
         // PRJ-34 : mes projets (chef de projet) dans Mon travail.
         myAssignments.AddRange(await Mine(db.Projects, "project", meKey, groups, Project.Done, all, seen));
+        // Conformité NIS 2 : mes évaluations ouvertes (pilote), jusqu'à leur validation.
+        myAssignments.AddRange(await Mine(db.Assessments, "assessment", meKey, groups, ["Validée"], all, seen));
 
         // PRJ-34 : projets hors tolérance (délai, coût, prévision de fin) ou à jalons en retard.
         var todayDate = DateTime.UtcNow.Date;
@@ -263,6 +265,13 @@ public class ConsoleController(AppDbContext db, PerimeterAccess access) : Contro
             reviewsDue.AddRange(await db.Agreements.AsNoTracking()
                 .Where(a => a.Status == "En vigueur" && a.ReviewDate != null && a.ReviewDate < today && (all || managed.Contains(a.PerimeterId)))
                 .Select(a => new Item("agreement", a.Id, a.Reference, a.Title, a.Status)).ToListAsync());
+            // SLM-24 : SLA en vigueur expirant dans les 30 jours, à renouveler avant l'échéance (comme la notification).
+            var expiringLimit = today.AddDays(30);
+            var expiringAgreements = (await db.Agreements.AsNoTracking()
+                    .Where(a => a.Status == "En vigueur" && a.ValidTo != null && a.ValidTo >= today && a.ValidTo <= expiringLimit
+                                && (all || managed.Contains(a.PerimeterId)))
+                    .OrderBy(a => a.ValidTo).ToListAsync())
+                .Select(a => new Item("agreement", a.Id, a.Reference, a.Title, $"Expire le {a.ValidTo:dd/MM/yyyy}")).ToList();
             // NIS-16 : évaluation NIS 2 validée arrivée à la date de la prochaine évaluation.
             reviewsDue.AddRange(await db.Assessments.AsNoTracking()
                 .Where(a => a.Status == "Validée" && a.NextAssessmentDate != null && a.NextAssessmentDate <= today && (all || managed.Contains(a.PerimeterId)))
@@ -298,7 +307,7 @@ public class ConsoleController(AppDbContext db, PerimeterAccess access) : Contro
             management = new { Staging = staging, ToQualify = toQualify, InAnalysisNoRootCause = inAnalysisNoRootCause,
                                KnownErrorsNoAction = knownErrorsNoAction, OverdueActions = overdue,
                                MajorIncidents = majorIncidents, Decisions = decisions, ReviewsDue = reviewsDue,
-                               OverdueRequests = overdueRequests, Regulatory = regulatory,
+                               OverdueRequests = overdueRequests, Regulatory = regulatory, ExpiringAgreements = expiringAgreements,
                                // NIS-23 : exigences du référentiel NIS 2 encore sans texte (Admin, qui l'importe).
                                ReferentialWithoutText = User.IsInRole("Admin")
                                    ? await db.SecurityRequirements.CountAsync(r => r.Text == null || r.Text == "") : 0,

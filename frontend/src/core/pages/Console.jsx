@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import usePerimeters from '../usePerimeters'
 import { api, getUser } from '../../api'
+import { refreshFeatures } from '../features'
 import { ITEM_TYPES, hrefOf } from '../itemTypes'
 
 const badge = s => s.replace(/[ é]/g, m => (m === ' ' ? '' : 'e'))
@@ -78,6 +79,8 @@ export default function Console() {
   const nav = useNavigate()
   // PER-09 : la console couvre mes périmètres ; avec plusieurs, on peut n'en regarder qu'un.
   useEffect(() => { api.console.get(perimeter).then(setC).catch(e => setError(e.message)) }, [perimeter])
+  // OPT-04 : l'ouverture de la console relit les fonctionnalités activées.
+  useEffect(() => { refreshFeatures(true) }, [])
   if (error) return <div className="error">{error}</div>
   if (!c) return <p className="muted">Chargement…</p>
 
@@ -104,7 +107,7 @@ export default function Console() {
   // NIS-23 : exigences du référentiel NIS 2 sans texte (Admin).
   const referential = m?.referentialWithoutText > 0
     ? [{ id: 'nis2', reference: 'Référentiel NIS 2', title: `${m.referentialWithoutText} exigence(s) encore sans texte : importer le texte de l’ANSSI`, href: '/settings/nis2' }] : []
-  const chase = L('overdueActions') + L('knownErrorsNoAction') + L('reviewsDue') + L('overdueRequests') + L('projectAlerts') + L('changeFollowUps') + L('incidentFollowUps') + L('idleProblems') + L('unhelpfulArticles') + L('cisToVerify') + referential.length
+  const chase = L('overdueActions') + L('knownErrorsNoAction') + L('reviewsDue') + L('overdueRequests') + L('projectAlerts') + L('changeFollowUps') + L('incidentFollowUps') + L('idleProblems') + L('unhelpfulArticles') + L('cisToVerify') + L('expiringAgreements') + referential.length
   const work = myTodo.length + c.myAssignments.length + (c.myProjectAlerts?.length ?? 0) + (c.myChangeFollowUps?.length ?? 0) + (c.myIncidentFollowUps?.length ?? 0) + (c.myUnhelpfulArticles?.length ?? 0) + (c.myFollowUpChecks?.length ?? 0) + (c.myCisToVerify?.length ?? 0)
   const follow = c.myProblems.length + L('inAnalysisNoRootCause')
 
@@ -196,6 +199,9 @@ export default function Console() {
             meta={<span className={'badge ' + r.priority}>{r.priority}</span>} />} />
         <List title="Revues échues" tone="amber" rows={m.reviewsDue} onRow={goItem}
           hint="Articles publiés et SLA en vigueur dont la date de revue est passée, évaluations NIS 2 à renouveler." render={itemRow} />
+        {/* SLM-24 */}
+        <List title="SLA expirant" tone="amber" rows={m.expiringAgreements ?? []} onRow={goItem}
+          hint="SLA en vigueur dont la fin de validité tombe dans les 30 jours : le renouveler ou le laisser expirer." render={itemRow} />
         {/* REQ-30 */}
         <List title="Demandes en retard" tone="amber" rows={m.overdueRequests ?? []} onRow={goItem}
           hint="Échéance dépassée : relancer le responsable." render={itemRow} />

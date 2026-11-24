@@ -3,6 +3,8 @@
 > Pratique ITIL 4 *Incident management*. Code : `backend/Modules/IncidentManagement`,
 > `frontend/src/modules/incident-management`. Préfixe des règles : **INC**. Socle commun et
 > conventions (✅ / 🔜, lots) : [règles métier](../regles-metier.md).
+> Fonctionnalité optionnelle qui s'y greffe : [tri assisté des tickets](../tri-assiste-des-tickets.md)
+> (suggestions de catégorie, service, groupe et impact, panne probable ; règles TRI).
 
 <sub>[← Règles métier](../regles-metier.md) · [Toutes les pratiques](readme.md)</sub>
 
@@ -160,7 +162,7 @@ résolution par priorité, mesurés en échéances et en état SLA (INC-21, INC-
 | Lien | Sens | Règle | Statut |
 |---|---|---|---|
 | Incident → Problème | Cause à rechercher | INC-14, INC-15 | ✅ |
-| Incident → CI | CI affecté | Lien manuel ; CI Retiré refusé (CFG-14) | ✅ / 🔜 |
+| Incident → CI | CI affecté | Lien manuel ; CI Retiré refusé (CFG-14) | ✅ |
 | Incident → Service / SLA | Service affecté, cibles | INC-20, INC-21 | ✅ |
 | Incident → Article | Solution utilisée, cas similaires | INC-19, RAG-06, RAG-09 | ✅ (suggestion, lien en un clic) |
 | Incident → Changement | Changement à l'origine de l'incident | Lien manuel ; indicateur CHG-33 | ✅ |

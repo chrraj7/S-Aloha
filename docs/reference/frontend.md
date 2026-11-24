@@ -20,6 +20,7 @@ frontend/
     ├── core/                     # socle UI, transverse aux processus
     │   ├── about.js              # URL du code source et licence (AGPLv3, VITE_SOURCE_URL)
     │   ├── fields.js             # champs communs (titre, description, responsable AD), formats de date
+    │   ├── features.js           # fonctionnalités optionnelles activées (GET /api/features), useFeatures, OPT-04
     │   ├── itemTypes.js          # types reliables → libellé et page (miroir de ItemLinks côté API)
     │   ├── components/
     │   │   ├── Layout.jsx        # sidebar (desktop) / tiroir (mobile), construite depuis le registre
@@ -122,7 +123,7 @@ sauf le registre `modules/registry.js` (lu par `Layout`).
 | `/admin/perimeters`, `/admin/perimeters/:id` | `core/pages/admin/Perimeters`, `PerimeterDetail` | Administration › Périmètres (Admin) |
 | `/preferences` | `core/pages/Preferences` | Mes préférences : notifications par courriel (SOC-22), icône sous l'utilisateur dans la barre latérale |
 | `/admin/search` | `core/pages/SearchIndexAdmin` | Administration › Index de recherche (Admin) |
-| `/admin/users`, `/admin/platform`, `/admin/health`, `/admin/audit`, `/admin/duplicates` | `core/pages/admin/Users`, `PlatformSettings`, `Health`, `AuditLog`, `Duplicates` | Administration › Utilisateurs et rôles, Messagerie et stockage, Santé, Journal d'audit, Nettoyage des doublons (Admin) |
+| `/admin/users`, `/admin/platform`, `/admin/features`, `/admin/health`, `/admin/audit`, `/admin/duplicates` | `core/pages/admin/Users`, `PlatformSettings`, `OptionalFeatures` (avec `TriageSettings` : réglages et mesure du tri, TRI-10, TRI-13), `Health`, `AuditLog`, `Duplicates` | Administration › Utilisateurs et rôles, Messagerie et stockage, Fonctionnalités optionnelles, Santé, Journal d'audit, Nettoyage des doublons (Admin) |
 | `/settings/categories` | `core/pages/settings/Categories` | Paramétrage › Catégories d'incident et de problème (Manager, Admin) |
 | `/settings/discovery` | `modules/service-configuration-management/pages/DiscoverySettings` | Paramétrage › Découverte du réseau (Manager, Admin) ; onglets `?tab=` : tâches, identifiants, fins de support, clés et certificats, constructeurs (OUI) |
 | `/settings/nis2` | `modules/compliance-assessment/pages/ReferentialSettings` | Paramétrage › Référentiel NIS 2 (Admin) |
@@ -150,7 +151,7 @@ Toutes les routes sauf `/login` passent par `Private` (jeton présent) et sont r
 - `SECTIONS` — les sections de menu après les groupes de modules : **Paramétrage**
   (`id: 'settings'`, `roles: ['Manager','Admin']`) et **Administration**
   (`id: 'administration'`, `roles: ['Admin']`), chacune avec ses `entries`. Une entrée :
-  `{ href, label, description, icon, roles? }`, où `icon` est une clé de `SECTION_ICONS`
+  `{ href, label, description, icon, roles?, feature? }`, où `icon` est une clé de `SECTION_ICONS`
   **propre à l'entrée** (`'categories'`, `'discovery'`, `'users'`, `'health'`…) : deux
   entrées ne partagent jamais une icône, sans quoi on ne les distingue plus dans le rail
   (vérifié par `Layout.rail.test.jsx`, modules compris). Une section n'est affichée que si au moins une de ses
@@ -158,7 +159,8 @@ Toutes les routes sauf `/login` passent par `Private` (jeton présent) et sont r
   `Layout.sections.test.jsx` sur le registre réel). Le titre de la section
   Administration porte un marqueur ambre (`.nav-section.admin`) ;
 - `roles` (section, module ou sous-entrée, facultatif) : rôles qui voient l'entrée ; absent, tous.
-  `visibleFor(entry, role)` décide ; la barre latérale masque les entrées réservées (l'API
+  `visibleFor(entry, role, features)` décide (une entrée qui porte `feature` exige en plus que cette
+  fonctionnalité optionnelle soit activée, OPT-04) ; la barre latérale masque les entrées réservées (l'API
   reste seule juge des droits) ;
 
 **Sous-entrée filtrée** : un `href` peut porter un filtre de registre
@@ -258,6 +260,7 @@ Un module `soon` apparaît grisé, non cliquable, avec le badge « Bientôt ».
 | [Niveaux de service](processus/gestion-des-niveaux-de-service.md) | Catalogue des services | Tous | SLM-01 | ✅ |
 | | Accords (SLA) | Tous | SLM-02 | ✅ |
 | | Respect des SLA (tableau mensuel) : tableau de bord, onglet Conformité, « Respect des SLA, par service » ; disponibilité sur la fiche du SLA | Tous | SLM-20, SLM-21 | ✅ |
+| | SLA expirant : liste de la console (Relances, SLA en vigueur dont la fin de validité tombe dans les 30 jours) | Manager | SLM-24 | ✅ |
 | [Connaissances](processus/gestion-des-connaissances.md) | Base de connaissances, avec le bloc « Chercher d'abord » (recherche hybride) en tête du registre | Tous | KB-04, RAG-05 | ✅ |
 | | Brouillons à publier : bloc « Décisions » de la console (KB-21) ; fiche : onglet **Lecture** (Markdown, KB-10) et bloc « Cycle de l'article » (soumission, revue, archivage demandé, utilisation) | Manager, Admin (soumission : tous) | KB-21, KB-10, KB-17 | ✅ (console, fiche) / 🔜 (sous-entrée de menu) |
 | [Amélioration](processus/amelioration-continue.md) | Registre d'amélioration | Tous | CSI-01 | ✅ |
@@ -323,6 +326,7 @@ Section réservée à l'**Admin** ; elle apparaît avec sa première entrée imp
 | Entrée | Contenu | Règle | Statut |
 |---|---|---|---|
 | Utilisateurs et rôles (`/admin/users`) | Membres des groupes AD de rôle (annuaire), rôle effectif par périmètre et sa source, dernière connexion ; mapping groupes AD → rôles (lecture) ; affectations « sans accès » | [ADM-10 à ADM-13](administration.md) | ✅ |
+| Fonctionnalités optionnelles (`/admin/features`) | Tri assisté des tickets, CMDB assistée, serveur MCP : état (indisponible, coupée, activée), conteneur contrôlé, dépendances, activer ou couper avec confirmation ; une entrée de navigation qui porte `feature` n'apparaît qu'activée (`core/features.js`, lu à la connexion et à l'ouverture de la console) | [OPT-01 à OPT-04](fonctionnalites-optionnelles.md) | ✅ |
 | Messagerie et stockage (`/admin/platform`) | SMTP (serveur, chiffrement, compte, expéditeur, adresse de l'interface, courriel d'essai) ; stockage S3 (adresse, bucket, clés, taille maximale, essai de dépôt) ; secrets jamais réaffichés | [ADM-60 à ADM-63](administration.md) | ✅ |
 | Santé (`/admin/health`) | Base, annuaire, embeddings, coffre, messagerie, stockage, tâches de fond, version déployée | [ADM-20, ADM-21](administration.md) | ✅ |
 | Journal d'audit (`/admin/audit`) | Journal global, filtrable par auteur, pratique, action, référence, période ; pages de 100 ; export CSV | [ADM-30, ADM-31](administration.md) | ✅ |
@@ -344,6 +348,7 @@ un onglet sans contenu reste visible avec un état vide explicite.
 |---|---|---|---|
 | Informations | Champs du § 3, actions de transition (§ 4) en boutons nommés par l'étape (« Prendre en charge », « Autoriser »…) | § 3 et § 4 de chaque pratique | ✅ (champs) / 🔜 (boutons de transition) |
 | Suppression (Informations) | Bouton « Supprimer » (Admin ; analyse ou action d'un problème : Manager) ; boîte de dialogue `core/components/DeleteDialog.jsx` qui rappelle la référence et liste ce qui part avec, focus sur « Annuler », Échap pour fermer | SOC-14 | ✅ |
+| Propositions (Informations) | Fonctionnalité optionnelle activée seulement (OPT-04) : encadré commun des propositions ouvertes (`core/components/Proposals.jsx`), une ligne par champ, accepter (par la modification de la fiche, en-tête `X-S-Aloha-Proposal`), corriger, rejeter ; bandeau « Panne probable » de la fiche incident (`OutageBanner`, TRI-07) | OPT-15, TRI-07, TRI-09 | ✅ |
 | Propre à la pratique | Analyse de cause racine et Actions correctives (problème), Relations et impact (CI), Accords (SLA) (service), Conflits (changement) | PRB-05, CFG-04, SLM-02, CHG-09 | ✅ |
 | Liens | Enregistrements reliés, toutes pratiques ; onglet dédié ; un enregistrement d'un autre périmètre est listé masqué, sans lien ni retrait (PER-08) | SOC-12, PER-08 | ✅ |
 | Commentaires | Fil chronologique, public ou note de travail (marquée, invisible du demandeur) ; `core/components/Comments.jsx` | SOC-24 | ✅ |
