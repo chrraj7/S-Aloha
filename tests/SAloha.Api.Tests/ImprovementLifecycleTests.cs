@@ -68,6 +68,33 @@ public class ImprovementLifecycleTests(ApiFixture api)
     }
 
     [Fact]
+    public async Task CSI_12_apres_la_validation_seul_un_gestionnaire_change_la_note()
+    {
+        var m = api.Client("Manager", "chef.csi12b");
+        var u = api.Client("User", "tiers.csi12b");
+        var a = await Json(await u.PostAsJsonAsync("/api/improvements", Ami("Réduire les relances")));
+        var url = $"/api/improvements/{Id(a)}";
+        // Avant la validation, la note est libre.
+        await Json(await u.PutAsJsonAsync(url, Ami("Réduire les relances", value: 2, effort: 2)));
+        var v = await Json(await m.PutAsJsonAsync(url, Ami("Réduire les relances", "Validée", value: 1, effort: 3)));
+        Assert.Equal("Faible", v.GetProperty("priority").GetString());
+
+        // #336 : un User ne réécrit ni la note ni la priorité d'une amélioration validée.
+        var raised = await u.PutAsJsonAsync(url, Ami("Réduire les relances", "Validée", value: 3, effort: 1));
+        Assert.Equal(HttpStatusCode.BadRequest, raised.StatusCode);
+        Assert.Contains("décision de gestionnaire", await raised.Content.ReadAsStringAsync());
+        var cleared = await u.PutAsJsonAsync(url, new { title = "Réduire les relances", step = 2, priority = "Élevée", status = "Validée",
+            benefit = "b", baseline = "5 j", target = "2 j" });
+        Assert.Equal(HttpStatusCode.BadRequest, cleared.StatusCode);
+        // Témoin : le même User modifie le reste de la fiche en renvoyant la note telle quelle.
+        var kept = await Json(await u.PutAsJsonAsync(url, Ami("Réduire les relances (retitrée)", "Validée", value: 1, effort: 3)));
+        Assert.Equal(("Faible", 1), (kept.GetProperty("priority").GetString(), kept.GetProperty("value").GetInt32()));
+        // Le gestionnaire, lui, revoit sa note.
+        var revised = await Json(await m.PutAsJsonAsync(url, Ami("Réduire les relances", "Validée", value: 3, effort: 1)));
+        Assert.Equal("Élevée", revised.GetProperty("priority").GetString());
+    }
+
+    [Fact]
     public async Task CSI_21_amelioration_en_retard_relancee_au_porteur()
     {
         var m = api.Client("Manager", "chef.csi21");
