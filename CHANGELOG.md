@@ -26,8 +26,8 @@ découverte du SI vers un sas de rapprochement, intégration à l'Active Directo
 
 **Réserves** : calibrages de la recherche (RAG-10) et du tri assisté (TRI-12) mesurés sur des
 données fictives, à remesurer sur des données réelles ; inventaire WinRM (CFG-57) à valider sur
-un Windows réel ; évaluations sur référentiels importés (F12) et agent d'inventaire nomade
-(F13 phase 4) spécifiés, pas encore implémentés ; pas de démonstration en ligne ; `dotnet
+un Windows réel ; évaluations sur référentiels importés (F12, spécifiées) et agent
+d'inventaire nomade (F13 phase 4) pas encore implémentés ; pas de démonstration en ligne ; `dotnet
 format` absent de la CI ; gouvernance formelle à venir avec le deuxième contributeur régulier.
 
 ### Ajouté
