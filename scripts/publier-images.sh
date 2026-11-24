@@ -9,7 +9,7 @@ set -euo pipefail
 [ $# -gt 0 ] || { echo "Usage : $0 <tag> [<tag>…]" >&2; exit 2; }
 prefixe=ghcr.io/chrraj7/s-aloha
 source=https://github.com/chrraj7/S-Aloha
-for image in api:backend web:frontend annuaire-demo:demo/annuaire features:features/SAloha.Features; do
+for image in api:backend web:frontend annuaire-demo:demo/annuaire features:features/SAloha.Features mcp:features/SAloha.Mcp; do
   nom=${image%%:*}; dossier=${image#*:}
   etiquettes=()
   for tag in "$@"; do etiquettes+=(-t "$prefixe-$nom:$tag"); done

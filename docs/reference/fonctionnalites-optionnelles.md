@@ -20,7 +20,7 @@
 |---|---|---|---|---|---|---|
 | [Tri assisté des tickets](tri-assiste-des-tickets.md) | `assisted-ticket-triage` | `features` | Suggère la catégorie, le service, le groupe et l'impact d'un incident ; signale les incidents ouverts qui semblent liés | Service d'embeddings (facultatif : sans lui, règles et mots seuls) | TRI | 🔜 |
 | [CMDB assistée](cmdb-assistee.md) | `assisted-cmdb` | `features` | Propose de renommer, reclasser, fusionner et relier des CI, et d'aider au rapprochement du sas | Modèle de langage (§ 4) | CMA | 🔜 |
-| [Serveur MCP](serveur-mcp.md) | `mcp-server` | `mcp` | Ouvre S-Aloha en lecture aux assistants des utilisateurs, avec les droits de chacun | — | MCP | 🔜 |
+| [Serveur MCP](serveur-mcp.md) | `mcp-server` | `mcp` | Ouvre S-Aloha en lecture aux assistants des utilisateurs, avec les droits de chacun | — | MCP | ✅ |
 
 ```mermaid
 flowchart LR
@@ -129,7 +129,9 @@ aujourd'hui, la seule [CMDB assistée](cmdb-assistee.md). Le tri assisté des ti
   (`FEATURES_URL`, `http://features:8080`) et le même jeton
   ([exploitation](exploitation.md#fonctionnalités-optionnelles)). Hors développement, le
   jeton d'exemple de `docker-compose.demo.yml` fait refuser le démarrage de l'API comme du
-  conteneur, sauf en démonstration (S7). Le conteneur `mcp` ne reçoit que l'adresse de l'API.
+  conteneur, sauf en démonstration (S7). Le conteneur `mcp` ne reçoit que l'adresse du port
+  public de l'API (`Api__Url`, `http://api:8080`) ; l'API reçoit la sienne (`MCP_URL`,
+  `http://mcp:8080`) ; nginx lui relaie `/mcp` (404 sans le conteneur).
 - **Modèle de langage dans le SI** : un serveur d'inférence au format OPT-21, sur le
   réseau de l'organisation. La mémoire et le temps de réponse nécessaires dépendent du
   modèle ; le jeu d'essai de la CMDB assistée ([CMA-11](cmdb-assistee.md)) les mesure et les
