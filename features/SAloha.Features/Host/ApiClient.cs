@@ -106,6 +106,13 @@ public class ApiClient
         return await res.Content.ReadFromJsonAsync<LanguageModel.LanguageModelSettingsData>(Json, ct);
     }
 
+    /// <summary>OPT-27 : trace d'un appel au modèle ; faux si l'API la refuse (fonctionnalité coupée, champ hors bornes).</summary>
+    public async Task<bool> TraceLanguageModelCallAsync(LanguageModel.LanguageModelCall call, CancellationToken ct)
+    {
+        using var res = await http.PostAsJsonAsync("internal/language-model/calls", call, Json, ct);
+        return res.IsSuccessStatusCode;
+    }
+
     /// <summary>TRI-06 : une page des incidents ouverts, avec leurs CI reliés.</summary>
     public async Task<OpenPage> OpenIncidentsAsync(int after, CancellationToken ct) =>
         (await http.GetFromJsonAsync<OpenPage>($"internal/incidents/open?after={after}&limit=500", Json, ct))!;
