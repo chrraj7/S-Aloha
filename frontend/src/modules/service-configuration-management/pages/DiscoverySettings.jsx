@@ -5,6 +5,7 @@ import { dateFr, dateTimeFr } from '../../../core/fields'
 import PerimeterSelect from '../../../core/components/PerimeterSelect'
 import usePerimeters, { perimeterName } from '../../../core/usePerimeters'
 import useManagesPerimeter from '../../../core/useManagesPerimeter'
+import { useFeatures } from '../../../core/features'
 import { JOB_TONES, SOURCE_LABELS } from '../config'
 
 const SSH_HELP = 'Inventaire en lecture seule, sans sudo : système, constructeur, logiciels installés, services actifs, ports en écoute, connexions établies (flux proposés). '
@@ -41,7 +42,7 @@ const V3_PRIV = [{ value: 'AES', label: 'AES-128 (recommandé)' }, { value: 'AES
   { value: 'AES256', label: 'AES-256' }, { value: 'None', label: 'Aucun (authentification seule)' }]
 const BUSY = ['En file', 'En cours']
 const blankJob = { name: '', scanType: 'IpSweep', targetRange: '', portList: '', credentialId: '', frequencyHours: 24,
-  windowStart: '20:00', windowEnd: '06:00', isActive: true }
+  windowStart: '20:00', windowEnd: '06:00', isActive: true, assistedCmdb: false }
 
 function JobForm({ job, credentials, onSaved, onCancel }) {
   const perimeters = usePerimeters().filter(p => ['Admin', 'Manager'].includes(p.role))
@@ -49,6 +50,7 @@ function JobForm({ job, credentials, onSaved, onCancel }) {
     windowStart: job.windowStart ?? '', windowEnd: job.windowEnd ?? '' } : blankJob)
   const [perimeterId, setPerimeterId] = useState(job?.perimeterId ?? null)
   const [error, setError] = useState('')
+  const assisted = useFeatures().has('assisted-cmdb')
   // Un seul périmètre géré (parmi d'autres consultés) : pas de choix à faire, il est retenu d'office.
   useEffect(() => { if (!job && perimeterId === null && perimeters.length === 1) setPerimeterId(perimeters[0].id) }, [perimeters.length])
   const set = patch => setF(prev => ({ ...prev, ...patch }))
@@ -97,6 +99,10 @@ function JobForm({ job, credentials, onSaved, onCancel }) {
           <small className="field-hint">Heure locale ; hors heures ouvrées de préférence. Vide : à toute heure.</small></div>
         <div className="field"><label>État</label>
           <label className="check"><input type="checkbox" checked={f.isActive} onChange={e => set({ isActive: e.target.checked })} /> Active (lancements planifiés)</label></div>
+        {/* CMA-08 : à la fin de la tâche, la CMDB assistée propose un CI candidat ou un type pour les actifs laissés au sas. */}
+        {assisted && <div className="field"><label>CMDB assistée</label>
+          <label className="check"><input type="checkbox" checked={!!f.assistedCmdb} onChange={e => set({ assistedCmdb: e.target.checked })} /> Analyser avec la CMDB assistée</label>
+          <small className="field-hint">Pour les actifs laissés au sas : un CI candidat ou un type, à décider sur la fiche de l’actif.</small></div>}
       </div>
       <div className="actions">
         <button className="btn" onClick={save} disabled={!f.name.trim()}>Enregistrer</button>

@@ -60,6 +60,15 @@ Terminée avec le nombre de propositions faites et écartées (propositions refu
 CMA-09 ou par l'API, réponses non conformes). Un modèle en panne ou trop lent met
 l'analyse en échec avec son motif.
 
+**Aide au sas** (CMA-08) : à la fin d'une tâche de découverte dont l'option est cochée, le
+conteneur lit les actifs qu'elle laisse au sas sans rapprochement et présélectionne pour
+chacun au plus cinq CI candidats du périmètre (serveurs et équipements non retirés, au nom
+proche du nom d'hôte, ou celui que CFG-41 a trouvé en conflit) ; par requêtes de 20 actifs,
+le modèle en choisit un, ou un type pour créer le CI. Le nom court de l'actif, les adresses
+et numéros de série partent pseudonymisés : un CI qui porte le nom d'hôte en reçoit le même
+jeton. Une proposition hors des candidats est écartée (CMA-09). Un modèle en panne arrête
+l'aide, journalisée ; le passage suivant de la tâche la refait.
+
 **Criticité** ne vise que les applications qui n'en ont pas (CFG-43) ; elle s'accepte, comme
 Renommer, Normaliser et Reclasser, par la modification du CI. **Relier** ne soumet que les CI
 dont la description cite le nom (normalisé, quatre caractères au moins) ou la référence d'un
@@ -90,8 +99,8 @@ conserver ; la proposition déposée vise l'autre (CMA-05).
 | CMA-04 | **Convention de nommage**, tenue par les gestionnaires dans Paramétrage : une description (500 caractères au plus) et jusqu'à cinq exemples par type de CI, transmis au modèle ; une description vide retire la convention. Sans convention pour un type, la tâche Renommer ne s'y applique pas | ✅ | 3 |
 | CMA-05 | **Fusion** : le gestionnaire choisit le CI conservé (la proposition en suggère un). Les liens, les relations et les actifs du sas rapprochés du doublon lui sont reportés, sans relation vers lui-même ni en double ; le doublon passe au statut **Retiré**, avec le motif « Fusionné dans <référence> » ; l'opération est tracée au journal d'audit des deux CI. Refusée (400) entre deux périmètres ou deux environnements différents | ✅ | 3 |
 | CMA-06 | **Doublons candidats** : le conteneur présélectionne lui-même les paires à soumettre (même périmètre, même environnement, types compatibles, noms proches une fois normalisés) ; le modèle ne juge que ces paires, 50 au plus par requête, et ne voit jamais toute la CMDB. Une paire rejetée n'est plus soumise | ✅ (critères de la présélection au § 2) | 3 |
-| CMA-07 | **Données envoyées** : nom, type, environnement, système, constructeur, modèle, description (1 000 caractères au plus) et relations existantes des CI analysés, **pseudonymisés** ([OPT-24](fonctionnalites-optionnelles.md#4-connecteur-de-modèle-de-langage)) : adresses IP et MAC, numéros de série, noms d'hôte, comptes des propriétaires. Aucun identifiant du coffre ni secret. Une requête ne porte que des CI d'un seul périmètre | 🔜 (toutes les tâches, #367 5a à 5c-1 ; aide au sas, 5c-2) | 3 |
-| CMA-08 | **Aide au sas** : pour un actif À rapprocher ou En conflit que [CFG-41](processus/gestion-de-la-configuration.md) n'a pas rapproché, la CMDB assistée propose un CI candidat, ou un type pour la création, avec son motif ; la proposition s'affiche sur la fiche de l'actif, et la décision reste celle de [CFG-40](processus/gestion-de-la-configuration.md). Elle se déclenche à la fin d'une tâche de découverte dont l'option « Analyser avec la CMDB assistée » est cochée | 🔜 | 3 |
+| CMA-07 | **Données envoyées** : nom, type, environnement, système, constructeur, modèle, description (1 000 caractères au plus) et relations existantes des CI analysés, **pseudonymisés** ([OPT-24](fonctionnalites-optionnelles.md#4-connecteur-de-modèle-de-langage)) : adresses IP et MAC, numéros de série, noms d'hôte, comptes des propriétaires. Aucun identifiant du coffre ni secret. Une requête ne porte que des CI d'un seul périmètre | ✅ | 3 |
+| CMA-08 | **Aide au sas** : pour un actif À rapprocher ou En conflit que [CFG-41](processus/gestion-de-la-configuration.md) n'a pas rapproché, la CMDB assistée propose un CI candidat, ou un type pour la création, avec son motif ; la proposition s'affiche sur la fiche de l'actif, et la décision reste celle de [CFG-40](processus/gestion-de-la-configuration.md). Elle se déclenche à la fin d'une tâche de découverte dont l'option « Analyser avec la CMDB assistée » est cochée | ✅ | 3 |
 | CMA-09 | **Sortie validée** ([OPT-25](fonctionnalites-optionnelles.md#4-connecteur-de-modèle-de-langage)) : une proposition qui cite un CI inconnu ou hors de l'analyse, un type ou une relation hors liste, une relation d'un CI vers lui-même ou une relation qui existe déjà est écartée et comptée | ✅ | 3 |
 | CMA-10 | **Mesure** : par tâche, sur 30 et 90 jours, la part des propositions acceptées, corrigées, rejetées et expirées, la part des réponses non conformes et la durée des analyses ([OPT-27](fonctionnalites-optionnelles.md#4-connecteur-de-modèle-de-langage)) ; affichée dans Administration › Fonctionnalités optionnelles › CMDB assistée | 🔜 | 3 |
 | CMA-11 | **Jeu d'essai** : une CMDB fictive d'au moins 50 CI, avec ses réponses attendues (doublons, types, relations, normalisations), mesure chaque tâche sur au moins un modèle exécutable dans le SI ; la précision par tâche, la durée et la mémoire nécessaire sont consignées ici avant la version stable. Une tâche dont la précision mesurée reste sous 70 % est coupée par défaut | 🔜 | 3 |
@@ -103,7 +112,8 @@ conserver ; la proposition déposée vise l'autre (CMA-05).
 |---|---|---|
 | Configuration › **CMDB assistée** (gestionnaires) | Lancer une analyse (CMA-01), suivre les analyses, file des propositions filtrée par tâche, statut et périmètre, avant et après côte à côte, décision une à une ou par sélection | ✅ (les six tâches ; file filtrée par tâche, périmées signalées, sur tous les périmètres gérés ; une fusion montre le doublon retiré et le CI qui le reçoit, et se décide en gardant l'un ou l'autre, par sélection le CI suggéré ; une relation montre son type et sa cible) |
 | Fiche CI | Encadré « Propositions » quand il en reste d'ouvertes ; une fusion ou une relation y cite l'autre CI, se rejette, et se décide dans la file | ✅ |
-| Sas de staging, fiche d'un actif | Proposition de CI candidat ou de type (CMA-08) | 🔜 |
+| Sas de staging, fiche d'un actif | Proposition de CI candidat ou de type (CMA-08), avec son motif : « Rapprocher de … » ou « Créer en … » (formulaire prérempli), ou la rejeter ; la décision reste celle du rapprochement | ✅ |
+| Paramétrage › Découverte, tâche de scan | Option « Analyser avec la CMDB assistée » (CMA-08), visible quand la CMDB assistée est activée | ✅ |
 | Paramétrage › Convention de nommage | Description et exemples par type de CI (CMA-04) | ✅ |
 | Administration › Fonctionnalités optionnelles › CMDB assistée | Réglages (CMA-12), mesure (CMA-10) | 🔜 |
 
@@ -122,7 +132,9 @@ conserver ; la proposition déposée vise l'autre (CMA-05).
 | `GET /api/admin/assisted-cmdb/metrics` | Admin | Mesure (CMA-10) |
 | `GET /internal/assisted-cmdb/analyses/{id}`, `PUT /internal/assisted-cmdb/analyses/{id}` | Jeton du conteneur `features`, CMDB assistée activée | Analyse annoncée par le fil (`analysis.requested`) : `{ id, perimeterId, tasks, configurationItemIds, status, itemCount }` (`configurationItemIds` null : tout le périmètre). Compte rendu (CMA-01) : `{ status, reason, proposalCount, rejectedCount }` ; En file → En cours ou En échec, En cours → En cours (lot suivant, l'analyse reste vivante), Terminée ou En échec ; une analyse finie ne change plus (409) ; En échec sans motif : 400 (OPT-28) |
 | `GET /internal/configuration-items?perimeter=&after=`, `?ids=` | Jeton du conteneur `features` | CI d'un périmètre hors retirés, 200 par page par identifiant croissant, CMDB assistée activée (403 sinon : le tri ne lit que des CI désignés) ; ou des CI désignés, 50 au plus (OPT-13) |
-| `GET /internal/discovery/staging/{id}`, `POST /internal/language-model/calls` (trace) | Jeton du conteneur `features` | Lectures et comptes rendus du conteneur (OPT-13, OPT-27) |
+| `GET /internal/discovery/staging?job=` | Jeton du conteneur `features`, CMDB assistée activée | CMA-08 : à la fin d'une tâche de découverte (`discovery.finished`), la tâche `{ id, perimeterId, assistedCmdb, lastStatus }` et ses actifs laissés au sas sans rapprochement (À rapprocher sans CI, ou En conflit ; 500 au plus) ; aucun sans l'option de la tâche ; 404 tâche inconnue |
+| `GET /api/discovery/staging/{id}/proposals`, `POST /api/discovery/staging/{id}/proposals/{proposition}/reject` | Gestionnaire du périmètre de l'actif, comme le sas | CMA-08 : propositions ouvertes de l'actif `{ id, field, before, after, reasons, createdAt, stale, candidate }` (`candidate` : le CI candidat, du périmètre) ; rejeter sans décider de l'actif (204). Le rapprochement (`POST …/reconcile`, CFG-40) décide les propositions ouvertes : acceptées s'il les suit, corrigées sinon ; ignorer l'actif les rejette |
+| `POST /internal/language-model/calls` (trace) | Jeton du conteneur `features` | Comptes rendus du conteneur (OPT-27) |
 | `POST /language-model/test`, `GET /health` (conteneur `features`) | Jeton du conteneur | Appelées par l'API ([OPT-26](fonctionnalites-optionnelles.md#4-connecteur-de-modèle-de-langage), OPT-01) |
 
 ## 6. Scénarios d'acceptation

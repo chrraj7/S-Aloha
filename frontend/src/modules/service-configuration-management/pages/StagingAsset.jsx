@@ -5,6 +5,7 @@ import { dateTimeFr } from '../../../core/fields'
 import RecordForm, { toForm, toPayload } from '../../../core/components/RecordForm'
 import { ciConfig, HARDWARE_TYPES, RULE_LABELS } from '../config'
 import { KeyValues, ScoreMeter, Sources, StagingBadge } from '../components/Discovery'
+import { useFeatures } from '../../../core/features'
 
 const OPEN = ['À rapprocher', 'En conflit']
 const COMPARED = [
@@ -154,9 +155,40 @@ function PickCi({ asset, onPick, onCancel }) {
   )
 }
 
+/**
+ * CMA-08 : propositions de la CMDB assistée sur l'actif, un CI candidat ou un type pour la création, avec leur motif. La
+ * décision reste celle du rapprochement (CFG-40) : la suivre, en décider autrement, ou la rejeter.
+ */
+function AssistedHelp({ asset, onUpdate, onCreate, onError }) {
+  const enabled = useFeatures().has('assisted-cmdb')
+  const [list, setList] = useState([])
+  const load = () => Promise.resolve().then(() => api.discovery.staging.proposals(asset.id)).then(setList).catch(() => setList([]))
+  useEffect(() => { if (enabled) load() }, [enabled, asset.id, asset.lastSeenAt])
+  if (!enabled || list.length === 0) return null
+  const reject = p => api.discovery.staging.rejectProposal(asset.id, p.id).then(load).catch(e => onError(e.message))
+  return (
+    <div className="suggestions" aria-label="CMDB assistée" style={{ marginBottom: 12 }}>
+      <h4 className="form-heading" style={{ marginTop: 0 }}>Proposé par la CMDB assistée</h4>
+      {list.map(p => (
+        <div key={p.id} style={{ marginBottom: 8 }}>
+          {p.field === 'matchedCiId'
+            ? <b>Rapprocher de {p.candidate ? <Link to={'/configuration/' + p.candidate.id}>{p.candidate.reference} {p.candidate.title}</Link> : 'un CI'}</b>
+            : <b>Créer un CI de type {p.after}</b>}
+          <div className="small">{p.reasons}</div>
+          <div className="toolbar">
+            {p.field === 'matchedCiId' && p.candidate && <button className="btn small" onClick={() => onUpdate(p.candidate)}>Rapprocher de {p.candidate.reference}</button>}
+            {p.field === 'ciType' && <button className="btn small" onClick={() => onCreate(p.after)}>Créer en {p.after}</button>}
+            <button className="btn ghost small" onClick={() => reject(p)}>Rejeter</button>
+          </div>
+        </div>))}
+    </div>
+  )
+}
+
 /** Décision du gestionnaire : l'action principale suit la suggestion ; les autres restent à portée. */
 function Decision({ data, onChanged, onError }) {
   const [mode, setMode] = useState(null)
+  const [type, setType] = useState(null)
   const { asset, suggestion, targetCi } = data
   const nav = useNavigate()
   const act = (p, then) => p.then(then ?? onChanged).catch(e => onError(e.message))
@@ -177,6 +209,7 @@ function Decision({ data, onChanged, onError }) {
   return (
     <section className="card decision" aria-label="Décision">
       <h3 className="card-title">Votre décision</h3>
+      {!mode && <AssistedHelp asset={asset} onUpdate={update} onError={onError} onCreate={t => { setType(t); setMode('create') }} />}
       {!mode && (
         <div className="actions">
           {proposeUpdate && <button className="btn" onClick={() => update(targetCi)}>Rapprocher de {targetCi.reference}</button>}
@@ -187,7 +220,8 @@ function Decision({ data, onChanged, onError }) {
               && act(api.discovery.staging.ignore(asset.id))}>Ignorer</button>
         </div>
       )}
-      {mode === 'create' && <CreateCi data={data} onCancel={() => setMode(null)}
+      {mode === 'create' && <CreateCi data={type ? { ...data, proposal: { ...data.proposal, ciType: type } } : data}
+        onCancel={() => { setMode(null); setType(null) }}
         onDone={r => nav('/configuration/' + r.configurationItem.id)} />}
       {mode === 'pick' && <PickCi asset={asset} onCancel={() => setMode(null)} onPick={update} />}
     </section>

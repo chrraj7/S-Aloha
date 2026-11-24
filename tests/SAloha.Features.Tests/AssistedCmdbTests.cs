@@ -178,6 +178,55 @@ public class RelationsTests
     }
 }
 
+/// <summary>CMA-08 : aide au sas, candidats présélectionnés et lecture des réponses, en fonctions pures.</summary>
+public class StagingTests
+{
+    private static CiRecord Ci(int id, string title, string type = "Serveur", string status = "En service", int perimeter = 7) =>
+        new(id, perimeter, $"CI-{id}", title, null, status, type, "Production", null, null, null, null, null, null, null, [], []);
+
+    private static StagingAsset Asset(int id, string host, int? matched = null, string type = "Serveur") =>
+        new(id, 7, "À rapprocher", host, "10.9.0.4", "00:11:22:33:44:55", "SN-77-AX", null, null, "Linux", type, "22,443", "IpSweep", false, matched);
+
+    [Fact]
+    public void CMA_08_candidats_serveurs_ou_equipements_du_perimetre_aux_noms_proches_et_le_CI_en_conflit()
+    {
+        var items = new[]
+        {
+            Ci(1, "SRV-PAIE-01"), Ci(2, "srvpaie1", "Application"), Ci(3, "SRV-PAIE-01-old", status: "Retiré"), Ci(4, "srvpaie1", perimeter: 8),
+            Ci(5, "SRV-MAIL-01"), Ci(6, "NAS-01", "Stockage"),
+        };
+        var subjects = Staging.Subjects([Asset(10, "srvpaie1.siege.local"), Asset(11, "inconnu-77", matched: 6)], items);
+        Assert.Equal([1], subjects[0].Candidates.Select(c => c.Id));   // ni l'application, ni le retiré, ni l'autre périmètre
+        Assert.Equal([6], subjects[1].Candidates.Select(c => c.Id));   // le CI que CFG-41 a trouvé en conflit
+    }
+
+    [Fact]
+    public void CMA_07_CMA_09_actif_pseudonymise_et_reponse_hors_candidats_ecartee()
+    {
+        var subjects = Staging.Subjects([Asset(10, "srvpaie1.siege.local"), Asset(11, "imprimante-3")], [Ci(1, "srvpaie1")]);
+        var pseudo = new Pseudonymizer();
+        var input = pseudo.Apply(Staging.Input(subjects, pseudo));
+        foreach (var secret in new[] { "srvpaie1", "10.9.0.4", "00:11:22:33:44:55", "SN-77-AX" }) Assert.DoesNotContain(secret, input);
+        // Le CI qui porte le nom d'hôte reçoit le même jeton que l'actif.
+        var first = JsonDocument.Parse(input).RootElement[0];
+        Assert.Equal(first.GetProperty("candidats")[0].GetProperty("nom").GetString(), first.GetProperty("nom").GetString());
+        Assert.StartsWith("HOTE", first.GetProperty("nom").GetString());
+
+        var output = JsonDocument.Parse("""
+            { "propositions": [
+              { "actif": 10, "ci": 1, "type": "Serveur", "motif": "Même nom d'hôte." },
+              { "actif": 10, "ci": 0, "type": "Réseau", "motif": "Second avis : ignoré." },
+              { "actif": 11, "ci": 0, "type": "Poste de travail", "motif": "Ports d'impression." },
+              { "actif": 11, "ci": 1, "type": "Serveur", "motif": "Pas son candidat : écarté." },
+              { "actif": 99, "ci": 0, "type": "Autre", "motif": "Hors de la requête : écarté." } ] }
+            """).RootElement;
+        var (kept, rejected) = Staging.Read(output, subjects);
+        Assert.Equal([new StagingProposal(10, "matchedCiId", "1", "Même nom d'hôte."), new StagingProposal(11, "ciType", "Poste de travail", "Ports d'impression.")], kept);
+        Assert.Equal(2, rejected);
+        Assert.Null(SchemaCheck.Error(output, Staging.Schema));
+    }
+}
+
 /// <summary>Port interne factice de l'API et modèle factice : une analyse, ses CI, les conventions, les propositions et les comptes rendus.</summary>
 public sealed class FakeCmdbApi : IAsyncLifetime
 {
@@ -192,6 +241,8 @@ public sealed class FakeCmdbApi : IAsyncLifetime
     public volatile object[] Naming = [];
     /// <summary>CMA-06 : paires rejetées servies au conteneur.</summary>
     public volatile int[][] Declined = [];
+    /// <summary>CMA-08 : la tâche de découverte et ses actifs laissés au sas.</summary>
+    public volatile object? StagingRead;
     /// <summary>Réponse du modèle selon la tâche (nom du schéma demandé) ; absente : panne (500).</summary>
     public readonly ConcurrentDictionary<string, string> Replies = new();
 
@@ -223,6 +274,7 @@ public sealed class FakeCmdbApi : IAsyncLifetime
         });
         app.MapGet("/internal/assisted-cmdb/naming", () => Results.Json(Naming));
         app.MapGet("/internal/assisted-cmdb/declined-pairs", (int perimeter) => Results.Json(Declined));
+        app.MapGet("/internal/discovery/staging", (int job) => StagingRead is { } read ? Results.Json(read) : Results.NotFound());
         app.MapPost("/internal/proposals", async (HttpContext c) =>
         {
             Proposals.Enqueue(await JsonSerializer.DeserializeAsync<JsonElement>(c.Request.Body));
@@ -389,6 +441,42 @@ public class AssistedCmdbTests(FakeCmdbApi api) : IClassFixture<FakeCmdbApi>
         var critical = Assert.Single(api.ModelRequests, r => r.GetProperty("response_format").GetProperty("json_schema").GetProperty("name").GetString() == "criticality");
         Assert.Equal([31], JsonDocument.Parse(critical.GetProperty("messages")[1].GetProperty("content").GetString()!).RootElement.EnumerateArray()
             .Select(c => c.GetProperty("id").GetInt32()));
+    }
+
+    [Fact]
+    public async Task CMA_08_a_la_fin_d_une_decouverte_les_actifs_laisses_au_sas_recoivent_un_CI_candidat_ou_un_type()
+    {
+        api.Items = [Item(41, "srvweb1", "Serveur"), Item(42, "Paie", "Application")];
+        api.StagingRead = new
+        {
+            job = new { id = 61, perimeterId = 7, assistedCmdb = true, lastStatus = "Réussie" },
+            assets = new object[]
+            {
+                new { id = 71, perimeterId = 7, status = "À rapprocher", hostname = "srvweb1.siege.local", ipAddress = "10.9.0.7", detectedType = "Serveur", inDirectory = true },
+                new { id = 72, perimeterId = 7, status = "À rapprocher", hostname = "imp-rdc", ipAddress = "10.9.0.8", detectedType = "Autre", inDirectory = false },
+            },
+        };
+        api.Replies["staging"] = """
+            { "propositions": [ { "actif": 71, "ci": 41, "type": "Serveur", "motif": "Même nom d'hôte et même système." },
+              { "actif": 72, "ci": 0, "type": "Poste de travail", "motif": "Ports d'impression ouverts." } ] }
+            """;
+        api.Events.Enqueue(new { id = Interlocked.Increment(ref eventId), type = "discovery.finished", entityType = "discovery-job", entityId = 61,
+            perimeterId = 7, at = DateTime.UtcNow });
+
+        using var container = Container();
+        container.CreateClient();
+        List<(int, string?, string?)> assets = [];
+        for (var i = 0; i < 200 && assets.Count < 2; i++)
+        {
+            await Task.Delay(50);
+            assets = api.Proposals.Where(p => p.GetProperty("targetType").GetString() == "asset")
+                .Select(p => (p.GetProperty("targetId").GetInt32(), p.GetProperty("field").GetString(), p.GetProperty("after").GetString())).ToList();
+        }
+        Assert.Equal([(71, "matchedCiId", "41"), (72, "ciType", "Poste de travail")], assets);
+        var request = Assert.Single(api.ModelRequests, r => r.GetProperty("response_format").GetProperty("json_schema").GetProperty("name").GetString() == "staging");
+        var user = request.GetProperty("messages")[1].GetProperty("content").GetString()!;
+        foreach (var secret in new[] { "srvweb1", "10.9.0.7", "Paie" }) Assert.DoesNotContain(secret, user);   // ni l'application, jamais candidate
+        api.StagingRead = null;
     }
 
     [Fact]

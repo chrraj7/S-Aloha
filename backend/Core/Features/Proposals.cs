@@ -107,6 +107,9 @@ public static class ProposalFields
         new("ci", Merge, FeatureCatalog.AssistedCmdb, _ => null, CiMerge.ValidateAsync, Id, target => target.ToString()),
         // CMA-02 : relier le CI visé à un autre, « <identifiant>|<type de relation> » ; le sens compte.
         new("ci", Relation, FeatureCatalog.AssistedCmdb, _ => null, CiRelate.ValidateAsync, v => CiRelate.Parse(v)?.Target),
+        // CMA-08 : aide au sas, un CI candidat pour l'actif, ou un type pour la création ; décidée au rapprochement (CFG-40).
+        new("asset", "matchedCiId", FeatureCatalog.AssistedCmdb, e => ((DiscoveredAsset)e).MatchedCiId?.ToString(), AssistedStaging.ValidateCandidateAsync),
+        new("asset", "ciType", FeatureCatalog.AssistedCmdb, e => ((DiscoveredAsset)e).DetectedType, OneOf("Type de CI", ConfigurationItem.Types)),
     ];
 
     public static Field? Of(string targetType, string name) => All.FirstOrDefault(f => f.TargetType == targetType && f.Name == name);
@@ -115,6 +118,18 @@ public static class ProposalFields
     {
         "incident" => await db.Incidents.FindAsync(id),
         "ci" => await db.ConfigurationItems.FindAsync(id),
+        "asset" => await db.DiscoveredAssets.FindAsync(id),
+        _ => null
+    };
+
+    /// <summary>Ce qu'une proposition retient de sa cible : identifiant, périmètre, dernière modification (péremption, OPT-15).</summary>
+    public record Stamped(int Id, int PerimeterId, DateTime UpdatedAt);
+
+    /// <summary>Un enregistrement d'une pratique, ou un actif du sas (vu pour la dernière fois : sa dernière modification).</summary>
+    public static Stamped? Stamp(object? target) => target switch
+    {
+        Records.Record r => new(r.Id, r.PerimeterId, r.UpdatedAt),
+        DiscoveredAsset a => new(a.Id, a.PerimeterId, a.LastSeenAt),
         _ => null
     };
 

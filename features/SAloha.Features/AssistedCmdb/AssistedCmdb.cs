@@ -22,10 +22,15 @@ public class AssistedCmdb(ApiClient api, LanguageModelClient model, ILogger<Assi
 
     public string Key => FeatureKey;
     public string Feature => FeatureKey;
-    public IReadOnlyCollection<string> Types { get; } = ["analysis.requested"];
+    public IReadOnlyCollection<string> Types { get; } = ["analysis.requested", "discovery.finished"];
 
     public async Task HandleAsync(FeatureEvent e, CancellationToken ct)
     {
+        if (e.EntityType == "discovery-job")
+        {
+            await StagingAsync(e.EntityId, ct);
+            return;
+        }
         if (e.EntityType != "cmdb-analysis") return;
         var analysis = await api.AnalysisAsync(e.EntityId, ct);
         // Rejoué après un redémarrage, ou déjà prise : une analyse qui n'est plus en file ne se refait pas.
@@ -131,6 +136,39 @@ public class AssistedCmdb(ApiClient api, LanguageModelClient model, ILogger<Assi
 
     /// <summary>Le modèle en panne ou trop lent : l'analyse s'arrête, en échec, avec ce motif (OPT-28).</summary>
     private sealed class ModelFailed(string reason) : Exception(reason);
+
+    /// <summary>
+    /// CMA-08 : à la fin d'une tâche de découverte dont l'option est cochée, un CI candidat ou un type pour chaque actif qu'elle
+    /// laisse au sas, par requêtes de 20 actifs. Rien ne se refait : le prochain passage de la tâche rafraîchit les propositions.
+    /// Un modèle en panne arrête l'aide, journalisée, sans autre effet.
+    /// </summary>
+    private async Task StagingAsync(int jobId, CancellationToken ct)
+    {
+        var read = await api.StagingAsync(jobId, ct);
+        if (read is null || !read.Job.AssistedCmdb || read.Assets.Count == 0) return;
+        var items = new List<CiRecord>();
+        for (var after = 0; ;)
+        {
+            var page = await api.PerimeterItemsAsync(read.Job.PerimeterId, after, ct);
+            items.AddRange(page.Where(c => c.PerimeterId == read.Job.PerimeterId));
+            if (page.Count == 0) break;
+            after = page[^1].Id;
+        }
+        foreach (var chunk in Staging.Subjects(read.Assets.Where(a => a.PerimeterId == read.Job.PerimeterId).ToList(), items).Chunk(Staging.AssetsPerRequest))
+        {
+            var pseudo = new Pseudonymizer();
+            var result = await model.RunAsync(new LanguageModelTask(FeatureKey, Staging.Task, CmdbTasks.PromptVersion, Staging.Instructions,
+                Staging.Input(chunk, pseudo), Staging.Schema), pseudo, ct);
+            if (result.Call.Outcome is LanguageModelClient.Error or LanguageModelClient.Timeout)
+            {
+                log.LogWarning("Aide au sas de la tâche {Job} arrêtée : {Error}", jobId, result.Call.Error);
+                return;
+            }
+            if (result.Output is not { } output) continue;
+            foreach (var p in Staging.Read(output, chunk).Kept)
+                await api.ProposeAsync(new ProposalInput(FeatureKey, "asset", p.Asset, p.Field, p.Value, p.Reasons, [], null), ct);
+        }
+    }
 
     /// <summary>Les CI de l'analyse : la sélection (par 50), ou le périmètre page après page.</summary>
     private async Task<List<CiRecord>> ItemsAsync(AnalysisData analysis, CancellationToken ct)

@@ -3,16 +3,20 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import DiscoverySettings from './DiscoverySettings'
+import { resetFeatures } from '../../../core/features'
 
 let role = 'Admin'
 const importOui = vi.fn(() => Promise.resolve({ imported: 2, skipped: 1 }))
 const createCredential = vi.fn(() => Promise.resolve({}))
 const acceptKey = vi.fn(() => Promise.resolve({}))
+const createJob = vi.fn(() => Promise.resolve({}))
 vi.mock('../../../api', () => ({
   getUser: () => ({ role }),
   api: {
+    features: () => Promise.resolve(['assisted-cmdb']),
     perimeters: { mine: () => Promise.resolve([{ id: 1, name: 'Siège' }]), list: () => Promise.resolve([{ id: 1, name: 'Siège' }]) },
     discovery: {
+      jobs: { list: () => Promise.resolve([]), create: (...a) => createJob(...a) },
       macVendors: { get: () => Promise.resolve({ count: 0, lastImport: null }), import: (...a) => importOui(...a) },
       credentials: { list: () => Promise.resolve({ vaultConfigured: true, items: [] }), create: (...a) => createCredential(...a) },
       sshHostKeys: {
@@ -77,4 +81,15 @@ it('CFG-53 : l’Admin accepte une clé d’hôte changée', async () => {
   expect(await screen.findByText('Clé changée')).toBeTruthy()
   fireEvent.click(screen.getByRole('button', { name: 'Accepter la nouvelle clé' }))
   await waitFor(() => expect(acceptKey).toHaveBeenCalledWith(7))
+})
+
+it('CMA-08 : une tâche de scan porte l’option « Analyser avec la CMDB assistée » quand elle est activée', async () => {
+  resetFeatures()
+  render(<MemoryRouter initialEntries={['/settings/discovery']}><DiscoverySettings /></MemoryRouter>)
+  fireEvent.click(await screen.findByText('+ Nouvelle tâche de scan'))
+  fireEvent.change(screen.getByPlaceholderText('Ex. : Réseau du siège'), { target: { value: 'Réseau du siège' } })
+  fireEvent.click(await screen.findByLabelText('Analyser avec la CMDB assistée'))
+  fireEvent.click(screen.getByText('Enregistrer'))
+  await waitFor(() => expect(createJob).toHaveBeenCalled())
+  expect(createJob.mock.calls[0][0]).toMatchObject({ name: 'Réseau du siège', assistedCmdb: true })
 })

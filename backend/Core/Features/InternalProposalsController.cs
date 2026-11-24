@@ -29,7 +29,7 @@ public class InternalProposalsController(AppDbContext db, IFeatureGate gate) : C
         if (field is null || field.Feature != feature.Key)
             return BadRequest(new { message = $"Champ non proposable par « {feature.Name} » : {input.TargetType}.{input.Field}." });
         var target = await ProposalFields.LoadAsync(db, field.TargetType, input.TargetId);
-        if (target is not Record record) return NotFound(new { message = "Enregistrement introuvable." });
+        if (ProposalFields.Stamp(target) is not { } record) return NotFound(new { message = "Enregistrement introuvable." });
         var after = input.After?.Trim() ?? "";
         if (after.Length > 2000) return BadRequest(new { message = "Valeur proposée : 2 000 caractères au plus." });
         if (await field.Validate(db, target, after) is { } error) return BadRequest(new { message = error });
@@ -86,7 +86,7 @@ public class InternalProposalsController(AppDbContext db, IFeatureGate gate) : C
     /// sinon elle se crée, l'autre enregistrement cité. Plusieurs paires restent ouvertes sur un même enregistrement : un CI
     /// peut avoir plusieurs doublons candidats, plusieurs relations à créer.
     /// </summary>
-    private async Task<IActionResult> PairAsync(string feature, ProposalFields.Field field, Record record, string after, ProposalInput input)
+    private async Task<IActionResult> PairAsync(string feature, ProposalFields.Field field, ProposalFields.Stamped record, string after, ProposalInput input)
     {
         var other = field.Other!(after)!.Value;
         var reasons = input.Reasons?.Trim() ?? "";
@@ -99,7 +99,7 @@ public class InternalProposalsController(AppDbContext db, IFeatureGate gate) : C
         if (pair.FirstOrDefault(p => p.Status == Proposal.Open) is { } open)
         {
             // Périmée (l'un des deux modifié depuis), elle redevient acceptable : le conteneur vient de la juger à nouveau.
-            var changed = (await ProposalFields.LoadAsync(db, field.TargetType, other) as Record)?.UpdatedAt;
+            var changed = ProposalFields.Stamp(await ProposalFields.LoadAsync(db, field.TargetType, other))?.UpdatedAt;
             if (open.Reasons != reasons || record.UpdatedAt > open.CreatedAt || changed > open.CreatedAt)
             {
                 (open.Reasons, open.CreatedAt) = (reasons, DateTime.UtcNow);
