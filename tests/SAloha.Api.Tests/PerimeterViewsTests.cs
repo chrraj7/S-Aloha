@@ -132,6 +132,66 @@ public class PerimeterViewsTests(ApiFixture api)
     }
 
     [Fact]
+    public async Task PER_08_NIS_08_une_preuve_d_un_autre_perimetre_est_masquee_au_questionnaire_et_a_l_export()
+    {
+        var (siege, usine, tiana, lova) = await Setup("per08p");
+        var admin = api.Client();
+        object Ci(string title, int perimeter) => new
+        {
+            title, ciType = "Serveur", environment = "Production", status = "En service", perimeterId = perimeter,
+            ownerType = "User", ownerId = "owner.per08p", ownerDisplayName = "Owner"
+        };
+        var id = Id(await Json(await admin.PostAsJsonAsync("/api/assessments", new
+        {
+            title = "PER-08 preuves", description = "Périmètre", entityCategory = "Entité importante", perimeterId = siege,
+            ownerType = "User", ownerId = "lova.per08p", ownerDisplayName = "Lova"
+        })));
+        var requirement = (await Json(await admin.GetAsync($"/api/assessments/{id}/questionnaire"))).GetProperty("objectives").EnumerateArray()
+            .SelectMany(o => o.GetProperty("themes").EnumerateArray())
+            .SelectMany(t => t.GetProperty("requirements").EnumerateArray()).First();
+        var rid = Id(requirement);
+        var code = requirement.GetProperty("code").GetString()!;
+        var usineCi = await Json(await admin.PostAsJsonAsync("/api/configuration-items", Ci("srv-usine-SECRET-per08p", usine)));
+        var siegeCi = await Json(await admin.PostAsJsonAsync("/api/configuration-items", Ci("srv-siege-per08p", siege)));
+        var movedCi = await Json(await admin.PostAsJsonAsync("/api/configuration-items", Ci("srv-deplace-SECRET-per08p", siege)));
+        // Lova voit les deux périmètres : elle désigne le CI de l'Usine ; Tiana, ceux du Siège.
+        var fromUsine = await Json(await lova.PostAsJsonAsync($"/api/assessments/{id}/responses/{rid}/evidence", new { reference = Ref(usineCi) }));
+        await Json(await tiana.PostAsJsonAsync($"/api/assessments/{id}/responses/{rid}/evidence", new { reference = Ref(siegeCi) }));
+        var fromMoved = await Json(await tiana.PostAsJsonAsync($"/api/assessments/{id}/responses/{rid}/evidence", new { reference = Ref(movedCi) }));
+        // Le troisième CI part ensuite à l'Usine (PER-07).
+        await Json(await admin.PutAsJsonAsync($"/api/configuration-items/{Id(movedCi)}", Ci("srv-deplace-SECRET-per08p", usine)));
+        Assert.Equal(HttpStatusCode.NotFound, (await tiana.GetAsync($"/api/configuration-items/{Id(usineCi)}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await tiana.GetAsync($"/api/configuration-items/{Id(movedCi)}")).StatusCode);
+
+        async Task<List<JsonElement>> Evidence(HttpClient c) =>
+            (await Json(await c.GetAsync($"/api/assessments/{id}/questionnaire"))).GetProperty("objectives").EnumerateArray()
+                .SelectMany(o => o.GetProperty("themes").EnumerateArray())
+                .SelectMany(t => t.GetProperty("requirements").EnumerateArray())
+                .Single(r => Id(r) == rid).GetProperty("evidence").EnumerateArray().ToList();
+        // Ni la référence ni le titre d'une cible que Tiana ne voit pas ne lui sont servis.
+        var read = await tiana.GetStringAsync($"/api/assessments/{id}/questionnaire") + await tiana.GetStringAsync($"/api/assessments/{id}/export");
+        foreach (var secret in new[] { Ref(usineCi), Ref(movedCi), "SECRET" }) Assert.DoesNotContain(secret, read);
+        // Les trois preuves comptent pour Tiana ; seule celle du Siège est décrite.
+        var seen = await Evidence(tiana);
+        Assert.Equal(3, seen.Count);
+        Assert.Equal(Ref(siegeCi), Ref(seen.Single(x => !x.GetProperty("hidden").GetBoolean())));
+        foreach (var x in seen.Where(x => x.GetProperty("hidden").GetBoolean()))
+        {
+            Assert.Equal((0, "", ""), (x.GetProperty("targetId").GetInt32(), Ref(x), x.GetProperty("targetType").GetString()));
+            Assert.Equal("Enregistrement d'un autre périmètre", x.GetProperty("title").GetString());
+        }
+        var row = (await Json(await tiana.GetAsync($"/api/assessments/{id}/export"))).GetProperty("rows").EnumerateArray()
+            .Single(r => r.GetProperty("code").GetString() == code);
+        Assert.Contains(Ref(siegeCi), row.GetProperty("evidence").GetString());
+        // Une preuve masquée ne se retire pas (PER-08) ; Lova, qui voit l'Usine, lit et retire la sienne.
+        Assert.Equal(HttpStatusCode.NotFound, (await tiana.DeleteAsync($"/api/assessments/{id}/evidence/{Id(fromMoved)}")).StatusCode);
+        Assert.Equal(3, (await Evidence(admin)).Count(x => !x.GetProperty("hidden").GetBoolean()));
+        Assert.Contains(await Evidence(lova), x => Ref(x) == Ref(usineCi));
+        Assert.Equal(HttpStatusCode.NoContent, (await lova.DeleteAsync($"/api/assessments/{id}/evidence/{Id(fromUsine)}")).StatusCode);
+        Assert.Equal(2, (await Evidence(tiana)).Count);
+    }
+
+    [Fact]
     public async Task PER_08_le_service_degrade_masque_le_CI_d_un_autre_perimetre()
     {
         var (siege, usine, tiana, _) = await Setup("per08d");
