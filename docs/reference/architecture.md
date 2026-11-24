@@ -297,7 +297,7 @@ push sur `main` et sur chaque pull request, en onze jobs : **API** (tests ci-des
 `dotnet list package --vulnerable`, couverture publiée sans seuil), **Interface** (`npm ci`, tests, build,
 `npm audit` haut et critique par `scripts/check-audit-npm.py` : exception datée possible
 pour l'outillage de build et de test, jamais pour le paquet livré), **Documentation** (`scripts/check-docs.py`) et
-**Images Docker** (build des deux images, sans publication), **DCO** (chaque commit porte le
+**Images Docker** (build des images de l'API, de l'interface et des conteneurs `features` et `mcp`, sans publication), **DCO** (chaque commit porte le
 `Signed-off-by` de son auteur, bots exceptés ;
 [ADR-0010](../decisions/adr-0010-certificat-d-origine-dco.md) ; sur `main`, les commits
 arrivés par la fusion, pour repérer un squash dont le message a perdu la signature) et, sur
@@ -305,11 +305,12 @@ une pull request seulement, **Hygiène**
 (`scripts/check-hygiene.py` : trailers autres que `Signed-off-by` et termes réservés, lus dans
 le secret `HYGIENE_TERMES` ; bloquant et exigé pour fusionner depuis le 2026-11-03) ; **Recette** : la pile de démonstration construite depuis les sources sur une base
 vierge (annuaire Samba AD, API, interface, conteneur `features` du profil `fonctionnalites`,
-sans le service d'embeddings), les données
+conteneur `mcp` du profil `mcp`, sans le service d'embeddings), les données
 d'exemple chargées par l'API (`demo/donnees/charger.py`), puis
 [`scripts/recette.py`](../../scripts/recette.py) par l'interface : connexion des trois rôles,
 jeu de données complet, santé de la base, de l'annuaire et du conteneur `features` (joignable,
-jeton reconnu) ; c'est la recette avant fusion ;
+jeton reconnu), serveur MCP par nginx (`/mcp` en 404 coupé ; activé, les six outils listés et
+`search` appelé avec un jeton personnel ; de nouveau 404 une fois coupé) ; c'est la recette avant fusion ;
 sur une pull request seulement, **Preuve** ([`scripts/preuve.py`](../../scripts/preuve.py) :
 les tests ajoutés ou modifiés par la PR, rejoués sur le code de la base, doivent échouer — sinon
 ils ne prouvent pas le changement ; un code modifié sans test modifié échoue aussi ; exception

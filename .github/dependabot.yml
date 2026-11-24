@@ -16,7 +16,7 @@ updates:
         update-types: [version-update:semver-major]
 
   - package-ecosystem: nuget
-    directories: [/backend, /tests/SAloha.Api.Tests, /features/SAloha.Features, /tests/SAloha.Features.Tests]
+    directories: [/backend, /tests/SAloha.Api.Tests, /features/SAloha.Features, /features/SAloha.Mcp, /tests/SAloha.Features.Tests]
     schedule: { interval: weekly, day: monday }
     groups:
       dotnet:
@@ -27,7 +27,7 @@ updates:
         update-types: [version-update:semver-major]
 
   - package-ecosystem: docker
-    directories: [/backend, /frontend, /demo/annuaire, /features/SAloha.Features]
+    directories: [/backend, /frontend, /demo/annuaire, /features/SAloha.Features, /features/SAloha.Mcp]
     schedule: { interval: weekly, day: monday }
     labels: [dependencies]
     ignore:
