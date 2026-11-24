@@ -308,6 +308,9 @@ public abstract class RecordController<T, TDto, TView>(AppDbContext db) : Contro
             proposal = await db.Proposals.FirstOrDefaultAsync(p => p.Id == proposalId && p.TargetType == LinkType && p.TargetId == id && p.Status == Proposal.Open);
             if (proposal is null || !await Gate.IsEnabledAsync(proposal.Feature))
                 return NotFound(new { message = "Proposition introuvable ou déjà décidée." });
+            // Une proposition sur deux enregistrements (fusion, CMA-05) se décide par sa route propre.
+            if (ProposalFields.Of(proposal.TargetType, proposal.Field) is { Pair: true })
+                return BadRequest(new { message = "Cette proposition porte sur deux enregistrements : elle se décide par sa route propre." });
             if (e.UpdatedAt > proposal.CreatedAt)
                 return Conflict(new { message = $"Proposition périmée : {e.Reference} a été modifié depuis ; elle sera recalculée." });
         }

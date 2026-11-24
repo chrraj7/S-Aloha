@@ -62,22 +62,30 @@ public record ProposalView(int Id, string Feature, string Field, string? Before,
 /// </summary>
 public static class ProposalFields
 {
-    public record Field(string TargetType, string Name, string Feature, Func<object, string?> Read, Func<AppDbContext, string, Task<string?>> Validate);
+    /// <param name="Validate">Contrôle de la valeur proposée, l'enregistrement visé en main : message (400) ou null.</param>
+    /// <param name="Pair">
+    /// La valeur désigne un second enregistrement du même type (fusion, CMA-05) : la proposition porte sur la paire, dans
+    /// un sens ou dans l'autre ; elle se décide par sa route propre, jamais par la modification de la pratique.
+    /// </param>
+    public record Field(string TargetType, string Name, string Feature, Func<object, string?> Read,
+        Func<AppDbContext, object, string, Task<string?>> Validate, bool Pair = false);
 
-    private static Func<AppDbContext, string, Task<string?>> OneOf(string label, string[] values) =>
-        (_, v) => Task.FromResult(values.Contains(v) ? null : $"{label} inconnu(e) : « {v} ». Valeurs : {string.Join(", ", values)}.");
+    public const string Merge = "merge";
 
-    private static Func<AppDbContext, string, Task<string?>> Text(string label, int max) =>
-        (_, v) => Task.FromResult(string.IsNullOrWhiteSpace(v) ? $"{label} vide." : v.Length > max ? $"{label} : {max} caractères au plus." : null);
+    private static Func<AppDbContext, object, string, Task<string?>> OneOf(string label, string[] values) =>
+        (_, _, v) => Task.FromResult(values.Contains(v) ? null : $"{label} inconnu(e) : « {v} ». Valeurs : {string.Join(", ", values)}.");
+
+    private static Func<AppDbContext, object, string, Task<string?>> Text(string label, int max) =>
+        (_, _, v) => Task.FromResult(string.IsNullOrWhiteSpace(v) ? $"{label} vide." : v.Length > max ? $"{label} : {max} caractères au plus." : null);
 
     public static readonly Field[] All =
     [
         // Tri assisté des tickets (TRI-03, TRI-04).
         new("incident", "impact", FeatureCatalog.AssistedTriage, e => ((Incident)e).Impact, OneOf("Impact", Priority.Impacts)),
         new("incident", "category", FeatureCatalog.AssistedTriage, e => ((Incident)e).Category,
-            async (db, v) => (await Category.CheckAsync(db, "incident", v, null)).Error ?? (string.IsNullOrWhiteSpace(v) ? "Catégorie vide." : null)),
+            async (db, _, v) => (await Category.CheckAsync(db, "incident", v, null)).Error ?? (string.IsNullOrWhiteSpace(v) ? "Catégorie vide." : null)),
         new("incident", "serviceId", FeatureCatalog.AssistedTriage, e => ((Incident)e).ServiceId?.ToString(),
-            async (db, v) => int.TryParse(v, out var id) && await db.Services.AnyAsync(s => s.Id == id && s.Status == "En service")
+            async (db, _, v) => int.TryParse(v, out var id) && await db.Services.AnyAsync(s => s.Id == id && s.Status == "En service")
                 ? null : $"Service inconnu ou hors service : « {v} »."),
         new("incident", "owner", FeatureCatalog.AssistedTriage, e => ((Incident)e) is { OwnerType: "Group" } i ? i.OwnerId : null,
             Text("Groupe responsable", 200)),
@@ -88,6 +96,8 @@ public static class ProposalFields
         new("ci", "operatingSystem", FeatureCatalog.AssistedCmdb, e => ((ConfigurationItem)e).OperatingSystem, Text("Système", 150)),
         new("ci", "vendor", FeatureCatalog.AssistedCmdb, e => ((ConfigurationItem)e).Vendor, Text("Constructeur", 100)),
         new("ci", "model", FeatureCatalog.AssistedCmdb, e => ((ConfigurationItem)e).Model, Text("Modèle", 100)),
+        // CMA-05 : fusionner le CI visé dans l'autre (son identifiant), que la proposition suggère de conserver.
+        new("ci", Merge, FeatureCatalog.AssistedCmdb, _ => null, CiMerge.ValidateAsync, Pair: true),
     ];
 
     public static Field? Of(string targetType, string name) => All.FirstOrDefault(f => f.TargetType == targetType && f.Name == name);

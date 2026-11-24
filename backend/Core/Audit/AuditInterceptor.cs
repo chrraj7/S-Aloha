@@ -28,6 +28,8 @@ public class AuditInterceptor(IHttpContextAccessor http, ILogger<AuditIntercepto
 {
     /// <summary>Clé de HttpContext.Items : motif d'une transition forcée par un Admin.</summary>
     public const string ForcedReasonKey = "audit.forced-reason";
+    /// <summary>Clé de HttpContext.Items : motif des transitions de la requête, sans forçage (fusion de CI, CMA-05).</summary>
+    public const string ReasonKey = "audit.reason";
     private const int MaxValue = 2000;
 
     /// <summary>Ligne en attente ; <c>Entity</c> donne l'identifiant d'une création après l'enregistrement.</summary>
@@ -81,6 +83,7 @@ public class AuditInterceptor(IHttpContextAccessor http, ILogger<AuditIntercepto
     {
         if (context is null) return;
         var reason = http.HttpContext?.Items[ForcedReasonKey] as string;
+        var motive = http.HttpContext?.Items[ReasonKey] as string;
         var drafts = new List<Draft>();
         foreach (var entry in context.ChangeTracker.Entries()
                      .Where(x => x.State is EntityState.Added or EntityState.Modified or EntityState.Deleted))
@@ -115,7 +118,7 @@ public class AuditInterceptor(IHttpContextAccessor http, ILogger<AuditIntercepto
                     break;
                 default:
                     var type = TypeOf(entry.Entity);
-                    if (type is not null) drafts.AddRange(Own(entry, type, reason));
+                    if (type is not null) drafts.AddRange(Own(entry, type, reason, motive));
                     break;
             }
         }
@@ -163,7 +166,7 @@ public class AuditInterceptor(IHttpContextAccessor http, ILogger<AuditIntercepto
     }
 
     /// <summary>Enregistrement d'une pratique : création, suppression, transition, champs modifiés.</summary>
-    private static IEnumerable<Draft> Own(EntityEntry entry, string type, string? forcedReason)
+    private static IEnumerable<Draft> Own(EntityEntry entry, string type, string? forcedReason, string? motive)
     {
         var reference = entry.Property("Reference").CurrentValue as string;
         var id = entry.State == EntityState.Added ? (int?)null : (int)entry.Property("Id").CurrentValue!;
@@ -182,7 +185,7 @@ public class AuditInterceptor(IHttpContextAccessor http, ILogger<AuditIntercepto
         foreach (var (name, old, now) in Changes(entry))
             yield return name == "status"
                 ? new Draft(type, null, id, reference, forcedReason is null ? AuditEntry.Transition : AuditEntry.ForcedTransition,
-                    name, old, now, forcedReason)
+                    name, old, now, forcedReason ?? motive)
                 : new Draft(type, null, id, reference, AuditEntry.Modification, name, old, now, null);
     }
 
