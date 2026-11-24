@@ -251,8 +251,8 @@ git clone https://github.com/chrraj7/S-Aloha.git && cd S-Aloha
 docker compose -f docker-compose.yml -f docker-compose.demo.yml up -d
 ```
 
-Les images de développement (`edge`, l'état de `main`) sont téléchargées ; ajoutez
-`--build` pour construire depuis les sources ([images publiées](docs/reference/exploitation.md)).
+Les images de la dernière version (`latest`) sont téléchargées ; `S_ALOHA_VERSION=edge`
+suit `main`, `--build` construit depuis les sources ([images publiées](docs/reference/exploitation.md)).
 
 Ouvrez **http://localhost** et connectez-vous avec l'un des comptes de démonstration :
 
