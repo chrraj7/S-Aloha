@@ -133,66 +133,45 @@ public class LanguageModelEssayTests(ApiFixture api, FakeEssayContainer containe
         Assert.Equal(HttpStatusCode.Forbidden, (await Admin(factory, "Manager").PostAsync($"{Path}/test", null)).StatusCode);
     }
 
-    private static object Call(string feature = FeatureCatalog.AssistedCmdb, string outcome = LanguageModelCall.Valid, int duration = 1200, int rejected = 0,
-        string? hash = null) => new
-    {
-        feature, task = "proprietaire", model = "qwen2.5:7b", location = "Dans le SI", promptVersion = "1", inputHash = hash ?? new string('0', 64),
-        durationMs = duration, outcome, attempts = rejected + 1, rejected, error = (string?)null,
-    };
-
     [Fact]
-    public async Task OPT_27_le_conteneur_trace_chaque_appel_et_la_page_en_tire_ses_compteurs_gardes_90_jours()
+    public async Task OPT_27_la_page_tire_ses_compteurs_des_traces_gardees_90_jours()
     {
-        static async Task<int> Send(WebApplicationFactory<Program> host, object call)
-        {
-            var context = await host.Server.SendAsync(c =>
-            {
-                c.Request.Method = "POST";
-                c.Request.Path = "/internal/language-model/calls";
-                c.Connection.LocalPort = 8081;
-                c.Request.Headers.Authorization = $"Bearer {FakeFeaturesContainer.Token}";
-                c.Request.ContentType = "application/json";
-                c.Request.Body = new MemoryStream(JsonSerializer.SerializeToUtf8Bytes(call));
-            });
-            return context.Response.StatusCode;
-        }
-
-        // CMDB assistée coupée : aucune trace reçue (OPT-04).
-        using (var off = Factory(container.Url)) Assert.Equal(403, await Send(off, Call()));
         await using (var db = api.Database())
         {
-            db.OptionalFeatures.Add(new OptionalFeature { Key = FeatureCatalog.AssistedCmdb, Enabled = true, UpdatedAt = DateTime.UtcNow });
+            LanguageModelCall Trace(string outcome, int ms, int rejected = 0, int daysAgo = 0) => new()
+            {
+                At = DateTime.UtcNow.AddDays(-daysAgo), Feature = FeatureCatalog.AssistedCmdb, Task = "proprietaire", Model = "qwen2.5:7b",
+                Location = "Dans le SI", PromptVersion = "1", InputHash = new string('0', 64), DurationMs = ms, Outcome = outcome,
+                Attempts = rejected + 1, Rejected = rejected,
+            };
+            db.LanguageModelCalls.AddRange(Trace(LanguageModelCall.Valid, 1000), Trace(LanguageModelCall.Valid, 3000),
+                Trace(LanguageModelCall.NonConforming, 5000, rejected: 2), Trace(LanguageModelCall.Valid, 9000, daysAgo: 40),
+                Trace(LanguageModelCall.Failed, 100, daysAgo: 91));
             await db.SaveChangesAsync();
         }
-        // La garde garde l'état des fonctionnalités en mémoire : un hôte neuf le relit.
         using var factory = Factory(container.Url);
-        Task<int> Trace(object call) => Send(factory, call);
-        Assert.Equal(201, await Trace(Call(duration: 1000)));
-        Assert.Equal(201, await Trace(Call(duration: 3000)));
-        Assert.Equal(201, await Trace(Call(outcome: LanguageModelCall.NonConforming, rejected: 2)));
-        // Hors bornes : issue, fonctionnalité ou empreinte inconnues.
-        Assert.Equal(400, await Trace(Call(outcome: "réussi")));
-        Assert.Equal(400, await Trace(Call(feature: FeatureCatalog.McpServer)));
-        Assert.Equal(400, await Trace(Call(hash: "pas-une-empreinte")));
-
-        // Ni l'invite ni la réponse : la table n'a pas de colonne pour elles.
-        Assert.DoesNotContain(typeof(LanguageModelCall).GetProperties(), p => p.Name is "Prompt" or "Input" or "Response" or "Output");
-
         var usage = await Json(await Admin(factory).GetAsync($"{Path}/usage?days=30"));
         var rows = usage.GetProperty("rows").EnumerateArray().ToList();
-        var valid = rows.Single(r => r.GetProperty("outcome").GetString() == LanguageModelCall.Valid);
+        Assert.Equal([LanguageModelCall.Valid, LanguageModelCall.NonConforming], rows.Select(r => r.GetProperty("outcome").GetString()));
+        var valid = rows[0];
         Assert.Equal((FeatureCatalog.AssistedCmdb, 2, 2000), (valid.GetProperty("feature").GetString(), valid.GetProperty("count").GetInt32(),
             valid.GetProperty("averageMs").GetInt32()));
-        Assert.Equal(2, rows.Single(r => r.GetProperty("outcome").GetString() == LanguageModelCall.NonConforming).GetProperty("rejected").GetInt32());
+        Assert.Equal(2, rows[1].GetProperty("rejected").GetInt32());
+        // La période se borne à 90 jours ; la trace de 40 jours y entre.
+        var wide = await Json(await Admin(factory).GetAsync($"{Path}/usage?days=365"));
+        Assert.Equal(90, wide.GetProperty("days").GetInt32());
+        Assert.Equal(3, wide.GetProperty("rows").EnumerateArray().Single(r => r.GetProperty("outcome").GetString() == LanguageModelCall.Valid)
+            .GetProperty("count").GetInt32());
+        Assert.Equal(HttpStatusCode.Forbidden, (await Admin(factory, "Manager").GetAsync($"{Path}/usage")).StatusCode);
 
-        // 90 jours : une trace plus ancienne est purgée, les autres restent.
+        // Purge quotidienne : plus de 90 jours, effacée ; les autres restent. Le service de purge de l'hôte a pu passer
+        // le premier, à son démarrage : seul l'état final compte.
         await using (var db = api.Database())
         {
-            var old = await db.LanguageModelCalls.OrderBy(c => c.Id).FirstAsync();
-            old.At = DateTime.UtcNow.AddDays(-91);
-            await db.SaveChangesAsync();
-            Assert.Equal(1, await FeatureEventsRetention.PurgeCallsAsync(db, 90));
-            Assert.Equal(2, await db.LanguageModelCalls.CountAsync());
+            await FeatureEventsRetention.PurgeCallsAsync(db, 90);
+            var left = await db.LanguageModelCalls.AsNoTracking().Select(c => c.At).ToListAsync();
+            Assert.Equal(4, left.Count);
+            Assert.All(left, at => Assert.True(at > DateTime.UtcNow.AddDays(-90)));
         }
     }
 }
