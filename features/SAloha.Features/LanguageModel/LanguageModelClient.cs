@@ -104,12 +104,33 @@ public sealed partial class LanguageModelClient(IHttpClientFactory factory, ApiC
     /// <summary>
     /// Exécute une tâche. Les réglages sont relus à chaque appel (toujours ceux du moment) ; l'essai (OPT-26) passe les
     /// siens, même désactivés. Le pseudonymiseur porte les valeurs déclarées par l'appelant ; il rétablit la sortie.
+    /// Chaque appel d'une fonctionnalité remet sa trace à l'API (OPT-27) ; celle de l'essai, l'API la garde elle-même.
     /// </summary>
     public async Task<LanguageModelResult> RunAsync(LanguageModelTask task, Pseudonymizer pseudo, CancellationToken ct,
         LanguageModelSettingsData? settings = null)
     {
         var essay = settings is not null;
-        settings ??= await SettingsAsync(ct);
+        var result = await ExecuteAsync(task, pseudo, essay, settings ?? await SettingsAsync(ct), ct);
+        if (!essay && !await TraceAsync(result.Call, ct))
+            log.LogWarning("Trace de l'appel au modèle non remise ({Feature}, {Task}).", task.Feature, task.Name);
+        return result;
+    }
+
+    private async Task<bool> TraceAsync(LanguageModelCall call, CancellationToken ct)
+    {
+        try
+        {
+            return await api.TraceLanguageModelCallAsync(call, ct);
+        }
+        catch (HttpRequestException) when (!ct.IsCancellationRequested)
+        {
+            return false;
+        }
+    }
+
+    private async Task<LanguageModelResult> ExecuteAsync(LanguageModelTask task, Pseudonymizer pseudo, bool essay, LanguageModelSettingsData? settings,
+        CancellationToken ct)
+    {
         var input = pseudo.Apply(task.Input);
         var hash = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(input)));
         var clock = Stopwatch.StartNew();

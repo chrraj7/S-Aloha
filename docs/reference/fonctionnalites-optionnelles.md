@@ -86,7 +86,7 @@ aujourd'hui, la seule [CMDB assistée](cmdb-assistee.md). Le tri assisté des ti
 | OPT-23 | **Clé** chiffrée par le coffre (`Discovery:VaultKey`, comme [ADM-62](administration.md#7-messagerie-et-stockage)), jamais renvoyée à l'interface. Le conteneur `features` reçoit les réglages, clé comprise, par une route interne (`GET /internal/language-model`), relue à chaque appel du modèle : un changement vaut dès l'appel suivant ; il ne l'écrit nulle part | ✅ | 3 |
 | OPT-24 | **Données minimales, pseudonymisées** : seuls les champs utiles à la tâche sont envoyés. Les adresses IP et MAC, les noms d'hôte et FQDN, les numéros de série, les comptes et les adresses de courriel sont remplacés par des jetons stables pour la durée d'une requête (`IP_1`, `HOTE_3`, `COMPTE_2`), et rétablis dans la réponse. Aucun secret du coffre n'est envoyé. La règle vaut dans le SI comme hors du SI | ✅ | 3 |
 | OPT-25 | **Sortie validée** : la réponse est lue comme du JSON et validée contre le schéma de la tâche ; une réponse non conforme, ou qui cite un jeton ou une référence inconnus, est écartée et comptée, et réessayée une fois au plus. Une sortie du modèle n'est jamais exécutée ni lue comme une consigne : elle ne produit que des propositions (OPT-14) | ✅ | 3 |
-| OPT-26 | **Essai** avec les réglages enregistrés, même désactivés : une requête courte passe par le conteneur `features` ; la page affiche le résultat (modèle joignable, durée, sortie JSON valide ou non) ou le message de l'erreur, sans secret, comme [ADM-63](administration.md#7-messagerie-et-stockage) | 🔜 | 3 |
+| OPT-26 | **Essai** avec les réglages enregistrés, même désactivés : une requête courte passe par le conteneur `features`, par le même chemin qu'une tâche (pseudonymisation, schéma, jetons : le modèle doit recopier le jeton d'un nom d'hôte) ; la page affiche le résultat (modèle joignable, durée, sortie JSON valide ou non) ou le message de l'erreur, sans secret, comme [ADM-63](administration.md#7-messagerie-et-stockage) | 🔜 (essai par le conteneur, #366 4c-3 ; route de l'API, 4c-2 ; page, 4c-4) | 3 |
 | OPT-27 | **Trace** de chaque appel, remise à l'API : fonctionnalité, tâche, modèle, emplacement, version du gabarit d'invite, empreinte SHA-256 de l'entrée pseudonymisée, durée, issue (valide, non conforme, délai, erreur). Ni l'invite ni la réponse en clair. Gardée 90 jours ; la page de la fonctionnalité en tire ses compteurs | 🔜 (remise par le conteneur, #366 4c-3 ; table et réception, 4c-1 ; essai, compteurs et purge, 4c-2) | 3 |
 | OPT-28 | **Charge** : chaque fonctionnalité a sa file de travail dans le conteneur, pour qu'une analyse longue n'en retarde pas une autre ; une requête au modèle à la fois, délai borné (OPT-20) ; un modèle en panne met l'analyse en cours en échec, motif affiché, sans rien bloquer d'autre | ✅ | 3 |
 
@@ -114,6 +114,7 @@ aujourd'hui, la seule [CMDB assistée](cmdb-assistee.md). Le tri assisté des ti
 | `GET {Features:Url}/health`, `GET {Mcp:Url}/health` (conteneurs) | Jeton du conteneur `features` ; aucun pour `mcp` | Contrôle de santé (OPT-01) : `200` et `{ "version": "…", "features": ["<clé>", …] }` ; `401` ou `403` : jeton refusé ; 3 s au plus |
 | `GET /internal/events?after=<numéro>&limit=<500 au plus>` | Jeton du conteneur `features`, port interne | Fil d'événements (OPT-12) : `{ "events": [{ "id", "type", "entityType", "entityId", "perimeterId", "at" }], "next", "gap" }` ; types : `incident.created`, `incident.updated`, `incident.resolved`, `incident.deleted` (tri assisté) ; `ci.created`, `ci.updated`, `ci.retired`, `ci.deleted`, `staging.created`, `discovery.finished` (CMDB assistée) ; 403 sans fonctionnalité activée |
 | `GET /internal/language-model` ; `POST /internal/language-model/calls` | Jeton du conteneur `features`, port interne, CMDB assistée activée (403 sinon) | Réglages du modèle, clé comprise, déchiffrée pour le seul conteneur (OPT-23) ; trace d'un appel (OPT-27) : `{ feature, task, model, location, promptVersion, inputHash, durationMs, outcome, attempts, rejected, error }`, `201` ; issue, fonctionnalité ou empreinte inconnues : 400 |
+| `POST {Features:Url}/language-model/test` (conteneur) | Jeton du conteneur `features` | Essai (OPT-26) : reçoit les réglages enregistrés, clé comprise, même désactivés, et rend `{ "call": <trace> }` (fonctionnalité `language-model`, tâche `essai`) |
 | Lectures propres à chaque fonctionnalité | Jeton du conteneur `features`, port interne | Contrat (OPT-13) |
 
 ## 7. Exploitation
@@ -143,8 +144,10 @@ aujourd'hui, la seule [CMDB assistée](cmdb-assistee.md). Le tri assisté des ti
   propriétés, `additionalProperties: false`, éléments, valeurs permises, longueurs), puis
   rétablie dans ses seules chaînes. Une réponse écartée (non JSON, hors schéma, jeton ou
   référence inconnus, plus grande que la taille maximale) est réessayée une fois ; un délai
-  dépassé ou une erreur ne l'est pas. Chaque appel rend sa trace (OPT-27) : issue, essais,
-  réponses écartées, durée, empreinte de l'entrée pseudonymisée.
+  dépassé ou une erreur ne l'est pas. Chaque appel d'une fonctionnalité remet sa trace à l'API
+  (`POST /internal/language-model/calls`, OPT-27 : issue, essais, réponses écartées, durée,
+  empreinte de l'entrée pseudonymisée) ; une trace non remise est journalisée, la tâche
+  continue. L'essai (OPT-26) rend la sienne à l'API, qui la garde.
 - **Fil d'événements, côté conteneur** : le conteneur lit le fil toutes les 5 secondes
   (`Events:PollMilliseconds`), page après page quand il a du retard ; sans fonctionnalité
   activée (403) ou API injoignable, il réessaie toutes les 30 secondes
