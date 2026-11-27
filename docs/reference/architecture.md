@@ -325,7 +325,8 @@ jeton reconnu), serveur MCP par nginx (`/mcp` en 404 coupé ; activé, les six o
 sur une pull request seulement, **Preuve** ([`scripts/preuve.py`](../../scripts/preuve.py) :
 les tests ajoutés ou modifiés par la PR, rejoués sur le code de la base, doivent échouer — sinon
 ils ne prouvent pas le changement ; un code modifié sans test modifié échoue aussi ; exception
-par l'étiquette `preuve-non-requise` du mainteneur) et **Dépendances ajoutées**
+par l'étiquette `preuve-non-requise` du mainteneur, lue au moment du job : la poser puis relancer
+Preuve suffit) et **Dépendances ajoutées**
 (`actions/dependency-review-action` : vulnérabilité haute ou critique, licence incompatible
 avec l'AGPLv3) ; **Workflows** : actionlint et zizmor (injection par expression, déclencheurs
 dangereux, permissions) sur `.github/workflows/`, outils épinglés par version et empreinte ;
