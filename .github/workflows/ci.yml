@@ -148,11 +148,17 @@ jobs:
   preuve:
     # Les tests ajoutés ou modifiés par la PR, rejoués sur le code de la base : ils doivent
     # échouer, sinon ils ne prouvent pas le changement (scripts/preuve.py). Exception :
-    # étiquette `preuve-non-requise` posée par le mainteneur, puis relancer ce job.
+    # étiquette `preuve-non-requise` posée par le mainteneur, puis relancer ce job. Les étiquettes
+    # sont lues au moment du job, pas dans l'événement : une relance rejoue l'événement
+    # d'origine, sans l'étiquette posée depuis.
     name: Preuve
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -169,8 +175,12 @@ jobs:
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
           HEAD: ${{ github.event.pull_request.head.sha }}
-          ETIQUETTES: ${{ join(github.event.pull_request.labels.*.name, ',') }}
-        run: python3 scripts/preuve.py "$BASE" "$HEAD" --etiquettes "$ETIQUETTES"
+          PR: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ETIQUETTES=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/labels" --jq '[.[].name] | join(",")')
+          echo "Étiquettes de la PR : ${ETIQUETTES:-aucune}"
+          python3 scripts/preuve.py "$BASE" "$HEAD" --etiquettes "$ETIQUETTES"
 
   dependances:
     # Dépendances ajoutées ou changées par la PR : vulnérabilité haute ou critique, ou

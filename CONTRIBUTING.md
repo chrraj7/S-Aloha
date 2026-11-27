@@ -109,7 +109,8 @@ refuse qu'une PR supprime, réduise ou désactive des tests, ou modifie l'outill
 vérification (workflows, scripts de contrôle, configuration des tests) sans l'accord du
 mainteneur ([`scripts/garde-fous.py`](scripts/garde-fous.py)). Une refactorisation sans
 effet observable le dit dans sa description : le mainteneur pose alors
-`preuve-non-requise`.
+`preuve-non-requise`, puis relance le job **Preuve**, qui lit les étiquettes de la PR au
+moment où il tourne.
 
 Le job **Hygiène** refuse (contrôle exigé pour fusionner) tout trailer autre que
 `Signed-off-by` — ligne de co-auteur, lien de session d'un outil — et les termes réservés
