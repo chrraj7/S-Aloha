@@ -4,7 +4,7 @@ using SAloha.Api.Core.Records;
 namespace SAloha.Api.Modules.ServiceConfigurationManagement;
 
 /// <summary>
-/// Élément de configuration (ITIL 4, gestion de la configuration des
+/// Élément de configuration (ITIL, gestion de la configuration des
 /// services) : composant à gérer pour délivrer un service. Le titre porte le nom du CI.
 /// </summary>
 public class ConfigurationItem : Record

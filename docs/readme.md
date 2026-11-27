@@ -2,6 +2,8 @@
 
 > Tout ce qu'il faut pour comprendre, installer et faire évoluer S-Aloha.
 > Première visite ? Commencez par le [README](../README.md), puis le [Produit](reference/produit.md).
+> L'application mobile, [S-Aloha Mobile](https://github.com/chrraj7/S-Aloha-mobile) (iOS, Android), a son propre dépôt et sa
+> documentation, en anglais.
 
 ## Référence
 

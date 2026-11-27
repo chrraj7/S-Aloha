@@ -146,7 +146,7 @@ indicateurs · 9. API · 10. Scénarios d'acceptation.
 
 ## 4. Les pratiques
 
-Référentiel : les **pratiques ITIL 4** ([ADR-0007](../decisions/adr-0007-pratiques-itil4-et-socle-commun-des-processus.md)).
+Référentiel : les **pratiques ITIL** ([ADR-0007](../decisions/adr-0007-pratiques-itil4-et-socle-commun-des-processus.md)).
 
 | Pratique | Document | Objet | Maturité |
 |---|---|---|---|

@@ -1,6 +1,6 @@
 # 📏 Gestion des niveaux de service
 
-> Pratique ITIL 4 *Service level management*. Code :
+> Pratique ITIL *Service level management*. Code :
 > `backend/Modules/ServiceLevelManagement`, `frontend/src/modules/service-level-management`.
 > Préfixe des règles : **SLM**. Socle commun et conventions (✅ / 🔜, lots) :
 > [règles métier](../regles-metier.md).
@@ -9,7 +9,7 @@
 
 ## 1. Objectif et périmètre
 
-*Objectif ITIL 4 : fixer des cibles claires, orientées métier, pour les niveaux de
+*Objectif ITIL : fixer des cibles claires, orientées métier, pour les niveaux de
 service, et s'assurer que la prestation est correctement évaluée, suivie et gérée au
 regard de ces cibles.*
 

@@ -9,7 +9,7 @@
 
 ## Périmètre
 
-Application de gestion des problèmes ITIL v3 (5 commits, du socle initial au design
+Application de gestion des problèmes selon une ancienne édition d'ITIL (5 commits, du socle initial au design
 « fond neutre »), restructurée le 2026-10-06 en plateforme modulaire S-Aloha
 ([ADR-0003](../decisions/adr-0003-plateforme-modulaire-par-processus-itil.md)) avec un
 nouveau langage visuel ([ADR-0005](../decisions/adr-0005-langage-visuel-a-jetons-en-css-natif.md)).

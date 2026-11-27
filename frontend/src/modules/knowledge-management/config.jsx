@@ -3,7 +3,7 @@ import { titleField, descriptionField, ownerField, dateFr, dateTimeFr } from '..
 
 export const ARTICLE_TYPES = ['Solution', 'Procédure', 'Erreur connue', 'FAQ']
 
-// Gestion des connaissances (ITIL 4) : maintenir et améliorer l'usage
+// Gestion des connaissances (ITIL) : maintenir et améliorer l'usage
 // efficace, efficient et pratique de l'information et des connaissances.
 export const knowledgeConfig = {
   title: 'Connaissances',

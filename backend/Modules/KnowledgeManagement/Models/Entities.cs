@@ -4,7 +4,7 @@ using SAloha.Api.Core.Records;
 namespace SAloha.Api.Modules.KnowledgeManagement;
 
 /// <summary>
-/// Article de connaissance (ITIL 4, gestion des connaissances) : solution,
+/// Article de connaissance (ITIL, gestion des connaissances) : solution,
 /// procédure, erreur connue documentée ou FAQ. La description porte le résumé.
 /// </summary>
 public class KnowledgeArticle : Record

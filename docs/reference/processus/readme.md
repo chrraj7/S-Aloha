@@ -1,6 +1,6 @@
 # 🗂️ Pratiques ITIL — référentiel fonctionnel
 
-> Un document par pratique ITIL 4, sur le même gabarit. Socle commun (rôles, console,
+> Un document par pratique ITIL, sur le même gabarit. Socle commun (rôles, console,
 > conventions, règles `SOC`) : [règles métier](../regles-metier.md). Ce référentiel sert
 > de **spécification** à qui implémente, contributeur ou agent de code : chaque règle a un
 > identifiant, un statut (✅ implémentée / 🔜 à implémenter), un lot et ses scénarios
@@ -172,11 +172,11 @@ Un nouveau document (nouvelle pratique) reprend ce plan, dans cet ordre :
 ```markdown
 # <icône> <Nom de la pratique>
 
-> Pratique ITIL 4 *<nom anglais>*. Code : `backend/Modules/<Module>`,
+> Pratique ITIL *<nom anglais>*. Code : `backend/Modules/<Module>`,
 > `frontend/src/modules/<module>`. Préfixe des règles : **XXX**. Socle et conventions :
 > [règles métier](../regles-metier.md).
 
-## 1. Objectif et périmètre      objectif ITIL 4, définition, hors périmètre
+## 1. Objectif et périmètre      objectif ITIL, définition, hors périmètre
 ## 2. Rôles et droits            rôles ITIL ↔ rôles applicatifs ; matrice action × rôle, avec statut
 ## 3. Données                    champ | type | obligatoire | valeurs / règle | statut
 ## 4. Cycle de vie               diagramme Mermaid ; tableau De → Vers | Qui | Conditions | Effets | Statut

@@ -1,6 +1,6 @@
 # 🔍 Gestion des problèmes
 
-> Pratique ITIL 4 *Problem management*. Code : `backend/Modules/ProblemManagement`,
+> Pratique ITIL *Problem management*. Code : `backend/Modules/ProblemManagement`,
 > `frontend/src/modules/problem-management`. Préfixe des règles : **PRB**. Socle commun et
 > conventions (✅ / 🔜, lots) : [règles métier](../regles-metier.md).
 
@@ -8,7 +8,7 @@
 
 ## 1. Objectif et périmètre
 
-*Objectif ITIL 4 : réduire la probabilité et l'impact des incidents en identifiant leurs
+*Objectif ITIL : réduire la probabilité et l'impact des incidents en identifiant leurs
 causes réelles et potentielles, et en gérant les contournements et les erreurs connues.*
 
 Un **problème** est la cause, inconnue au départ, d'un ou plusieurs incidents. La pratique

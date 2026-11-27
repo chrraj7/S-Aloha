@@ -17,7 +17,7 @@ et **s'ouvre à vos assistants**, et montre à chacun **ce qui requiert son inte
 [![Licence AGPLv3](https://img.shields.io/badge/Licence-AGPLv3-A42E2B)](LICENSE)
 [![Étoiles](https://img.shields.io/github/stars/chrraj7/S-Aloha?style=flat&logo=github&label=%C3%A9toiles)](https://github.com/chrraj7/S-Aloha/stargazers)
 
-[Fonctionnalités assistées](#-fonctionnalités-assistées) · [Fonctionnalités](#fonctionnalités) · [Aperçu](#aperçu) · [Essayer](#essayer-en-5-minutes) · [Feuille de route](#feuille-de-route) · [Contribuer](#contribuer-et-soutenir) · [English](#english)
+[Fonctionnalités assistées](#-fonctionnalités-assistées) · [Fonctionnalités](#fonctionnalités) · [Mobile](#-application-mobile) · [Aperçu](#aperçu) · [Essayer](#essayer-en-5-minutes) · [Feuille de route](#feuille-de-route) · [Contribuer](#contribuer-et-soutenir) · [English](#english)
 
 <br/>
 
@@ -81,7 +81,7 @@ site ou entité.
 ## Pour qui
 
 - Les **DSI** — PME, ETI, collectivités, établissements publics — qui veulent des
-  pratiques ITIL 4 sans outil propriétaire, et une aide concrète pour trier les tickets
+  pratiques ITIL sans outil propriétaire, et une aide concrète pour trier les tickets
   et tenir la CMDB.
 - Les **entités soumises à NIS 2**, qui évaluent leur conformité et suivent leurs écarts au
   même endroit que leurs incidents et leurs changements.
@@ -153,7 +153,7 @@ règle par règle, avec ce qu'elle demande pour tourner
   catalogue des services, SLA en heures de service (délais de prise en charge et de
   résolution P1–P4), **respect mesuré** et alerte sous la cible, expiration et revues.
 - **[Amélioration continue](docs/reference/processus/amelioration-continue.md)** — registre
-  priorisé, modèle ITIL 4 en 7 étapes, mesures de départ et cible, propositions automatiques
+  priorisé, modèle ITIL en 7 étapes, mesures de départ et cible, propositions automatiques
   sur problèmes récurrents et SLA sous la cible.
 - **[Reporting](docs/reference/reporting.md)** — **score de santé** des services, MTTR, MTTD,
   résolution au premier contact, respect des SLA, problèmes, changements, projets,
@@ -180,6 +180,16 @@ règle par règle, avec ce qu'elle demande pour tourner
   l'annuaire avec leur dernière connexion, santé de la plateforme, journal d'audit global
   et export, nettoyage des doublons ; catégories d'incident et de problème tenues par les
   gestionnaires.
+
+## 📱 Application mobile
+
+**[S-Aloha Mobile](https://github.com/chrraj7/S-Aloha-mobile)** emporte S-Aloha sur iOS et Android : une application
+Expo (React Native, TypeScript), libre sous AGPLv3, dans son propre dépôt, documentée en
+anglais. Elle se connecte à votre instance avec le compte Active Directory, garde la session
+dans le stockage sécurisé du téléphone et affiche les incidents récents, en lecture seule ;
+l'API de S-Aloha reste seule juge des sessions, des droits et des règles. C'est une première
+fondation : prise en charge et commentaires des incidents, notifications push et mode hors
+ligne sont à [sa feuille de route](https://github.com/chrraj7/S-Aloha-mobile/blob/main/docs/ROADMAP.md).
 
 ## Aperçu
 
@@ -226,7 +236,7 @@ règle par règle, avec ce qu'elle demande pour tourner
   </tr>
   <tr>
     <td><img src="docs/screenshots/14-connaissances.png" alt="Base de connaissances" /><br/><b>Connaissances</b> — solutions, procédures, erreurs connues</td>
-    <td><img src="docs/screenshots/15-amelioration-continue.png" alt="Amélioration continue" /><br/><b>Amélioration continue</b> — registre et modèle ITIL 4 en 7 étapes</td>
+    <td><img src="docs/screenshots/15-amelioration-continue.png" alt="Amélioration continue" /><br/><b>Amélioration continue</b> — registre et modèle ITIL en 7 étapes</td>
   </tr>
   <tr>
     <td><img src="docs/screenshots/17-projet-scrum.png" alt="Projet Scrum" /><br/><b>Projets</b> — Scrum, cycle en V, PRINCE2 : backlog, sprints, tableau</td>
@@ -283,9 +293,8 @@ d'acceptation ([pratiques ITIL](docs/reference/processus/readme.md)). Les procha
   de NIS 2.
 - 🛰️ **Agent de découverte léger** pour les postes nomades, et **preuves NIS 2** nourries par
   la découverte.
-- 🔎 **Recherche dans les pièces jointes** : le texte des documents déposés, indexé.
-- 🔐 **Durcissement avant la production** : secrets hors du dépôt, LDAPS et HTTPS, CORS
-  restreint.
+- 📱 **[Application mobile](https://github.com/chrraj7/S-Aloha-mobile)** : traiter les incidents en mobilité, notifications push,
+  mode hors ligne.
 
 Le détail et l'ordre : [plan d'action](docs/plan-action.md#7-feuille-de-route-fonctionnelle).
 Une organisation peut **sponsoriser** un chantier pour l'accélérer : le résultat est publié
@@ -302,6 +311,7 @@ pour tous ([Soutenir S-Aloha](docs/soutenir.md)).
 | **Fonctionnalités assistées** | Conteneur `features` hors de l'API (tri assisté, CMDB assistée), conteneur `mcp` ; modèle de langage au format `/v1/chat/completions`, dans le SI ou hébergé |
 | **Identité** | Active Directory (LDAP) → JWT, rôles Admin / Manager / User |
 | **Tests** | xUnit + Testcontainers (API), Vitest + Testing Library (frontend) |
+| **Mobile** | [S-Aloha Mobile](https://github.com/chrraj7/S-Aloha-mobile) : Expo SDK 58, React Native, TypeScript ; jeton de session dans SecureStore |
 
 Socle commun dans `backend/Core` et `frontend/src/core`, un module par processus dans
 `Modules/` et `modules/`. Détail : [architecture](docs/reference/architecture.md).
@@ -327,6 +337,8 @@ S-Aloha est un projet ouvert : code, documentation, retours d'usage, tout compte
   [`help wanted`](https://github.com/chrraj7/S-Aloha/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22).
 - 🧪 **Un terrain sûr.** Le mode démonstration démarre sans Active Directory ; tests d'API
   sur une vraie base PostgreSQL (Testcontainers), tests d'interface, CI à chaque pull request.
+- 📱 **Plutôt mobile ?** Le client iOS et Android a son dépôt, [S-Aloha-mobile](https://github.com/chrraj7/S-Aloha-mobile), en
+  anglais, avec sa feuille de route et les mêmes règles de contribution.
 - 📝 Le [guide de contribution](CONTRIBUTING.md) explique comment proposer une
   modification. Chaque commit est signé (`git commit -s`, *Developer Certificate of Origin*).
 - ⭐ **Le projet vous parle ?** Une [étoile sur GitHub](https://github.com/chrraj7/S-Aloha/stargazers)
@@ -347,6 +359,7 @@ S-Aloha est un projet ouvert : code, documentation, retours d'usage, tout compte
 | 🔎 [Recherche](docs/reference/recherche.md) | Recherche hybride, cas similaires, service d'embeddings |
 | 📊 [Reporting](docs/reference/reporting.md) | Tableau de bord : score de santé, indicateurs par onglet, filtres, exports |
 | 🧭 [Périmètres](docs/reference/perimetres.md) | Droits scopés par direction, site ou entité (droits, visibilité, écran d'administration) |
+| 📱 [Application mobile](https://github.com/chrraj7/S-Aloha-mobile) | Client iOS et Android : installation, architecture, feuille de route (en anglais) |
 | 📦 [Journal des versions](CHANGELOG.md) | Nouveautés et consignes de mise à jour de chaque version |
 | 🤝 [Contribuer](CONTRIBUTING.md) | Issues, pull requests, contrôles avant envoi |
 | 🚨 [Signaler une faille](SECURITY.md) | En privé, jamais dans une issue publique |
@@ -354,11 +367,11 @@ S-Aloha est un projet ouvert : code, documentation, retours d'usage, tout compte
 
 ## English
 
-**S-Aloha** is a free (AGPLv3), self-hosted **ITIL 4 service-management platform** that
+**S-Aloha** is a free (AGPLv3), self-hosted **ITIL service-management platform** that
 helps IT teams **triage tickets**, **keep their CMDB accurate** and **query it from their
 own assistants**, and lands each user on an action-oriented console showing what needs
 their attention, ranked by severity. **Assisted ticket triage, assisted CMDB, MCP server,
-10 linked ITIL 4 practices, NIS 2 built in.**
+10 linked ITIL practices, NIS 2 built in.**
 
 - **Assisted features** (switched on or off by the administrator, run outside the API in
   a separate container; they only propose, a person decides; assisted triage is on in the
@@ -398,9 +411,12 @@ their attention, ranked by severity. **Assisted ticket triage, assisted CMDB, MC
   links between records, hybrid search (keywords + semantic, local `bge-m3` model).
 - **Enterprise integration**: sign-in with the organisation's Active Directory, roles from
   its groups, no accounts to create; perimeter-scoped permissions.
+- **Mobile app**: [S-Aloha Mobile](https://github.com/chrraj7/S-Aloha-mobile), an iOS and Android client (Expo, React Native,
+  TypeScript, AGPLv3) in its own repository: Active Directory sign-in, session kept in the
+  device's secure storage, recent incidents read-only; incident handling, push notifications
+  and offline mode are on its roadmap.
 - **Roadmap**: imported compliance frameworks (ISO 27002, CR-CMM…), a lightweight discovery
-  agent for remote devices and NIS 2 evidence from discovery, attachment text search,
-  production hardening.
+  agent for remote devices and NIS 2 evidence from discovery, and the mobile app.
 - **Stack**: ASP.NET Core 10 (LTS), EF Core, PostgreSQL 16, React 19 + Vite, Docker Compose.
 - **Try it**: `docker compose -f docker-compose.yml -f docker-compose.demo.yml up -d`,
   then sign in at http://localhost as `demo.admin` / `Demo-Admin-2026` (a demo directory

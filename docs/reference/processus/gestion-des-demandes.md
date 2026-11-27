@@ -1,6 +1,6 @@
 # 🧾 Gestion des demandes de service
 
-> Pratique ITIL 4 *Service request management*. Code :
+> Pratique ITIL *Service request management*. Code :
 > `backend/Modules/ServiceRequestManagement`, `frontend/src/modules/service-request-management`.
 > Préfixe des règles : **REQ**. Socle commun et conventions (✅ / 🔜, lots) :
 > [règles métier](../regles-metier.md).
@@ -9,7 +9,7 @@
 
 ## 1. Objectif et périmètre
 
-*Objectif ITIL 4 : soutenir la qualité de service convenue en traitant, de manière
+*Objectif ITIL : soutenir la qualité de service convenue en traitant, de manière
 efficace et conviviale, toutes les demandes de service prédéfinies initiées par les
 utilisateurs.*
 

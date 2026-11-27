@@ -5,7 +5,7 @@ using SAloha.Api.Core.Records;
 namespace SAloha.Api.Modules.ServiceRequestManagement;
 
 /// <summary>
-/// Demande de service (ITIL 4, gestion des demandes de service) : demande
+/// Demande de service (ITIL, gestion des demandes de service) : demande
 /// prédéfinie initiée par un utilisateur (accès, matériel, information…).
 /// </summary>
 public class ServiceRequest : Record, IServiceBound

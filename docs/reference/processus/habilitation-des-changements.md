@@ -1,6 +1,6 @@
 # 🔁 Habilitation des changements
 
-> Pratique ITIL 4 *Change enablement*. Code : `backend/Modules/ChangeEnablement`,
+> Pratique ITIL *Change enablement*. Code : `backend/Modules/ChangeEnablement`,
 > `frontend/src/modules/change-enablement`. Préfixe des règles : **CHG**. Socle commun et
 > conventions (✅ / 🔜, lots) : [règles métier](../regles-metier.md).
 
@@ -8,7 +8,7 @@
 
 ## 1. Objectif et périmètre
 
-*Objectif ITIL 4 : maximiser le nombre de changements de services et de produits réussis,
+*Objectif ITIL : maximiser le nombre de changements de services et de produits réussis,
 en veillant à ce que les risques soient correctement évalués, en autorisant les changements
 et en gérant le calendrier des changements.*
 

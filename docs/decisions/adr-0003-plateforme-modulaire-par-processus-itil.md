@@ -8,7 +8,7 @@
 
 ## Contexte
 
-L'application est née comme un outil de **gestion des problèmes** ITIL v3
+L'application est née comme un outil de **gestion des problèmes** selon une ancienne édition d'ITIL
 (`ProblemManagement.Api`), avec une arborescence plate : `Controllers/`, `Services/`,
 `Models/`, `Data/` côté backend, `pages/` et `components/` côté frontend. L'ambition est
 désormais plus large : **S-Aloha**, une plateforme couvrant l'ensemble des processus ITIL

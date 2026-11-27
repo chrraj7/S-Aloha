@@ -5,7 +5,7 @@ using SAloha.Api.Core.Records;
 namespace SAloha.Api.Modules.ProblemManagement;
 
 /// <summary>
-/// Problème (ITIL 4, gestion des problèmes) : cause d'un ou plusieurs incidents.
+/// Problème (ITIL, gestion des problèmes) : cause d'un ou plusieurs incidents.
 /// Enregistrement du socle commun (référence, statut, responsable = gestionnaire du
 /// problème, périmètre), avec ses analyses de cause racine et ses actions correctives.
 /// </summary>

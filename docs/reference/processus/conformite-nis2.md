@@ -1,6 +1,6 @@
 # 🛡️ Conformité NIS 2
 
-> Pratique ITIL 4 *Information security management*, appliquée à l'évaluation de la
+> Pratique ITIL *Information security management*, appliquée à l'évaluation de la
 > conformité à la directive NIS 2. Code : `backend/Modules/ComplianceAssessment`,
 > `frontend/src/modules/compliance-assessment`. Préfixe des règles : **NIS**. Socle commun et
 > conventions (✅ / 🔜, lots) : [règles métier](../regles-metier.md).
@@ -9,7 +9,7 @@
 
 ## 1. Objectif et périmètre
 
-*Objectif ITIL 4 (gestion de la sécurité de l'information) : protéger l'information dont
+*Objectif ITIL (gestion de la sécurité de l'information) : protéger l'information dont
 l'organisation a besoin pour conduire ses activités, en comprenant et en gérant les risques
 pour sa confidentialité, son intégrité et sa disponibilité.*
 

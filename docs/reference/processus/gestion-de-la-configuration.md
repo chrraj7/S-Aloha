@@ -1,6 +1,6 @@
 # 🧩 Gestion de la configuration
 
-> Pratique ITIL 4 *Service configuration management*. Code :
+> Pratique ITIL *Service configuration management*. Code :
 > `backend/Modules/ServiceConfigurationManagement`,
 > `frontend/src/modules/service-configuration-management`. Préfixe des règles : **CFG**.
 > Socle commun et conventions (✅ / 🔜, lots) : [règles métier](../regles-metier.md).
@@ -11,7 +11,7 @@
 
 ## 1. Objectif et périmètre
 
-*Objectif ITIL 4 : s'assurer que des informations exactes et fiables sur la configuration
+*Objectif ITIL : s'assurer que des informations exactes et fiables sur la configuration
 des services, et sur les éléments de configuration qui les supportent, sont disponibles
 quand et où elles sont nécessaires.*
 
@@ -22,11 +22,11 @@ alimentée de façon hybride : saisie manuelle et découverte automatique du ré
 par un sas de staging (§ 4.2, chantier F13 du [plan d'action](../../plan-action.md)).
 
 La plateforme y tient deux référentiels, qui reprennent le volet configuration de deux
-autres pratiques ITIL 4 (§ 3.1) :
+autres pratiques ITIL (§ 3.1) :
 
-- le **portefeuille applicatif** (*application portfolio*, pratique ITIL 4 *Portfolio
+- le **portefeuille applicatif** (*application portfolio*, pratique ITIL *Portfolio
   management*) : l'inventaire des applications, de leur gouvernance et de leur cycle de vie ;
-- les **actifs matériels** (pratique ITIL 4 *IT asset management*) : l'inventaire du
+- les **actifs matériels** (pratique ITIL *IT asset management*) : l'inventaire du
   matériel physique, de son identification et de son cycle de vie.
 
 Hors périmètre : le volet financier de la gestion des actifs (coûts, contrats, amortissements)

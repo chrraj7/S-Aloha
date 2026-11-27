@@ -9,13 +9,24 @@
 ```mermaid
 flowchart LR
     U(["Navigateur<br/>React"]) -- HTTP --> W["web<br/>nginx"]
+    MO(["S-Aloha Mobile<br/>iOS · Android"]) -- "HTTPS, Bearer" --> W
     W -- "/api/" --> A["api<br/>ASP.NET Core 10"]
-    A -- "EF Core" --> D[("db<br/>PostgreSQL 16")]
+    W -. "/mcp, facultatif" .-> MC["mcp<br/>serveur MCP"]
+    MC -. "jeton de l'utilisateur" .-> A
+    F["features<br/>tri, CMDB assistée"] -. "port interne 8081, facultatif" .-> A
+    A -- "EF Core" --> D[("db<br/>PostgreSQL 16 · pgvector")]
     A -- "LDAP(S) 389/636" --> AD[["Active Directory<br/>on-prem"]]
     A -. "HTTP 11434, facultatif" .-> E["embeddings<br/>Ollama · bge-m3"]
+    A -. "S3, facultatif" .-> G["garage<br/>pièces jointes"]
 ```
 
-Quatre containers orchestrés par `docker-compose.yml` : **web** (nginx sert le build React et proxifie `/api/` vers l'API), **api** (ASP.NET Core 8), **db** (PostgreSQL 16, volume persistant `pgdata`) et **embeddings** (Ollama, modèle `bge-m3`, réseau interne seulement), facultatif : sans lui, la recherche reste lexicale ([recherche](recherche.md), [ADR-0013](../decisions/adr-0013-recherche-hybride-service-embeddings-separe.md)).
+Quatre containers de base, orchestrés par `docker-compose.yml` : **web** (nginx sert le build React et proxifie `/api/` vers l'API), **api** (ASP.NET Core 10), **db** (PostgreSQL 16 avec l'extension pgvector, [ADR-0022](../decisions/adr-0022-pgvector-similarite-dans-postgresql.md), volume persistant `pgdata`) et **embeddings** (Ollama, modèle `bge-m3`, réseau interne seulement), facultatif : sans lui, la recherche reste lexicale ([recherche](recherche.md), [ADR-0013](../decisions/adr-0013-recherche-hybride-service-embeddings-separe.md)). Trois autres ne démarrent qu'avec leur profil : **garage** (`pieces-jointes`, stockage compatible S3 des pièces jointes, [ADR-0020](../decisions/adr-0020-pieces-jointes-s3-et-smtp-configurables.md)), **features** (`fonctionnalites`, tri assisté et CMDB assistée, qui n'appelle que le port interne de l'API) et **mcp** (`mcp`, serveur MCP en lecture seule, relayé par nginx sur `/mcp`) ([fonctionnalités optionnelles](fonctionnalites-optionnelles.md)).
+
+Deux clients utilisent l'API : l'interface web, par le cookie de session, et l'application
+mobile [S-Aloha Mobile](https://github.com/chrraj7/S-Aloha-mobile) (iOS et Android, Expo,
+dépôt à part), qui demande le jeton à la connexion et l'envoie en `Authorization: Bearer`
+(§ 4). Le mobile ne porte aucune règle de gestion : l'API reste seule juge des sessions, des
+droits et des données.
 
 ## 2. Stack
 
@@ -148,7 +159,7 @@ sequenceDiagram
 
 1. `POST /api/auth/login` : l'API se connecte à l'AD avec le **compte de service** (`Ldap:BindUser`), recherche l'utilisateur (`Ldap:UserFilter`), puis valide le mot de passe par un **bind avec le DN de l'utilisateur**.
 2. Les groupes `memberOf` sont comparés au mapping `Ldap:Groups` (Admin > Manager > User). Aucun groupe correspondant ⇒ connexion refusée.
-3. Un **JWT** est émis avec le rôle en claim ; il porte le `sAMAccountName` renvoyé par l'annuaire, non l'identifiant tel que tapé (de même que `LoginResponse.username`). Les comparaisons d'identifiants (console « Mes … », filtre `assignee` de `GET /api/actions`) ignorent la casse. Le jeton porte aussi les **groupes AD directs** de l'utilisateur (claims `adgroup`, nom court) : « les miens » (`owner=me`, console, actions dont je suis R, A, C ou I) comprend ce qui est confié à l'un de ses groupes (SOC-10, PRB-26 ; `Core/Auth/Principals.cs`). Il est posé dans un **cookie** `saloha_session` `HttpOnly`, `SameSite=Strict`, limité à `/api`, `Secure` en HTTPS (`X-Forwarded-Proto` derrière nginx) : le frontend ne le lit jamais ; il ne garde que le profil affiché, et retrouve la session par `GET /api/auth/me`. Une modification portée par le cookie exige l'en-tête `X-S-Aloha: 1` (CSRF, 403 sinon). Un client d'API (script) demande le jeton à la connexion (`returnToken`) et l'envoie en `Authorization: Bearer` ([ADR-0018](../decisions/adr-0018-jeton-en-cookie-httponly-et-csp.md)).
+3. Un **JWT** est émis avec le rôle en claim ; il porte le `sAMAccountName` renvoyé par l'annuaire, non l'identifiant tel que tapé (de même que `LoginResponse.username`). Les comparaisons d'identifiants (console « Mes … », filtre `assignee` de `GET /api/actions`) ignorent la casse. Le jeton porte aussi les **groupes AD directs** de l'utilisateur (claims `adgroup`, nom court) : « les miens » (`owner=me`, console, actions dont je suis R, A, C ou I) comprend ce qui est confié à l'un de ses groupes (SOC-10, PRB-26 ; `Core/Auth/Principals.cs`). Il est posé dans un **cookie** `saloha_session` `HttpOnly`, `SameSite=Strict`, limité à `/api`, `Secure` en HTTPS (`X-Forwarded-Proto` derrière nginx) : le frontend ne le lit jamais ; il ne garde que le profil affiché, et retrouve la session par `GET /api/auth/me`. Une modification portée par le cookie exige l'en-tête `X-S-Aloha: 1` (CSRF, 403 sinon). Un client d'API (script, [application mobile](https://github.com/chrraj7/S-Aloha-mobile)) demande le jeton à la connexion (`returnToken`) et l'envoie en `Authorization: Bearer` ([ADR-0018](../decisions/adr-0018-jeton-en-cookie-httponly-et-csp.md)).
 4. Côté API, trois policies imbriquées : `User` (tous les rôles), `Manager` (Manager + Admin), `Admin`.
 5. La console (`GET /api/console`) compose sa réponse **côté serveur** selon le rôle du jeton ; le frontend n'y reçoit que les blocs autorisés, classés pour mettre l'actionnable en premier.
 
@@ -276,12 +287,12 @@ Détails (registre des modules, thème, design) : [frontend.md](frontend.md).
   [revue fonctionnelle](../archives/revue-fonctionnelle-2026-10-06.md) — 6 tests d'API
   (`ProblemReferenceTests`, `ProblemLifecycleTests`) et 4 tests d'interface
   (`ProblemDetail.test.jsx`, `FtaTree.test.jsx`), qui échouent tous sur le code d'avant correctif ;
-  modules ITIL 4 — 23 tests d'API (`ItilModulesTests` : référence et statut inconnu par module,
+  modules ITIL — 23 tests d'API (`ItilModulesTests` : référence et statut inconnu par module,
   créations simultanées, décisions de gestionnaire, conditions de statut, liens, console,
   constats de la revue de code : changement rejeté, type d'un changement autorisé, amélioration
   abandonnée, conditions tenues hors changement de statut, longueurs, registre allégé ;
   F9 et F10 : article retouché, changement modifié) ; mise à niveau du schéma — 2 tests
-  (`MigrationTests` : base créée par `EnsureCreated` avant et après les modules ITIL 4) ; et 2 tests
+  (`MigrationTests` : base créée par `EnsureCreated` avant et après les modules ITIL) ; et 2 tests
   d'interface (`RecordForm.test.jsx` : conversions formulaire ↔ API).
 - **Taux de couverture de l'API** (Q5) : mesuré à chaque exécution du job **API** de la CI
   (coverlet, `--collect:"XPlat Code Coverage"`), sans seuil bloquant. Les taux de lignes et de

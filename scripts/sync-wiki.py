@@ -119,9 +119,9 @@ def home(by_source):
 
 <img src="{RAW}/frontend/public/favicon.svg" width="64" alt="S-Aloha" />
 
-Plateforme ITIL libre (AGPLv3), branchée sur votre Active Directory.
+Plateforme ITIL libre (AGPLv3) : tri assisté des tickets, CMDB assistée, serveur MCP.
 
-[Dépôt]({GITHUB}) · [README]({GITHUB}#readme) · [Issues]({GITHUB}/issues) · [Licence]({BLOB}/LICENSE)
+[Dépôt]({GITHUB}) · [README]({GITHUB}#readme) · [Application mobile](https://github.com/chrraj7/S-Aloha-mobile) · [Issues]({GITHUB}/issues) · [Licence]({BLOB}/LICENSE)
 
 </div>
 
@@ -130,17 +130,21 @@ Plateforme ITIL libre (AGPLv3), branchée sur votre Active Directory.
 
 ## En bref
 
-**10 pratiques ITIL 4** reliées entre elles — incidents, demandes, problèmes, changements,
-configuration, niveaux de service, connaissances, amélioration continue, conformité NIS 2,
-projets — sur un socle commun : connexion par l'Active Directory, console qui dit à chacun
-quoi faire, notifications, commentaires et historique sur chaque fiche, recherche hybride,
-reporting. **Plus de 250 règles de gestion** en place, on-prem, libre sous AGPLv3.
+**Tri assisté des tickets**, **CMDB assistée** et **serveur MCP**, activés par l'Admin et
+exécutés hors de l'API, sur **10 pratiques ITIL** reliées entre elles — incidents, demandes,
+problèmes, changements, configuration, niveaux de service, connaissances, amélioration
+continue, conformité NIS 2, projets — et un socle commun : console qui dit à chacun quoi
+faire, notifications, commentaires et historique sur chaque fiche, recherche hybride,
+reporting, connexion par l'Active Directory de l'organisation. **Plus de 400 règles de
+gestion** en place, on-prem, libre sous AGPLv3.
 
 - **Découvrir** : [fonctionnalités et captures]({GITHUB}#fonctionnalités), [Produit](Produit).
 - **Essayer** : le [mode démonstration]({GITHUB}#essayer-en-5-minutes) démarre sans Active
   Directory, en une commande.
-- **Contribuer** : chaque pratique est spécifiée règle par règle ; une soixantaine de règles
-  🔜 attendent leur implémentation ([pratiques ITIL](Pratiques-ITIL),
+- **En mobilité** : [S-Aloha Mobile](https://github.com/chrraj7/S-Aloha-mobile), client iOS et Android (Expo), dans
+  son propre dépôt, en anglais.
+- **Contribuer** : chaque pratique est spécifiée règle par règle ; les règles 🔜 restantes
+  attendent leur implémentation ([pratiques ITIL](Pratiques-ITIL),
   [guide de contribution]({BLOB}/CONTRIBUTING.md)).
 
 ## Référence

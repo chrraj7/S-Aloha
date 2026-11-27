@@ -14,7 +14,7 @@ const isApp = f => f.ciType === 'Application'
 const isHardware = f => HARDWARE_TYPES.includes(f.ciType)
 const IN_SERVICE = 'Requis pour un CI en service ou hors service.'
 
-// Gestion de la configuration des services (ITIL 4) : une information exacte
+// Gestion de la configuration des services (ITIL) : une information exacte
 // et fiable sur les services et les CI, quand et où elle est nécessaire.
 export const ciConfig = {
   title: 'Configuration',

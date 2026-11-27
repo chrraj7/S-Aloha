@@ -4,7 +4,7 @@ using SAloha.Api.Core.Records;
 namespace SAloha.Api.Modules.ContinualImprovement;
 
 /// <summary>
-/// Initiative d'amélioration (ITIL 4, amélioration continue), inscrite au
+/// Initiative d'amélioration (ITIL, amélioration continue), inscrite au
 /// registre d'amélioration continue (CIR) et suivie selon les sept étapes du
 /// modèle d'amélioration continue. La description porte l'opportunité.
 /// </summary>
@@ -28,7 +28,7 @@ public class Improvement : Record
     /// <summary>CSI-12 : priorité tirée de la valeur et de l'effort (1 à 3).</summary>
     public static string PriorityOf(int value, int effort) =>
         value == 3 && effort <= 2 ? "Élevée" : value == 1 && effort >= 2 ? "Faible" : "Moyenne";
-    /// <summary>Modèle d'amélioration continue ITIL 4, étapes 1 à 7.</summary>
+    /// <summary>Modèle d'amélioration continue ITIL, étapes 1 à 7.</summary>
     public static readonly string[] Steps =
     [
         "Quelle est la vision ?", "Où en sommes-nous ?", "Où voulons-nous être ?",

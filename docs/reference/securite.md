@@ -26,8 +26,13 @@
   jeton vit dans le cookie `saloha_session`, `HttpOnly` (illisible par un script de la
   page), `SameSite=Strict`, limité à `/api`, `Secure` dès que la requête arrive en HTTPS ;
   déconnexion par `POST /api/auth/logout`. **CSRF** : une modification authentifiée par le
-  cookie sans l'en-tête `X-S-Aloha: 1` reçoit 403. Les clients d'API (scripts) obtiennent le
+  cookie sans l'en-tête `X-S-Aloha: 1` reçoit 403. Les clients d'API (scripts, application mobile) obtiennent le
   jeton sur demande (`returnToken`) et l'envoient en `Authorization: Bearer`.
+- **Application mobile** ([S-Aloha Mobile](https://github.com/chrraj7/S-Aloha-mobile)) : le jeton est gardé dans le stockage
+  sécurisé du système (Expo SecureStore : trousseau iOS, Keystore Android), jamais en clair ;
+  un 401 efface la session locale et ramène à la connexion. Sans révocation côté serveur, un
+  téléphone perdu garde une session valide jusqu'à `Jwt:ExpiryHours`. Hors d'un réseau de
+  développement, le mobile vise l'adresse HTTPS de l'interface, jamais le port 8080 de l'API.
 - **CSP** servie par nginx : scripts de la seule origine (le script de thème en ligne autorisé
   par son empreinte), styles et polices de la seule origine (ADR-0021), `frame-ancestors 'none'`, `object-src 'none'` ;
   avec `X-Content-Type-Options: nosniff` et `Referrer-Policy: same-origin`.

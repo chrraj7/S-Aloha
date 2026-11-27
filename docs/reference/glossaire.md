@@ -8,8 +8,8 @@
 
 | Terme | Définition |
 |---|---|
-| **ITIL** | Référentiel de bonnes pratiques de gestion des services IT (PeopleCert/Axelos). Les processus de S-Aloha reprennent les objectifs des **pratiques ITIL 4** ([ADR-0007](../decisions/adr-0007-pratiques-itil4-et-socle-commun-des-processus.md)). |
-| **Pratique** (ITIL 4) | Ensemble de ressources organisationnelles destiné à accomplir un objectif (gestion des incidents, habilitation des changements…). Dans S-Aloha : un processus, un module. |
+| **ITIL** | Référentiel de bonnes pratiques de gestion des services IT (PeopleCert/Axelos). Les processus de S-Aloha reprennent les objectifs des **pratiques ITIL** ([ADR-0007](../decisions/adr-0007-pratiques-itil4-et-socle-commun-des-processus.md)). |
+| **Pratique** (ITIL) | Ensemble de ressources organisationnelles destiné à accomplir un objectif (gestion des incidents, habilitation des changements…). Dans S-Aloha : un processus, un module. |
 | **Processus** | Ensemble d'activités ITIL (incidents, problèmes, changements…). Un processus = un module S-Aloha. |
 | **Incident** | Interruption ou dégradation d'un service ; l'objectif est de le rétablir au plus vite. |
 | **Incident majeur** | Incident d'impact exceptionnel, suivi en tête de la console des gestionnaires jusqu'à sa résolution. |
@@ -25,20 +25,20 @@
 | **Impact × urgence** | Les deux axes qui déterminent la **priorité** P1 (la plus haute) à P4. |
 | **MTTR** | *Mean Time To Resolve* : durée moyenne de résolution — en jours pour les problèmes (création → clôture), en heures pour les incidents (création → résolution). |
 | **Changement** | Ajout, modification ou retrait de tout ce qui peut affecter un service. Types : **standard** (modèle déjà évalué, pré-autorisé), **normal** (évalué et autorisé), **urgent** (à mettre en œuvre au plus vite). |
-| **Habilitation des changements** (*change enablement*) | Pratique ITIL 4 : évaluer les risques, autoriser les changements, gérer leur calendrier. |
+| **Habilitation des changements** (*change enablement*) | Pratique ITIL : évaluer les risques, autoriser les changements, gérer leur calendrier. |
 | **Autorité de changement** | Personne ou instance qui autorise un changement ; dans S-Aloha, un gestionnaire. |
 | **Calendrier des changements** | Planning des changements planifiés (*change schedule*). |
 | **Plan de retour arrière** (*backout plan*) | Procédure de retour à l'état antérieur si un changement échoue. |
 | **CI** (*Configuration Item*) | Élément de configuration : composant à gérer pour délivrer un service (serveur, application, base…), relié à d'autres CI. |
 | **CMDB** | Base de données de configuration : CI et leurs relations (processus Configuration). |
-| **Portefeuille applicatif** (*application portfolio*) | Inventaire des applications, de leur gouvernance (propriétaire métier, responsable DSI, criticité) et de leur cycle de vie ; volet applications de la pratique ITIL 4 *Portfolio management*, tenu dans la CMDB ([configuration](processus/gestion-de-la-configuration.md), CFG-43). |
-| **Actifs matériels** (*IT asset management*) | Inventaire du matériel physique (constructeur, numéro de série, emplacement, garantie, fin de support) ; volet matériel de la pratique ITIL 4 *IT asset management*, tenu dans la CMDB, sans le volet financier ([configuration](processus/gestion-de-la-configuration.md), CFG-44). |
+| **Portefeuille applicatif** (*application portfolio*) | Inventaire des applications, de leur gouvernance (propriétaire métier, responsable DSI, criticité) et de leur cycle de vie ; volet applications de la pratique ITIL *Portfolio management*, tenu dans la CMDB ([configuration](processus/gestion-de-la-configuration.md), CFG-43). |
+| **Actifs matériels** (*IT asset management*) | Inventaire du matériel physique (constructeur, numéro de série, emplacement, garantie, fin de support) ; volet matériel de la pratique ITIL *IT asset management*, tenu dans la CMDB, sans le volet financier ([configuration](processus/gestion-de-la-configuration.md), CFG-44). |
 | **Actif inconnu** (*Shadow IT*) | Équipement vu sur le réseau par la découverte, sans compte d'ordinateur dans l'annuaire ni CI rapproché (CFG-42). |
 | **Sas de staging** | Zone d'attente des actifs découverts automatiquement, rapprochés des CI existants avant toute entrée dans la CMDB (CFG-40, CFG-41). |
 | **Catalogue des services** | Liste des services délivrés aux métiers, avec leur criticité et leurs heures de service. |
 | **SLA** | *Service Level Agreement* : accord de niveau de service entre le fournisseur et un client, avec des cibles (disponibilité, délais de résolution). |
 | **Article de connaissance** | Solution, procédure, erreur connue documentée ou FAQ, publié après validation et revu périodiquement. |
-| **CSI** | *Continual Service Improvement* : amélioration continue des services (pratique *continual improvement* d'ITIL 4). |
+| **CSI** | *Continual Service Improvement* : amélioration continue des services (pratique *continual improvement* d'ITIL). |
 | **NIS 2** | Directive européenne (UE) 2022/2555 sur la cybersécurité des entités importantes et essentielles ; évaluée dans S-Aloha par la pratique [Conformité NIS 2](processus/conformite-nis2.md). |
 | **ReCyF** | Référentiel Cyber France de l'ANSSI : 20 objectifs, 4 piliers, 152 exigences qui déclinent NIS 2 ; seule sa structure est dans le dépôt ([ADR-0012](../decisions/adr-0012-referentiel-nis2-structure-versionnee-texte-importe.md)). |
 | **EI / EE** | Entité importante / entité essentielle au sens de NIS 2 ; une exigence « EI/EE » s'applique aux deux, « EE » aux seules entités essentielles. |
@@ -59,7 +59,7 @@
 | **Modèle de demande** | Demande prédéfinie du catalogue de demandes : objet, approbation requise ou non, délai cible, groupe d'exécution ([REQ-20](processus/gestion-des-demandes.md)). |
 | **Résolution au premier contact** | Incident résolu sans prise en charge ni changement de responsable ([INC-23](processus/gestion-des-incidents.md)). |
 | **Registre d'amélioration continue** (CIR) | Liste des opportunités d'amélioration, avec leur valeur attendue, leur priorité et leur avancement. |
-| **Modèle d'amélioration continue** | Démarche ITIL 4 en sept étapes : vision, situation actuelle, cible, plan, action, vérification, maintien de la dynamique. |
+| **Modèle d'amélioration continue** | Démarche ITIL en sept étapes : vision, situation actuelle, cible, plan, action, vérification, maintien de la dynamique. |
 | **Code de résolution** | Nature de la résolution d'un incident : correctif appliqué, contournement, résolu sans action, non reproductible, doublon (relié à l'incident conservé). |
 | **Code de clôture** | Motif de clôture d'un problème : corrigé, erreur connue acceptée (risque accepté sans correctif), doublon (relié au problème conservé), non retenu. |
 | **Référence** | Identifiant d'un enregistrement : préfixe du processus, année, numéro (`INC-2026-0001`). Sert aussi à relier deux enregistrements. |

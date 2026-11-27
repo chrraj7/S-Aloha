@@ -36,7 +36,7 @@ Le nom vient du malgache *aloha*, « d'abord, avant tout » : le service passe a
 ## Pour qui
 
 **Organisations visées** : les DSI — PME, ETI, collectivités, établissements publics —
-qui veulent des pratiques ITIL 4 sans outil propriétaire ni licence par utilisateur, et une
+qui veulent des pratiques ITIL sans outil propriétaire ni licence par utilisateur, et une
 aide concrète pour trier les tickets et tenir la CMDB ; les entités soumises à **NIS 2** qui
 veulent suivre leur conformité au même endroit que leurs incidents et leurs changements.
 L'Active Directory de l'organisation est le prérequis de l'intégration.
@@ -72,7 +72,7 @@ où son interface existe ([ADR-0003](../decisions/adr-0003-plateforme-modulaire-
 | **Déclarations réglementaires** | Déclarer les incidents de sécurité dans les délais légaux (NIS 2 : ANSSI ; RGPD : CNIL) | Actif | `Modules/RegulatoryNotifications`, `modules/regulatory-notifications` |
 | **Projets** | Conduire les projets de la DSI : Scrum, Kanban, Cycle en V, PRINCE2, hybride | Actif | `Modules/ProjectManagement`, `modules/project-management` |
 
-Référentiel : les **pratiques ITIL 4** publiées par PeopleCert/Axelos
+Référentiel : les **pratiques ITIL** publiées par PeopleCert/Axelos
 ([ADR-0007](../decisions/adr-0007-pratiques-itil4-et-socle-commun-des-processus.md)). Chaque
 pratique tient son cycle de vie complet ; toutes ont quitté le stade MVP le 2026-10-16,
 selon des critères vérifiables, règle par règle ([plan d'action § Sortie du MVP](../plan-action.md#sortie-du-mvp)).
@@ -109,12 +109,23 @@ Indépendants des processus, accessibles à tous les rôles :
   (MTTR, MTTD, résolution au premier contact, SLA), problèmes, changements et projets,
   conformité ; filtres période et service, exports CSV et PDF ([reporting](reporting.md)).
 
+## Accès : navigateur et mobile
+
+S-Aloha se consulte dans le **navigateur** (interface React servie par nginx) et sur
+**iOS et Android** avec [S-Aloha Mobile](https://github.com/chrraj7/S-Aloha-mobile), une application Expo (React Native,
+TypeScript) publiée sous AGPLv3 dans son propre dépôt, documenté en anglais. Le mobile est
+un client de l'API comme un autre : connexion par le compte Active Directory, jeton de
+session gardé dans le stockage sécurisé du téléphone, mêmes rôles, mêmes périmètres et mêmes
+règles, tenus par le serveur. Sa première fondation affiche les incidents récents en lecture
+seule ; la prise en charge et les commentaires des incidents, les notifications push et le
+mode hors ligne sont à [sa feuille de route](https://github.com/chrraj7/S-Aloha-mobile/blob/main/docs/ROADMAP.md).
+
 ## Les processus
 
-Chaque processus reprend l'objectif de la pratique ITIL 4 correspondante. Règles
+Chaque processus reprend l'objectif de la pratique ITIL correspondante. Règles
 détaillées, pratique par pratique : [`processus/`](processus/readme.md).
 
-| Processus | Objectif ITIL 4 | Ce que fait le module |
+| Processus | Objectif ITIL | Ce que fait le module |
 |---|---|---|
 | Incidents | Minimiser l'impact négatif des incidents en rétablissant le service normal au plus vite | Déclaration, priorité P1–P4, assignation AD ; incident majeur piloté par un gestionnaire ; échéances de prise en charge et de résolution en heures de service, SLA en risque ; attente motivée, réouverture encadrée ; résolution avec code ; problème lié |
 | Demandes | Délivrer la qualité de service convenue en traitant les demandes prédéfinies des utilisateurs, de façon efficace et conviviale | Catalogue de demandes et modèles pré-approuvés, bénéficiaire ; approbation par un gestionnaire ; échéance et groupe d'exécution ; retards en relance ; annulation par le demandeur |
@@ -122,7 +133,7 @@ détaillées, pratique par pratique : [`processus/`](processus/readme.md).
 | Configuration | Une information exacte et fiable sur les services et les CI, quand et où elle est nécessaire | CI typés par environnement, propriétaire ; relations et impact en amont et en aval ; rattachement aux services ; vérification ; retrait encadré ; portefeuille applicatif et actifs matériels, inventaire et fins de support ; découverte automatique (balayage IP et bannières, SNMP v2c et v3, annuaire, inventaire SSH et WinRM, hyperviseurs Proxmox VE et vCenter) avec sas de staging, coffre d’identifiants, et relations « Héberge » et « Se connecte à » proposées au gestionnaire |
 | Niveaux de service | Des cibles claires, orientées métier, et le suivi de la prestation au regard de ces cibles | Catalogue des services ; SLA en heures de service (délais de prise en charge et de résolution P1–P4) ; respect mesuré, alerte sous la cible ; expiration et revues |
 | Connaissances | Un usage efficace, efficient et pratique de l'information et des connaissances | Articles (solution, procédure, erreur connue, FAQ) en Markdown ; soumission puis publication validée ; revue périodique et demande d'archivage ; articles d'erreur connue créés depuis les problèmes ; compteur d'utilisation |
-| Amélioration continue | Aligner les services sur l'évolution des besoins par l'amélioration continue | Registre priorisé (source, priorité), mesures de départ et cible, modèle ITIL 4 en 7 étapes, validation ; propositions sur problèmes récurrents et SLA sous la cible ; retards en relance |
+| Amélioration continue | Aligner les services sur l'évolution des besoins par l'amélioration continue | Registre priorisé (source, priorité), mesures de départ et cible, modèle ITIL en 7 étapes, validation ; propositions sur problèmes récurrents et SLA sous la cible ; retards en relance |
 | Conformité NIS 2 | Protéger l'information en gérant les risques pour sa confidentialité, son intégrité et sa disponibilité | Évaluation au Référentiel Cyber France (ANSSI) : questionnaire noté, scores et maturité, écarts et actions d'amélioration, preuves liées, comparaison de deux évaluations, export CSV, revue annuelle, version du référentiel figée ([conformité NIS 2](processus/conformite-nis2.md)) |
 | Déclarations réglementaires | Protéger l'information : déclarer les incidents de sécurité aux autorités dans les délais légaux | Incident marqué « sécurité » par tout rôle, qualifié par un gestionnaire (incident important au sens de NIS 2, violation de données personnelles) ; une déclaration par régime retenu, échéances en heures calendaires (alerte précoce 24 h, notification 72 h, rapport final), contenu complété par tous et figé à chaque envoi, motifs du retard RGPD ; échéances proches dans la console, rappels, respect des délais au reporting ([déclarations réglementaires](processus/declarations-reglementaires.md)) |
 | Gestion de projet | Faire aboutir les projets en planifiant, déléguant, suivant et maîtrisant tous leurs aspects | La méthode (Scrum, Kanban, Cycle en V, PRINCE2, hybride) active les composants : backlog, sprints et burndown, tableau, phases ou étapes, jalons, livrables, risques, business case, tolérances, prévision de la date de fin ; validation par un gestionnaire ; console des projets ([ADR-0015](../decisions/adr-0015-gestion-de-projet-methode-active-composants.md)) |

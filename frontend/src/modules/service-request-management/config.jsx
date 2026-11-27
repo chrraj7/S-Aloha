@@ -1,7 +1,7 @@
 import { api } from '../../api'
 import { titleField, descriptionField, ownerField, dateFr, dateTimeFr } from '../../core/fields'
 
-// Gestion des demandes de service (ITIL 4) : traiter les demandes prédéfinies
+// Gestion des demandes de service (ITIL) : traiter les demandes prédéfinies
 // initiées par les utilisateurs, de façon efficace et conviviale.
 export const requestConfig = {
   title: 'Demandes',

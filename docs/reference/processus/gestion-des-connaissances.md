@@ -1,6 +1,6 @@
 # 📚 Gestion des connaissances
 
-> Pratique ITIL 4 *Knowledge management*. Code : `backend/Modules/KnowledgeManagement`,
+> Pratique ITIL *Knowledge management*. Code : `backend/Modules/KnowledgeManagement`,
 > `frontend/src/modules/knowledge-management`. Préfixe des règles : **KB**. Socle commun et
 > conventions (✅ / 🔜, lots) : [règles métier](../regles-metier.md).
 
@@ -8,7 +8,7 @@
 
 ## 1. Objectif et périmètre
 
-*Objectif ITIL 4 : maintenir et améliorer l'utilisation efficace, efficiente et pratique
+*Objectif ITIL : maintenir et améliorer l'utilisation efficace, efficiente et pratique
 de l'information et des connaissances dans toute l'organisation.*
 
 Un **article** capitalise une solution, une procédure, une erreur connue ou une réponse

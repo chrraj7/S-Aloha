@@ -1,7 +1,7 @@
 import { api } from '../../api'
 import { titleField, descriptionField, ownerField, dateFr, dateTimeFr } from '../../core/fields'
 
-/** Modèle d'amélioration continue ITIL 4, étapes 1 à 7. */
+/** Modèle d'amélioration continue ITIL, étapes 1 à 7. */
 export const STEPS = [
   'Quelle est la vision ?', 'Où en sommes-nous ?', 'Où voulons-nous être ?', 'Comment y parvenir ?',
   'Passer à l\'action', 'Y sommes-nous parvenus ?', 'Comment maintenir la dynamique ?',
@@ -10,7 +10,7 @@ export const STEPS = [
 // CSI-12 (#336) : une fois l'amélioration validée, sa note et sa priorité sont celles du gestionnaire.
 const arbitrated = form => ['Validée', 'En cours'].includes(form.status)
 
-// Amélioration continue (ITIL 4) : aligner les services sur l'évolution des
+// Amélioration continue (ITIL) : aligner les services sur l'évolution des
 // besoins par l'amélioration continue des produits, services et pratiques.
 export const improvementConfig = {
   title: 'Amélioration continue',
