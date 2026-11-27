@@ -161,7 +161,10 @@ Toutes les routes sauf `/login` passent par `Private` (jeton présent) et sont r
 - `roles` (section, module ou sous-entrée, facultatif) : rôles qui voient l'entrée ; absent, tous.
   `visibleFor(entry, role, features)` décide (une entrée qui porte `feature` exige en plus que cette
   fonctionnalité optionnelle soit activée, OPT-04) ; la barre latérale masque les entrées réservées (l'API
-  reste seule juge des droits) ;
+  reste seule juge des droits). Les sous-entrées de module et la section Paramétrage reçoivent le
+  **rôle de gestionnaire** (`useManagesPerimeter`) et non le rôle AD : « Manager » pour l'Admin ou
+  le gestionnaire d'au moins un périmètre, « User » sinon, le rôle AD tant que la liste n'est pas
+  chargée (ADR-0014 D4, PER-03 ; vérifié par `Layout.perimeter.test.jsx`) ;
 
 **Sous-entrée filtrée** : un `href` peut porter un filtre de registre
 (`/problems?status=Erreur+connue`) ; la page lit ce filtre dans l'URL et adapte son titre.
