@@ -198,7 +198,8 @@ function SidebarContent({ user, location, collapsed, onToggle, rail, onRail, onC
   // PER-13 : Paramétrage suit le rôle de gestionnaire d'un périmètre, pas le rôle AD ; ses
   // entrées réservées à l'Admin (Référentiel NIS 2) le restent.
   const manages = useManagesPerimeter()
-  const sectionRole = (s) => (s.id === 'settings' && role !== 'Admin' ? (manages ? 'Manager' : 'User') : role)
+  const managerRole = role === 'Admin' ? role : (manages ? 'Manager' : 'User')
+  const sectionRole = (s) => (s.id === 'settings' ? managerRole : role)
   const group = (id, label, tone, current, children) => (
     <NavGroup key={id} id={id} label={label} tone={tone} current={current}
       collapsed={collapsed} onToggle={onToggle} rail={rail}>
@@ -227,7 +228,9 @@ function SidebarContent({ user, location, collapsed, onToggle, rail, onRail, onC
           if (modules.length === 0) return null
           const current = modules.some((m) => m.routes?.some((r) => within(location.pathname, r)))
           return group(g.id, g.label, g.tone, current,
-            modules.map((m) => <ModuleItem key={m.id} module={m} location={location} role={role} features={features} rail={rail} onClick={onClose} />))
+            // ADR-0014 D4 : les sous-entrées réservées (sas, CMDB assistée) suivent elles aussi le
+            // rôle de gestionnaire d'un périmètre, comme l'API qui les sert (#439).
+            modules.map((m) => <ModuleItem key={m.id} module={m} location={location} role={managerRole} features={features} rail={rail} onClick={onClose} />))
         })}
 
         {/* Paramétrage et Administration au pied de la navigation, à l'écart
