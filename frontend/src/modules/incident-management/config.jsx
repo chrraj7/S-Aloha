@@ -3,7 +3,7 @@ import { api } from '../../api'
 import { titleField, descriptionField, ownerField, dateTimeFr } from '../../core/fields'
 import TriageSuggestions from './TriageSuggestions'
 
-// Gestion des incidents (ITIL 4) : minimiser l'impact négatif des incidents
+// Gestion des incidents (ITIL) : minimiser l'impact négatif des incidents
 // en rétablissant le service normal au plus vite.
 /** INC-24 : tonalité de l'état SLA (dépassé, en risque, suspendu En attente…). */
 export const SLA_TONE = { 'SLA dépassé': 't-bad', 'SLA en risque': 't-wait', 'SLA suspendu': 't-closed', 'Dans le SLA': 't-done',

@@ -20,7 +20,7 @@ ci-dessous, chaque lundi.
 ## [1.0.0] — 2026-11-24
 
 Première version stable : tri assisté des tickets, CMDB assistée et serveur MCP (optionnels,
-activés par l'Admin, hors de l'API), dix pratiques ITIL 4 reliées, conformité NIS 2,
+activés par l'Admin, hors de l'API), dix pratiques ITIL reliées, conformité NIS 2,
 découverte du SI vers un sas de rapprochement, intégration à l'Active Directory. Images
 `ghcr.io/chrraj7/s-aloha-{api,web,features,mcp,annuaire-demo}:v1.0.0` et `latest`.
 
@@ -990,7 +990,8 @@ section Mise à jour avant d'installer** : migrations de base, nouveaux secrets 
   connexion ne journalise plus de faux échec LDAP.
 
 - **Sous-titres des pages** : le numéro de version d'ITIL est retiré (« (ITIL) ») ; la page
-  Problèmes affichait « ITIL v3 » alors que l'application suit les pratiques ITIL 4.
+  Problèmes citait une ancienne édition d'ITIL alors que l'application suit les pratiques
+  actuelles.
 - **Problèmes sur le socle commun** : le module Problèmes repose désormais, comme les autres
   pratiques, sur `Record` et `RecordController` (registre, transitions, transition forcée,
   périmètres, journal) ; il gagne un **gestionnaire du problème** (responsable AD, par défaut
@@ -1069,7 +1070,7 @@ Première ouverture publique du dépôt.
 - Gestion des problèmes : priorité impact × urgence, analyses de cause racine (5 Pourquoi,
   Ishikawa 6M, arbre des défaillances), erreurs connues, actions correctives avec matrice
   RACI affectée à des utilisateurs ou groupes AD.
-- Sept pratiques ITIL 4 en MVP : incidents, demandes, changements (avec calendrier),
+- Sept pratiques ITIL en MVP : incidents, demandes, changements (avec calendrier),
   configuration (CI et relations), niveaux de service (catalogue et SLA), connaissances,
   amélioration continue ; liens entre enregistrements de tous les processus.
 - Reporting : MTTR problèmes et incidents, taux de changements réussis, retards,

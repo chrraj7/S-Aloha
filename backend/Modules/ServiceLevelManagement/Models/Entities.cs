@@ -3,7 +3,7 @@ using SAloha.Api.Core.Records;
 
 namespace SAloha.Api.Modules.ServiceLevelManagement;
 
-/// <summary>Service du catalogue (ITIL 4, gestion des niveaux de service). Le titre porte le nom du service.</summary>
+/// <summary>Service du catalogue (ITIL, gestion des niveaux de service). Le titre porte le nom du service.</summary>
 public class ItService : Record
 {
     public static readonly string[] Statuses = ["En conception", "En service", "Retiré"];

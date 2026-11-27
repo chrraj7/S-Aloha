@@ -10,7 +10,7 @@
 
 La DSI conduit des projets — migrations, refontes, déploiements de services — dont les
 changements, problèmes et améliorations vivent déjà dans S-Aloha, sans objet pour les
-porter. ITIL 4 compte la **gestion de projet** parmi ses pratiques de gestion générale.
+porter. ITIL compte la **gestion de projet** parmi ses pratiques de gestion générale.
 
 Les équipes n'appliquent pas toutes la même méthode : Scrum ou Kanban pour le
 développement, Cycle en V pour l'intégration et la recette, PRINCE2 pour les projets

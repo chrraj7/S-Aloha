@@ -1,6 +1,6 @@
 # 📈 Amélioration continue
 
-> Pratique ITIL 4 *Continual improvement*. Code : `backend/Modules/ContinualImprovement`,
+> Pratique ITIL *Continual improvement*. Code : `backend/Modules/ContinualImprovement`,
 > `frontend/src/modules/continual-improvement`. Préfixe des règles : **CSI**. Socle commun
 > et conventions (✅ / 🔜, lots) : [règles métier](../regles-metier.md).
 
@@ -8,12 +8,12 @@
 
 ## 1. Objectif et périmètre
 
-*Objectif ITIL 4 : aligner les pratiques et les services de l'organisation sur l'évolution
+*Objectif ITIL : aligner les pratiques et les services de l'organisation sur l'évolution
 des besoins métier, par l'amélioration continue des produits, des services, des pratiques
 et de tout élément de leur gestion.*
 
 Le **registre d'amélioration continue** recense les opportunités d'amélioration, de la
-proposition à la mesure du résultat, selon le **modèle d'amélioration continue ITIL 4** en
+proposition à la mesure du résultat, selon le **modèle d'amélioration continue ITIL** en
 sept étapes. Toute pratique peut l'alimenter : un SLA non tenu, une tendance d'incidents,
 un problème systémique, une suggestion. Hors périmètre : la gestion de portefeuille de
 projets.
@@ -42,7 +42,7 @@ porteur AD, créateur, dates) : [socle](../regles-metier.md#5-règles-communes-a
 
 | Champ | Type | Oblig. | Valeurs / règle | Statut |
 |---|---|---|---|---|
-| `Step` | entier | ✔ | 1 à 7 (modèle ITIL 4, ci-dessous) | ✅ |
+| `Step` | entier | ✔ | 1 à 7 (modèle ITIL, ci-dessous) | ✅ |
 | `Priority` | texte 10 | ✔ | Faible, Moyenne, Élevée ; calculée dès que valeur et effort sont notés | ✅ CSI-12 |
 | `Benefit` | texte | | Valeur attendue | ✅ |
 | `Baseline`, `Target` | texte 300 | | Mesure de départ, mesure cible | ✅ |
@@ -55,7 +55,7 @@ porteur AD, créateur, dates) : [socle](../regles-metier.md#5-règles-communes-a
 | `FollowUpDate` | date | | Date de contrôle de la durabilité (étape 7) ; ne change plus une fois le contrôle conclu | ✅ CSI-15 |
 | `FollowUpDoneAt`, `FollowUpDoneBy`, `FollowUpHolds`, `FollowUpNote` | date, texte, booléen, texte | auto | Conclusion du contrôle : le résultat tient ou non, constat | ✅ CSI-15 |
 
-**Modèle d'amélioration continue ITIL 4** : 1. *Quelle est la vision ?* — 2. *Où en
+**Modèle d'amélioration continue ITIL** : 1. *Quelle est la vision ?* — 2. *Où en
 sommes-nous ?* — 3. *Où voulons-nous être ?* — 4. *Comment y parvenir ?* — 5. *Passer à
 l'action* — 6. *Y sommes-nous parvenus ?* — 7. *Comment maintenir la dynamique ?*
 
@@ -96,7 +96,7 @@ stateDiagram-v2
 | ID | Règle | Statut | Lot |
 |---|---|---|---|
 | CSI-01 | Registre : opportunité, valeur attendue, mesure de départ et cible, priorité, porteur, échéance, résultat constaté | ✅ | |
-| CSI-02 | Avancement selon le **modèle ITIL 4**, étape 1 à 7 ; hors de 1 à 7 ⇒ 400 | ✅ | |
+| CSI-02 | Avancement selon le **modèle ITIL**, étape 1 à 7 ; hors de 1 à 7 ⇒ 400 | ✅ | |
 | CSI-03 | **Validée** et **Abandonnée** : gestionnaire uniquement | ✅ | |
 | CSI-04 | **En cours** et **Réalisée** exigent une amélioration validée ; **Réalisée** exige le résultat constaté | ✅ | |
 | CSI-05 | **Abandonner**, comme revenir à Proposée, **retire la validation** : relancer demande une nouvelle validation | ✅ | |

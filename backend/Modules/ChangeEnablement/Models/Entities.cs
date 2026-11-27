@@ -4,7 +4,7 @@ using SAloha.Api.Core.Records;
 namespace SAloha.Api.Modules.ChangeEnablement;
 
 /// <summary>
-/// Changement (ITIL 4, habilitation des changements) : évalué, autorisé puis
+/// Changement (ITIL, habilitation des changements) : évalué, autorisé puis
 /// planifié au calendrier des changements.
 /// </summary>
 public class Change : Record

@@ -1,7 +1,7 @@
 # 📣 Déclarations réglementaires
 
 > Obligations de déclaration des **incidents de sécurité (cyber)** aux autorités. Relève de
-> la pratique ITIL 4 *Information security management*, aux côtés de la
+> la pratique ITIL *Information security management*, aux côtés de la
 > [conformité NIS 2](conformite-nis2.md). Préfixe des règles : **DRG**. Socle commun et
 > conventions (✅ / 🔜, lots) : [règles métier](../regles-metier.md). Lot 2 implémenté le
 > 2026-10-21, modèle de contenu par régime (DRG-08) le 2026-10-23 ; restent deux indicateurs (lot 3).

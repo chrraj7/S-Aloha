@@ -1,7 +1,7 @@
 import { api } from '../../api'
 import { titleField, descriptionField, ownerField, dateFr } from '../../core/fields'
 
-// Gestion des niveaux de service (ITIL 4) : fixer des cibles claires et
+// Gestion des niveaux de service (ITIL) : fixer des cibles claires et
 // orientées métier, et évaluer la prestation au regard de ces cibles.
 export const serviceConfig = {
   title: 'Catalogue des services',

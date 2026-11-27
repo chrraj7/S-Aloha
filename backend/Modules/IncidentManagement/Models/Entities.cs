@@ -5,7 +5,7 @@ using SAloha.Api.Core.Records;
 namespace SAloha.Api.Modules.IncidentManagement;
 
 /// <summary>
-/// Incident (ITIL 4, gestion des incidents) : interruption ou dégradation
+/// Incident (ITIL, gestion des incidents) : interruption ou dégradation
 /// d'un service, à rétablir au plus vite.
 /// </summary>
 public class Incident : Record, IServiceBound

@@ -16,4 +16,4 @@ body:
   - type: input
     id: itil
     attributes:
-      label: Pratique ITIL 4 concernée
+      label: Pratique ITIL concernée

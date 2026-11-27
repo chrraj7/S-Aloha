@@ -13,7 +13,7 @@
 ## 1. Objectif
 
 Réduire le temps passé à qualifier et aiguiller un incident (catégorisation, priorisation,
-affectation, ITIL 4 *Incident management*), et repérer tôt une panne qui touche plusieurs
+affectation, ITIL *Incident management*), et repérer tôt une panne qui touche plusieurs
 utilisateurs. Le tri **propose** ; la décision, et la responsabilité, restent à l'agent.
 
 Ce qui existe déjà, et que le tri ne refait pas :

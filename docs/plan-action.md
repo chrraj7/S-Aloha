@@ -18,7 +18,7 @@
 
 ## Prochaine séance
 
-*Mise à jour le 2026-11-24.* État : 413 règles ✅ ; 23 🔜, toutes en lot 3 : celles de F12 (15) et de
+*Mise à jour le 2026-11-27.* État : 413 règles ✅ ; 23 🔜, toutes en lot 3 : celles de F12 (15) et de
 F13 phase 4 (8), spécifiés le 2026-11-24 ([synthèse](reference/processus/readme.md)) ; les 60 règles des fonctionnalités optionnelles
 (F14) faites le 2026-11-24, [RAG-10](reference/recherche.md) (calibrage) le 2026-11-09,
 RAG-12 (indexation des pièces jointes) le 2026-11-24 ; tous les indicateurs des pratiques sont
@@ -33,6 +33,12 @@ PR en cours soldées ; elle attendait aussi F14, livré le 2026-11-24. Ses notes
 les **réserves** : RAG-10 à
 remesurer sur des données réelles, F12, F13 phase 4 (agent nomade), WinRM à valider sur un
 Windows réel (CFG-57), `dotnet format` (Q5), C8 et C9. Le tag a été posé par le mainteneur.
+
+**Application mobile** : [S-Aloha Mobile](https://github.com/chrraj7/S-Aloha-mobile), client iOS et Android (Expo, React Native,
+TypeScript), vit dans son propre dépôt, en anglais, avec sa feuille de route ; première
+fondation fusionnée le 2026-11-23 (connexion AD, session dans SecureStore, incidents récents
+en lecture seule). Elle est référencée dans le README et la référence depuis le 2026-11-27
+([produit](reference/produit.md#accès--navigateur-et-mobile)).
 
 **Reste du plan** : le chantier **F14** (fonctionnalités optionnelles : tri assisté des
 tickets, CMDB assistée, serveur MCP) est livré et mis en avant le 2026-11-24
@@ -66,6 +72,14 @@ lancement de la v1.0.0 compris (C7).
   avec ses notes et ses réserves, images `v1.0.0` et `latest` publiques (tirage anonyme
   vérifié), aperçu social du dépôt remplacé par l'image de partage refaite le même jour.
   Reste au mainteneur le lancement (C7).
+- **Sans numéro d'édition d'ITIL** (décision du 2026-11-27) : dépôt, wiki et image de partage
+  n'en citent plus. Restent au mainteneur : téléverser de nouveau l'image de partage comme
+  aperçu social du dépôt ([protocole § 2](protocole-documentation.md#2-mettre-à-jour-la-référence)),
+  et retoucher les notes de la [release v1.0.0](https://github.com/chrraj7/S-Aloha/releases/tag/v1.0.0),
+  qui citent encore l'édition.
+- **Application mobile** : éprouver [S-Aloha Mobile](https://github.com/chrraj7/S-Aloha-mobile) contre une instance v1.0.0
+  (connexion, restauration de session, liste des incidents) ; son README ne nomme pas encore
+  de version compatible.
 
 ## 1. Bloquants fonctionnels — le processus est inutilisable
 
@@ -137,8 +151,10 @@ restantes sont spécifiées règle par règle dans [`reference/processus/`](refe
 | F12 | Conformité | 🔜 **Évaluations sur référentiels définis par l'Admin** (ex. CR-CMM, ISO 27002) : l'Admin importe un référentiel en CSV depuis sa console en choisissant les colonnes (domaine ou pratique, niveau, identifiant, question, preuve attendue) et règle l'échelle (ex. Implémenté = 1, Partiel = 0,5, Non = 0 ; un niveau n'est atteint que si tous ses points de contrôle et ceux des niveaux inférieurs sont implémentés). Le contenu est importé par l'organisation et **jamais versionné** dans le dépôt, même logique que l'[ADR-0012](decisions/adr-0012-referentiel-nis2-structure-versionnee-texte-importe.md) : CR-CMM est sous licence CC BY-NC 4.0, usage interne libre, œuvre dérivée ou revente soumises à l'accord écrit de ses auteurs (vérifié le 2026-10-12). Place : section Conformité & réglementation | Spécifié le 2026-11-24 : [REF](reference/processus/evaluations-referentiels-importes.md), REF-01 à REF-15 ; [ADR-0025](decisions/adr-0025-referentiels-de-conformite-importes.md) |
 | F13 | Configuration, Sécurité | **Découverte automatique du SI et CMDB augmentée** (phases 1 et 2, console de staging, Shadow IT et obsolescence faites le 2026-10-19, bannières, constructeur par préfixe MAC, SNMP v3, interfaces, inventaire SSH, hyperviseurs, flux réseau et WinRM le 2026-10-19 ; agent et preuves NIS 2 à venir) : approche hybride (agentless & agent léger), balayage IP / ICMP sweep, fingerprinting, synchronisation annuaire (AD / LDAP / Entra ID), cartographie des dépendances, protocoles standard (ICMP/ARP, SNMP v2c/v3, WMI/WinRM, SSH, REST), Credentials Vault, zone de staging et réconciliation, détection Shadow IT et alignement NIS 2 (ReCyF) | [Chantier F13](#découverte-automatique-et-cmdb-augmentée-f13) |
 | F14 | Incidents, Configuration, socle | ✅ **Fonctionnalités optionnelles**, exécutées hors de l'API (un conteneur commun, le serveur MCP à part), activées par l'Admin : tri assisté des tickets, CMDB assistée (modèle de langage dans le SI ou hébergé), serveur MCP en lecture seule. **Avant la version stable** (décision du 2026-11-23) ; 60 règles faites et mise en avant le 2026-11-24 ([#426](https://github.com/chrraj7/S-Aloha/issues/426)) | [Chantier F14](#fonctionnalités-optionnelles-f14) |
+| Mobile | Incidents, puis demandes, problèmes et changements | 🔜 **Application mobile** [S-Aloha Mobile](https://github.com/chrraj7/S-Aloha-mobile), dépôt à part : prise en charge, affectation, commentaires et clôture des incidents, recherche et filtres, notifications push, mode hors ligne, publication dans les magasins. Client de l'API : une règle de gestion reste dans l'API, jamais dans le mobile | [Feuille de route du mobile](https://github.com/chrraj7/S-Aloha-mobile/blob/main/docs/ROADMAP.md) (en anglais) |
 
-Ces chantiers sont décidés : leurs règles sont écrites et classées en lots
+Ces chantiers sont décidés : leurs règles sont écrites et classées en lots (sauf l'application
+mobile, dont la feuille de route vit dans son dépôt)
 ([plan d'implémentation du lot 1](reference/processus/readme.md#plan-dimplémentation-conseillé--lot-1)).
 
 ### Découverte automatique et CMDB augmentée (F13)

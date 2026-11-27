@@ -46,8 +46,8 @@ public class MigrationTests
     }
 
     [Theory]
-    [InlineData(false)]  // installation antérieure aux modules ITIL 4
-    [InlineData(true)]   // installation des modules ITIL 4 avant les migrations
+    [InlineData(false)]  // installation antérieure aux modules ITIL
+    [InlineData(true)]   // installation des modules ITIL avant les migrations
     public async Task Une_base_creee_par_EnsureCreated_est_mise_a_niveau_sans_perte(bool withItilModules)
     {
         var (container, api) = await StartOnLegacyDatabase(withItilModules);

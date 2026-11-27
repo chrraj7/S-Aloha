@@ -3,7 +3,7 @@ import { titleField, descriptionField, ownerField, dateFr, dateTimeFr } from '..
 
 export const CATEGORIES = ['Entité importante', 'Entité essentielle']
 
-// Conformité NIS 2 (ITIL 4 : gestion de la sécurité de l'information) :
+// Conformité NIS 2 (ITIL : gestion de la sécurité de l'information) :
 // évaluation d'un périmètre au regard du Référentiel Cyber France (ReCyF) de
 // l'ANSSI. Règles NIS-xx : docs/reference/processus/conformite-nis2.md.
 export const assessmentConfig = {

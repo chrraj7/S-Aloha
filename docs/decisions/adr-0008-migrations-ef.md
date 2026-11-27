@@ -9,7 +9,7 @@
 ## Contexte
 
 Le schéma était créé au démarrage par `Database.EnsureCreated()`, qui ne fait rien sur une
-base existante. Les modules ITIL 4 ([ADR-0007](adr-0007-pratiques-itil4-et-socle-commun-des-processus.md))
+base existante. Les modules ITIL ([ADR-0007](adr-0007-pratiques-itil4-et-socle-commun-des-processus.md))
 ajoutent dix tables : sur toute installation en service, elles manquaient, et les nouveaux
 processus — console comprise — répondaient 500. Les bases existantes n'ont pas de table
 d'historique de migrations.

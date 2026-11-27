@@ -1,6 +1,6 @@
 # 📐 Gestion de projet
 
-> Pratique ITIL 4 de gestion générale *Project management*. Code :
+> Pratique ITIL de gestion générale *Project management*. Code :
 > `backend/Modules/ProjectManagement`, `frontend/src/modules/project-management`. Préfixe des
 > règles : **PRJ**. Socle commun et conventions (✅ / 🔜, lots) :
 > [règles métier](../regles-metier.md). La méthode active des composants :
@@ -10,7 +10,7 @@
 
 ## 1. Objectif et périmètre
 
-*Objectif ITIL 4 (gestion de projet) : s'assurer que tous les projets de l'organisation
+*Objectif ITIL (gestion de projet) : s'assurer que tous les projets de l'organisation
 aboutissent, en planifiant, déléguant, suivant et maintenant le contrôle de tous leurs
 aspects, et en motivant les personnes qui y participent.*
 

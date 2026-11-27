@@ -36,6 +36,9 @@ contribution est publiée sous la même licence. Chacun s'engage à respecter le
 - Pour comprendre le code : [architecture](docs/reference/architecture.md), et pour
   ajouter un écran ou un module : [frontend](docs/reference/frontend.md).
 - Issues, pull requests et commits sont acceptés **en français ou en anglais**.
+- L'application mobile (iOS, Android, Expo) a son dépôt, [S-Aloha-mobile](https://github.com/chrraj7/S-Aloha-mobile),
+  tenu en anglais, avec les mêmes règles : commits signés (DCO), pull request aux contrôles
+  verts. Une évolution de l'API dont le mobile a besoin se propose ici.
 
 ## Signaler un bug ou proposer une évolution
 

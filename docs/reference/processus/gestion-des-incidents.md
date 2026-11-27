@@ -1,6 +1,6 @@
 # 🚨 Gestion des incidents
 
-> Pratique ITIL 4 *Incident management*. Code : `backend/Modules/IncidentManagement`,
+> Pratique ITIL *Incident management*. Code : `backend/Modules/IncidentManagement`,
 > `frontend/src/modules/incident-management`. Préfixe des règles : **INC**. Socle commun et
 > conventions (✅ / 🔜, lots) : [règles métier](../regles-metier.md).
 > Fonctionnalité optionnelle qui s'y greffe : [tri assisté des tickets](../tri-assiste-des-tickets.md)
@@ -10,7 +10,7 @@
 
 ## 1. Objectif et périmètre
 
-*Objectif ITIL 4 : minimiser l'impact négatif des incidents en rétablissant le
+*Objectif ITIL : minimiser l'impact négatif des incidents en rétablissant le
 fonctionnement normal du service le plus rapidement possible.*
 
 Un **incident** est une interruption non planifiée d'un service, ou une baisse de sa

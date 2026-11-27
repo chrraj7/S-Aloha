@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 
 namespace SAloha.Api.Tests;
 
-/// <summary>Modules ITIL 4 (MVP) : références, valeurs fermées, décisions de gestionnaire, liens, console.</summary>
+/// <summary>Modules ITIL (MVP) : références, valeurs fermées, décisions de gestionnaire, liens, console.</summary>
 [Collection("api")]
 public class ItilModulesTests(ApiFixture api)
 {

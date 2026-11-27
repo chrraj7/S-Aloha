@@ -1,10 +1,12 @@
-# ADR-0007 — Pratiques ITIL 4 comme référentiel, socle commun des processus et liens dans le socle
+# ADR-0007 — Pratiques ITIL comme référentiel, socle commun des processus et liens dans le socle
 
 <sub>[← Documentation](../readme.md) · [Toutes les décisions](readme.md)</sub>
 
 - **Date** : 2026-10-06
 - **Statut** : accepté
 - **Décideur** : Leipa
+- **Révision** : 2026-11-27, numéros d'édition d'ITIL retirés à la demande du décideur :
+  S-Aloha suit les pratiques publiées, sans se lier à une édition
 
 ## Contexte
 
@@ -15,9 +17,10 @@ décisions des gestionnaires, relier les processus), l'enrichissement venant ens
 
 Trois questions se posaient :
 
-1. **Quel référentiel ?** Le module Problèmes a été construit sur ITIL v3. Le site officiel
-   (PeopleCert, propriétaire d'Axelos) publie les **pratiques ITIL 4**, avec un guide par
-   pratique, et introduit progressivement ITIL (Version 5), dont le contenu public est
+1. **Quel référentiel ?** Le module Problèmes a été construit sur une ancienne édition
+   d'ITIL, organisée en processus du cycle de vie des services. Le site officiel
+   (PeopleCert, propriétaire d'Axelos) publie les **pratiques ITIL**, avec un guide par
+   pratique, et introduit progressivement une nouvelle édition, dont le contenu public est
    encore partiel.
 2. **Comment livrer sept modules sans dupliquer sept fois le même code** (référence
    annuelle, contrôle des statuts, responsable AD, recherche, droits) ?
@@ -26,13 +29,14 @@ Trois questions se posaient :
 
 ## Décision
 
-1. **Référentiel : les pratiques ITIL 4.** Chaque module reprend l'objectif officiel de la
+1. **Référentiel : les pratiques ITIL.** Chaque module reprend l'objectif officiel de la
    pratique correspondante (gestion des incidents, gestion des demandes de service,
    habilitation des changements, gestion de la configuration des services, gestion des
    niveaux de service, gestion des connaissances, amélioration continue) et son
    vocabulaire (changement standard pré-autorisé, calendrier des changements, CI,
-   registre et modèle d'amélioration continue en sept étapes). ITIL (Version 5) conserve
-   ces pratiques : l'alignement reste valable.
+   registre et modèle d'amélioration continue en sept étapes). La nouvelle édition conserve
+   ces pratiques : l'alignement reste valable, et la documentation ne cite aucun numéro
+   d'édition.
 2. **Socle commun des processus** dans `backend/Core/Records` : une entité de base `Record`
    (non mappée, une table par processus) et un contrôleur générique
    `RecordController<T, TDto>`. Chaque module ne déclare que son préfixe de référence, ses
@@ -69,11 +73,11 @@ migré sur `Record`.
 
 ## Alternatives envisagées
 
-- **Rester sur ITIL v3** — écarté : ce n'est plus le référentiel publié ; ITIL 4 apporte
-  notamment l'habilitation des changements (changements standard pré-autorisés) et le
-  modèle d'amélioration continue.
-- **Viser ITIL (Version 5)** — écarté pour le MVP : publication encore progressive ; les
-  pratiques visées sont communes aux deux versions.
+- **Rester sur l'ancienne édition d'ITIL** — écarté : ce n'est plus le référentiel publié ;
+  les pratiques apportent notamment l'habilitation des changements (changements standard
+  pré-autorisés) et le modèle d'amélioration continue.
+- **Viser d'emblée la nouvelle édition** — écarté pour le MVP : publication encore
+  progressive ; les pratiques visées sont communes aux deux éditions.
 - **Un contrôleur et une page écrits à la main par module** — écarté : sept fois les mêmes
   règles (référence, statuts, droits, recherche), avec le risque d'y reproduire les défauts
   relevés sur le module Problèmes.

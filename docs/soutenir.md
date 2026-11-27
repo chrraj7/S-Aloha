@@ -32,14 +32,14 @@ qu'un sponsoring de fonctionnalité peut accélérer :
 | Chantier | Ce que l'organisation y gagne |
 |---|---|
 | **Référentiels de conformité importés** (ISO 27002, CR-CMM…) | Évaluer d'autres référentiels que NIS 2 avec le même outillage : scores, écarts, actions |
-| **Recherche dans les pièces jointes** ([recherche](reference/recherche.md)) | Retrouver une procédure ou un rapport par le texte des documents joints aux fiches |
 | **Agent d'inventaire nomade** (découverte des postes hors réseau, [configuration](reference/processus/gestion-de-la-configuration.md)) | Une CMDB à jour pour les postes itinérants, preuves NIS 2 alimentées par la découverte |
+| **Application mobile** ([S-Aloha Mobile](https://github.com/chrraj7/S-Aloha-mobile), iOS et Android) | Traiter les incidents en mobilité : prise en charge, commentaires, notifications push, mode hors ligne |
 | **Démonstration en ligne** | Essayer S-Aloha sans l'installer, sur un jeu de données remis à zéro chaque nuit |
 
 Déjà livrés grâce à la feuille de route : tri assisté des tickets, CMDB assistée et serveur
 MCP ([fonctionnalités optionnelles](reference/fonctionnalites-optionnelles.md)), déclarations
-réglementaires NIS 2 et RGPD, pièces jointes et notifications par courriel, import en masse de
-la CMDB, tâches d'exécution des demandes.
+réglementaires NIS 2 et RGPD, pièces jointes et notifications par courriel, recherche dans le
+texte des pièces jointes, import en masse de la CMDB, tâches d'exécution des demandes.
 
 ## Ce que reçoit un sponsor
 

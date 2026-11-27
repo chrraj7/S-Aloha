@@ -1,7 +1,7 @@
 import { api } from '../../api'
 import { titleField, descriptionField, ownerField, dateTimeFr } from '../../core/fields'
 
-// Habilitation des changements (ITIL 4) : maximiser le nombre de changements
+// Habilitation des changements (ITIL) : maximiser le nombre de changements
 // réussis en évaluant les risques, en autorisant et en gérant le calendrier.
 export const changeStatuses = [
   { value: 'Demandé', tone: 'new' }, { value: 'Évalué', tone: 'wait' },

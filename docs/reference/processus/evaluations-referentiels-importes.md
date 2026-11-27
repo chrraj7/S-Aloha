@@ -15,7 +15,7 @@
 
 ## 1. Objectif et périmètre
 
-*Objectif ITIL 4 (gestion de la sécurité de l'information) : protéger l'information dont
+*Objectif ITIL (gestion de la sécurité de l'information) : protéger l'information dont
 l'organisation a besoin pour conduire ses activités, en comprenant et en gérant les risques
 pour sa confidentialité, son intégrité et sa disponibilité.*
 
